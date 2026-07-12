@@ -43,3 +43,6 @@ Thumbs.db
 
 .vscode/
 ShaderGraphSettings.asset
+ProjectSettings/QualitySettings.asset
+ProjectSettings/ProjectSettings.asset
+ProjectSettings/TimelineSettings.asset

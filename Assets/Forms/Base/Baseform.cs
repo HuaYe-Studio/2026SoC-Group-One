@@ -55,9 +55,14 @@ public abstract class BaseForm : MonoBehaviour
         currentState == ActionState.Idle ||
         currentState == ActionState.Moving;
 
+    public void SetActionState(ActionState state)
+    {
+        currentState = state;
+    }
+
     public void ProcessInput(float horizontal, bool jumpPressed, bool jumpReleased)
     {
-        if (currentState == ActionState.Locked) return;
+        if (currentState == ActionState.Locked || currentState == ActionState.SpecialAction) return;
 
         DoMovement(horizontal);
         UpdateFacing(horizontal);
