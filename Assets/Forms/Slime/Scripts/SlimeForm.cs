@@ -6,6 +6,9 @@ public class SlimeForm : BaseForm
     [SerializeField] private float acceleration = 0.5f;
     [SerializeField] private float deceleration = 0.5f;
 
+    [Header("Devour")]
+    [SerializeField] private SlimeDevourHandler devourHandler;
+
     private float _currentVelocityX;
 
     public override void Initialize(PlayerController ctrl)
@@ -16,6 +19,9 @@ public class SlimeForm : BaseForm
         gravityScale = 1f;
         fallGravityMultiplier = 1.8f;
         jumpCutMultiplier = 0.5f;
+
+        if (devourHandler == null)
+            devourHandler = GetComponent<SlimeDevourHandler>();
     }
 
     public override void DoMovement(float horizontal)
@@ -35,5 +41,17 @@ public class SlimeForm : BaseForm
     public override void OnFormActivated()
     {
         _currentVelocityX = rb != null ? rb.velocity.x : 0f;
+    }
+
+    public override void OnFormDeactivated()
+    {
+        if (devourHandler != null)
+            devourHandler.CancelAll();
+    }
+
+    protected override void HandleInput()
+    {
+        if (devourHandler != null)
+            devourHandler.TryHandleDevourInput();
     }
 }

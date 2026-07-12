@@ -96,6 +96,19 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    public bool IsFormUnlocked(FormType formType)
+    {
+        if (formTypeToIndex.TryGetValue(formType, out int index))
+            return unlockedFormIndices.Contains(index);
+        return false;
+    }
+
+    public void SwitchToFormByType(FormType formType)
+    {
+        if (formTypeToIndex.TryGetValue(formType, out int index))
+            SwitchToForm(index);
+    }
+
     private void Update()
     {
         float horizontal = Input.GetAxisRaw("Horizontal");
@@ -106,8 +119,6 @@ public class PlayerController : MonoBehaviour
             ActiveForm.ProcessInput(horizontal, jumpPressed, jumpReleased);
 
         HandleFormSwitch();
-
-        HandleDevKeys();
     }
 
     private void HandleFormSwitch()
@@ -161,9 +172,4 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void HandleDevKeys()
-    {
-        if (Input.GetKeyDown(KeyCode.Alpha1)) MockEventCenter.TriggerFormUnlock(FormType.Slime);
-        if (Input.GetKeyDown(KeyCode.Alpha2)) MockEventCenter.TriggerFormUnlock(FormType.Frog);
-    }
 }
