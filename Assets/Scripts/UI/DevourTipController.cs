@@ -13,8 +13,7 @@ public class DevourTipController : MonoBehaviour
     [Header("吞噬提示 UI")]
     [SerializeField] private GameObject _devourTipUI;//对应显示的UI图像（暂时只有空格space）
 
-    private bool _isAnimalInRange = false;//是否有可吞噬的动物在范围内,默认是false
-    //吞噬检测代码不是UI模块职责，暂时留空等待
+
     private CanvasGroup _canvasGroup;
 
     void Awake()
@@ -23,6 +22,13 @@ public class DevourTipController : MonoBehaviour
         {
             _canvasGroup = _devourTipUI.GetComponent<CanvasGroup>();
         }
+    }
+
+    //订阅吞噬检测范围事件
+    void OnEnable()
+    {
+        MockEventCenter.OnAnimalEnterRange += HandleAnimalEnterRange;
+        MockEventCenter.OnAnimalExitRange += HandleAnimalExitRange;
     }
 
     // Start is called before the first frame update
@@ -34,35 +40,37 @@ public class DevourTipController : MonoBehaviour
         }
     }
 
-    // Update is called once per frame
-    void Update()
+    //退订吞噬检测范围事件
+    void OnDisable()
     {
-        if (Input.GetKeyDown(KeyCode.T))
-        {
-            _isAnimalInRange = !_isAnimalInRange;//简单的测试程序
-        }
+        MockEventCenter.OnAnimalEnterRange -= HandleAnimalEnterRange;
+        MockEventCenter.OnAnimalExitRange -= HandleAnimalExitRange;
+    }
 
-        if (_isAnimalInRange)
+    //处理生物进入检测范围，UI显现的逻辑
+    private void HandleAnimalEnterRange(DevourableAnimal animal)
+    {
+        if (_devourTipUI != null && !_devourTipUI.activeSelf)
         {
-            if (_devourTipUI != null && !_devourTipUI.activeSelf)
+            _devourTipUI.SetActive(true);
+            if (_canvasGroup != null)
             {
-                _devourTipUI.SetActive(true);
-                if (_canvasGroup != null)
-                {
-                    _canvasGroup.DOFade(0f, 0.5f).SetLoops(-1, LoopType.Yoyo);//反复淡入淡出效果
-                }
+                _canvasGroup.DOFade(0f, 0.5f).SetLoops(-1, LoopType.Yoyo);//反复淡入淡出效果
             }
         }
-        else
+    }
+
+    //处理生物离开检测范围，UI隐藏的逻辑
+    private void HandleAnimalExitRange(DevourableAnimal animal)
+    {
+        if (_devourTipUI != null && _devourTipUI.activeSelf)
         {
-            if (_devourTipUI != null && _devourTipUI.activeSelf)
+            if (_canvasGroup != null)
             {
-                if (_canvasGroup != null)
-                {
-                    _canvasGroup.DOKill();//停止淡入淡出效果
-                }
-                _devourTipUI.SetActive(false);
+                _canvasGroup.DOKill(); // 停止淡入淡出动画
+                _canvasGroup.alpha = 1f; // 重置透明度为完全不透明
             }
+            _devourTipUI.SetActive(false);
         }
     }
 }
