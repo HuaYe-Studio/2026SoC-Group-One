@@ -13,12 +13,10 @@ public abstract class BaseForm : MonoBehaviour
 {
     [Header("Movement")]
     [SerializeField] protected float moveSpeed = 5f;
-    [SerializeField] protected float jumpForce = 10f;
 
     [Header("Gravity")]
     [SerializeField] protected float gravityScale = 1f;
     [SerializeField] protected float fallGravityMultiplier = 1.5f;
-    [SerializeField] protected float jumpCutMultiplier = 0.5f;
 
     [Header("Ground Check")]
     [SerializeField] protected float groundCheckWidth = 0.8f;
@@ -29,13 +27,15 @@ public abstract class BaseForm : MonoBehaviour
     protected Rigidbody2D rb;
     protected Collider2D myCollider;
     protected SpriteRenderer spriteRenderer;
+    protected Animator animator;
     protected PlayerController controller;
 
     protected ActionState currentState = ActionState.Idle;
     protected float ignoreGroundUntil;
 
-    public bool IsGrounded { get; private set; }
+    public bool IsGrounded { get; protected set; }
     public ActionState CurrentState => currentState;
+    public Animator Animator => animator;
 
     public virtual void Initialize(PlayerController ctrl)
     {
@@ -43,6 +43,7 @@ public abstract class BaseForm : MonoBehaviour
         rb = GetComponentInParent<Rigidbody2D>();
         myCollider = GetComponent<Collider2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
+        animator = GetComponent<Animator>();
     }
 
     protected virtual bool CanMove() =>
@@ -51,27 +52,23 @@ public abstract class BaseForm : MonoBehaviour
         currentState == ActionState.Jumping ||
         currentState == ActionState.Falling;
 
-    protected virtual bool CanJump() =>
-        currentState == ActionState.Idle ||
-        currentState == ActionState.Moving;
-
     public void SetActionState(ActionState state)
     {
         currentState = state;
     }
 
-    public void ProcessInput(float horizontal, bool jumpPressed, bool jumpReleased)
+    public void SetAnimatorBool(string name, bool value)
+    {
+        if (animator != null)
+            animator.SetBool(name, value);
+    }
+
+    public void ProcessInput(float horizontal)
     {
         if (currentState == ActionState.Locked || currentState == ActionState.SpecialAction) return;
 
         DoMovement(horizontal);
         UpdateFacing(horizontal);
-
-        if (jumpPressed && CanJump())
-            DoJump();
-
-        if (jumpReleased)
-            ApplyJumpCut();
 
         HandleInput();
     }
@@ -86,16 +83,6 @@ public abstract class BaseForm : MonoBehaviour
             currentState = Mathf.Abs(horizontal) > 0.1f ? ActionState.Moving : ActionState.Idle;
     }
 
-    public virtual void DoJump()
-    {
-        if (!CanJump()) return;
-
-        rb.velocity = new Vector2(rb.velocity.x, jumpForce);
-        currentState = ActionState.Jumping;
-        ignoreGroundUntil = Time.fixedTime + 0.1f;
-        IsGrounded = false;
-    }
-
     protected virtual void UpdateFacing(float horizontal)
     {
         if (spriteRenderer == null) return;
@@ -103,12 +90,6 @@ public abstract class BaseForm : MonoBehaviour
             spriteRenderer.flipX = false;
         else if (horizontal < -0.1f)
             spriteRenderer.flipX = true;
-    }
-
-    protected virtual void ApplyJumpCut()
-    {
-        if (rb.velocity.y > 0)
-            rb.velocity = new Vector2(rb.velocity.x, rb.velocity.y * jumpCutMultiplier);
     }
 
     protected virtual void HandleInput() { }

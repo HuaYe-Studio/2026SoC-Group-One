@@ -112,11 +112,9 @@ public class PlayerController : MonoBehaviour
     private void Update()
     {
         float horizontal = Input.GetAxisRaw("Horizontal");
-        bool jumpPressed = Input.GetButtonDown("Jump");
-        bool jumpReleased = Input.GetButtonUp("Jump");
 
         if (ActiveForm != null)
-            ActiveForm.ProcessInput(horizontal, jumpPressed, jumpReleased);
+            ActiveForm.ProcessInput(horizontal);
 
         HandleFormSwitch();
     }
