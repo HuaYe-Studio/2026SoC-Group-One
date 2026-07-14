@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 /// <summary>
@@ -7,18 +8,17 @@ using UnityEngine;
 /// </summary>
 [RequireComponent(typeof(FSM))]
 [RequireComponent(typeof(Rigidbody2D))]
+[RequireComponent(typeof(EnvironmentMonitor))]
 public class FrogAI : AnimalBase
 {
-    [Header("Hop")]
-    [SerializeField] private float _hopForce = 9f;
-    [SerializeField] private float _hopForwardSpeed = 3.5f;
+    [Header("Jump")]
+    [SerializeField] private float _hopForce = 5f;
+    [SerializeField] private float _hopForwardSpeed = 2.35f;
 
     [Header("Ground Check")]
     [SerializeField] private float _groundCheckWidth = 0.5f;
     [SerializeField] private float _groundCheckHeight = 0.08f;
     [SerializeField] private LayerMask _groundLayer;
-
-    private const float AirControlThreshold = 0.1f;
 
     [Header("Idle Fidget")]
     [SerializeField] private float _idleHopForce = 5f;
@@ -26,18 +26,35 @@ public class FrogAI : AnimalBase
     [SerializeField] private float _idleHopIntervalMin = 1.5f;
     [SerializeField] private float _idleHopIntervalMax = 4f;
 
-    private float _idleHopTimer;
+    [Header("Animation")]
+    [SerializeField] private Animator _animator;
+
+    // Animator 参数：Int 枚举，0=Idle 1=Jump 2=Rest 3=Flee 4=Prey
+    private const string AnimStateParam = "AnimState";
+
+    private EnvironmentMonitor _monitor;
     private float _nextIdleHopTime;
+    private bool _hasIdleHopped;
 
     /// <summary>
     /// 当前是否着地。
     /// </summary>
-    public bool IsGrounded { get; private set; }
+    public override bool IsGrounded { get; protected set; } = true;
 
-    private bool _isInAir;
+    /// <summary>
+    /// 环境监视器引用，供外部查询地形、同类等信息。
+    /// </summary>
+    public EnvironmentMonitor Monitor => _monitor;
+
+    // 覆写基类食物属性，数据来源于 EnvironmentMonitor
+    public override bool IsFoodDetected => _monitor != null && _monitor.IsFoodDetected;
+    public override Vector2 FoodDirection => _monitor != null ? _monitor.FoodDirection : Vector2.zero;
+    public override float FoodDistance => _monitor != null ? _monitor.FoodDistance : 0f;
 
     protected override void Awake()
     {
+        _monitor = GetComponent<EnvironmentMonitor>();
+
         base.Awake();
     }
 
@@ -57,7 +74,6 @@ public class FrogAI : AnimalBase
         Vector2 size = new Vector2(width, _groundCheckHeight);
         RaycastHit2D hit = Physics2D.BoxCast(origin, size, 0f, Vector2.down, 0.05f, _groundLayer);
 
-        _isInAir = !hit && Rb.velocity.y > AirControlThreshold;
         IsGrounded = hit.collider != null;
     }
 
@@ -86,35 +102,59 @@ public class FrogAI : AnimalBase
 
         if (SpriteRenderer != null && Mathf.Abs(direction) > 0.05f)
             SpriteRenderer.flipX = direction < 0;
+
+        PlayAnimation("Jump");
     }
 
     /// <summary>
-    /// 青蛙使用觅食+休息+逃跑状态，不使用默认的巡逻状态。
+    /// 根据状态名设置 Animator 的 AnimState 整数参数。
+    /// </summary>
+    public override void PlayAnimation(string stateName)
+    {
+        if (_animator == null) return;
+
+        int state = 0;
+        switch (stateName)
+        {
+            case "Jump": state = 1; break;
+            case "Rest": state = 2; break;
+            case "Flee": state = 3; break;
+            case "Prey": state = 4; break;
+        }
+
+        _animator.SetInteger(AnimStateParam, state);
+    }
+
+    /// <summary>
+    /// 青蛙使用觅食+休息+捕食+逃跑状态，不使用默认的巡逻状态。
     /// 闲置时会随机小幅跳跃。
     /// </summary>
     protected override void RegisterStates()
     {
         ResetIdleHopTimer();
-        Fsm.RegisterState(new IdleState(Fsm, this, () => Fsm.ChangeState<ForageState>(), TryIdleHop));
+        Fsm.RegisterState(new IdleState(Fsm, this, () => Fsm.ChangeState<ForageState>(),
+            TryIdleHop, ResetIdleHopTimer));
         Fsm.RegisterState(new ForageState(Fsm, this));
         Fsm.RegisterState(new RestState(Fsm, this));
+        Fsm.RegisterState(new PounceState(Fsm, this));
         Fsm.RegisterState(new FleeState(Fsm, this));
     }
 
     /// <summary>
-    /// 重置闲置跳跃计时器（进入闲置时调用）。
+    /// 重置闲置跳跃计时器和标记（每次进入闲置时调用）。
     /// </summary>
     private void ResetIdleHopTimer()
     {
+        _hasIdleHopped = false;
         _nextIdleHopTime = Time.time + Random.Range(_idleHopIntervalMin, _idleHopIntervalMax);
     }
 
     /// <summary>
-    /// 闲置时的随机小跳。由 IdleState 每帧回调触发。
+    /// 闲置时的随机小跳。由 IdleState 每帧回调触发。每次闲置期只跳一次。
     /// </summary>
     private void TryIdleHop()
     {
-        if (!IsGrounded)
+        if (_hasIdleHopped || !IsGrounded)
             return;
 
         if (Time.time < _nextIdleHopTime)
@@ -127,7 +167,24 @@ public class FrogAI : AnimalBase
         if (SpriteRenderer != null)
             SpriteRenderer.flipX = direction < 0;
 
-        _nextIdleHopTime = Time.time + Random.Range(_idleHopIntervalMin, _idleHopIntervalMax);
+        PlayAnimation("Jump");
+        _hasIdleHopped = true;
+
+        // 跳完后切回 Idle 动画，防止 AnimState 卡在 Jump
+        StartCoroutine(ResetToIdleAnimation());
+    }
+
+    /// <summary>
+    /// 等待落地后切回 Idle 动画，保证空中全程显示跳跃动画。
+    /// </summary>
+    private System.Collections.IEnumerator ResetToIdleAnimation()
+    {
+        // 等青蛙落地再切动画
+        while (!IsGrounded)
+            yield return null;
+
+        if (Fsm.CurrentStateType == typeof(IdleState))
+            PlayAnimation("Idle");
     }
 
 #if UNITY_EDITOR
