@@ -22,6 +22,7 @@ public class RestState : IState
     public void OnEnter()
     {
         _animal.StopMoving();
+        _animal.PlayAnimation("Rest");
 
         float duration = Random.Range(RestDurationMin, RestDurationMax);
         _restEndTime = Time.time + duration;
@@ -32,6 +33,12 @@ public class RestState : IState
         if (_animal.IsPlayerDetected)
         {
             _fsm.ChangeState<FleeState>();
+            return;
+        }
+
+        if (_animal.IsFoodDetected)
+        {
+            _fsm.ChangeState<PounceState>();
             return;
         }
 

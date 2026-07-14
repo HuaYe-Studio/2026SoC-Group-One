@@ -58,6 +58,32 @@ public class AnimalBase : MonoBehaviour
     /// </summary>
     public float PlayerDistance { get; private set; }
 
+    /// <summary>
+    /// 当前是否检测到食物。默认返回false，子类可覆写以接入EnvironmentMonitor。
+    /// </summary>
+    public virtual bool IsFoodDetected => false;
+
+    /// <summary>
+    /// 当前是否着地。默认返回true，跳跃类动物覆写。
+    /// </summary>
+    public virtual bool IsGrounded { get; protected set; } = true;
+
+    /// <summary>
+    /// 最近食物的方向（归一化），仅在IsFoodDetected为true时有效。
+    /// </summary>
+    public virtual Vector2 FoodDirection => Vector2.zero;
+
+    /// <summary>
+    /// 到最近食物的距离，仅在IsFoodDetected为true时有效。
+    /// </summary>
+    public virtual float FoodDistance => 0f;
+
+    /// <summary>
+    /// 播放动画。默认空实现，子类可覆写以接入Animator。
+    /// </summary>
+    /// <param name="stateName">动画状态名或Trigger名</param>
+    public virtual void PlayAnimation(string stateName) { }
+
     protected virtual void Awake()
     {
         Fsm = GetComponent<FSM>();

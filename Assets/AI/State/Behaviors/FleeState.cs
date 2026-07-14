@@ -17,7 +17,7 @@ public class FleeState : IState
 
     public void OnEnter()
     {
-        // 逃跑状态使用更快的速度倍数
+        _animal.PlayAnimation("Flee");
     }
 
     public void OnUpdate()

@@ -40,6 +40,13 @@ public class ForageState : IState
             return;
         }
 
+        // 检测到食物 → 捕食
+        if (_animal.IsFoodDetected)
+        {
+            _fsm.ChangeState<PounceState>();
+            return;
+        }
+
         // 连续跳跃 4 次后休息
         if (_hopCount >= MaxHopsBeforeRest)
         {

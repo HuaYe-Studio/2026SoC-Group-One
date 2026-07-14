@@ -1,0 +1,82 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\\u738B\u738B\\2026SoC-Group-One\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{D461B102-B472-01A3-B555-C1D5F9CBE0F3}|Assembly-CSharp.csproj|C:\\Users\\\u738B\u738B\\2026SoC-Group-One\\assets\\ai\\shared\\animals\\frogai.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D461B102-B472-01A3-B555-C1D5F9CBE0F3}|Assembly-CSharp.csproj|solutionrelative:assets\\ai\\shared\\animals\\frogai.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D461B102-B472-01A3-B555-C1D5F9CBE0F3}|Assembly-CSharp.csproj|c:\\users\\\u738B\u738B\\2026soc-group-one\\assets\\ai\\state\\animalbase.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D461B102-B472-01A3-B555-C1D5F9CBE0F3}|Assembly-CSharp.csproj|solutionrelative:assets\\ai\\state\\animalbase.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D461B102-B472-01A3-B555-C1D5F9CBE0F3}|Assembly-CSharp.csproj|C:\\Users\\\u738B\u738B\\2026SoC-Group-One\\assets\\scripts\\core\\mockeventcenter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D461B102-B472-01A3-B555-C1D5F9CBE0F3}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\core\\mockeventcenter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 4,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:129:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c64b9c2-e352-428e-a56d-0ace190b99a6}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:128:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "AnimalBase.cs",
+              "DocumentMoniker": "C:\\Users\\\u738B\u738B\\2026SoC-Group-One\\Assets\\AI\\State\\AnimalBase.cs",
+              "RelativeDocumentMoniker": "Assets\\AI\\State\\AnimalBase.cs",
+              "ToolTip": "C:\\Users\\\u738B\u738B\\2026SoC-Group-One\\Assets\\AI\\State\\AnimalBase.cs",
+              "RelativeToolTip": "Assets\\AI\\State\\AnimalBase.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-14T04:14:49.279Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "FrogAI.cs",
+              "DocumentMoniker": "C:\\Users\\\u738B\u738B\\2026SoC-Group-One\\Assets\\AI\\Shared\\Animals\\FrogAI.cs",
+              "RelativeDocumentMoniker": "Assets\\AI\\Shared\\Animals\\FrogAI.cs",
+              "ToolTip": "C:\\Users\\\u738B\u738B\\2026SoC-Group-One\\Assets\\AI\\Shared\\Animals\\FrogAI.cs",
+              "RelativeToolTip": "Assets\\AI\\Shared\\Animals\\FrogAI.cs",
+              "ViewState": "AgIAAGMAAAAAAAAAAAAiwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-13T23:50:58.331Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "MockEventCenter.cs",
+              "DocumentMoniker": "C:\\Users\\\u738B\u738B\\2026SoC-Group-One\\Assets\\Scripts\\Core\\MockEventCenter.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\Core\\MockEventCenter.cs",
+              "ToolTip": "C:\\Users\\\u738B\u738B\\2026SoC-Group-One\\Assets\\Scripts\\Core\\MockEventCenter.cs",
+              "RelativeToolTip": "Assets\\Scripts\\Core\\MockEventCenter.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-13T23:45:54.798Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
