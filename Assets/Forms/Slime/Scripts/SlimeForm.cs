@@ -15,10 +15,8 @@ public class SlimeForm : BaseForm
     {
         base.Initialize(ctrl);
         moveSpeed = 4f;
-        jumpForce = 9f;
         gravityScale = 1f;
         fallGravityMultiplier = 1.8f;
-        jumpCutMultiplier = 0.5f;
 
         if (devourHandler == null)
             devourHandler = GetComponent<SlimeDevourHandler>();
@@ -53,5 +51,14 @@ public class SlimeForm : BaseForm
     {
         if (devourHandler != null)
             devourHandler.TryHandleDevourInput();
+    }
+
+    private void LateUpdate()
+    {
+        if (spriteRenderer == null || rb == null) return;
+        spriteRenderer.flipX = rb.velocity.x < 0f;
+
+        if (animator != null)
+            animator.SetFloat("Speed", Mathf.Abs(rb.velocity.x));
     }
 }

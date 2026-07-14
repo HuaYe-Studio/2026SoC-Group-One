@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(SlimeForm))]
@@ -24,6 +25,10 @@ public class SlimeDevourHandler : MonoBehaviour
     private float pounceEndTime;
     private float cooldownEndTime;
 
+    private HashSet<DevourableAnimal> animalsInRange = new HashSet<DevourableAnimal>();
+    private List<DevourableAnimal> rangeCheckResults = new List<DevourableAnimal>();
+    private Collider2D[] _overlapBuffer = new Collider2D[32];
+
     private void Awake()
     {
         slimeForm = GetComponent<SlimeForm>();
@@ -37,6 +42,45 @@ public class SlimeDevourHandler : MonoBehaviour
         effectPlayer = Camera.main?.GetComponent<DevourEffectPlayer>();
         if (effectPlayer == null)
             Debug.LogWarning("SlimeDevourHandler: No DevourEffectPlayer on Main Camera.");
+    }
+
+    private void Update()
+    {
+        UpdateAnimalsInRange();
+    }
+
+    private void UpdateAnimalsInRange()
+    {
+        Vector2 origin = transform.root.position;
+        int count = Physics2D.OverlapCircleNonAlloc(origin, detectionRadius, _overlapBuffer, animalLayer);
+
+        rangeCheckResults.Clear();
+        for (int i = 0; i < count; i++)
+        {
+            DevourableAnimal animal = _overlapBuffer[i].GetComponent<DevourableAnimal>();
+            if (animal != null)
+                rangeCheckResults.Add(animal);
+        }
+
+        foreach (DevourableAnimal animal in animalsInRange)
+        {
+            if (!rangeCheckResults.Contains(animal))
+                MockEventCenter.TriggerAnimalExitRange(animal);
+        }
+        animalsInRange.RemoveWhere(a => !rangeCheckResults.Contains(a));
+
+        foreach (DevourableAnimal animal in rangeCheckResults)
+        {
+            if (animalsInRange.Add(animal))
+                MockEventCenter.TriggerAnimalEnterRange(animal);
+        }
+    }
+
+    private void OnDisable()
+    {
+        foreach (DevourableAnimal animal in animalsInRange)
+            MockEventCenter.TriggerAnimalExitRange(animal);
+        animalsInRange.Clear();
     }
 
     private void FixedUpdate()
@@ -68,7 +112,7 @@ public class SlimeDevourHandler : MonoBehaviour
         if (baseForm.CurrentState == ActionState.SpecialAction) return false;
         if (isPouncing) return false;
         if (Time.time < cooldownEndTime) return false;
-        if (!Input.GetKeyDown(KeyCode.E)) return false;
+        if (!Input.GetKeyDown(KeyCode.Space)) return false;
 
         DevourableAnimal target = FindNearestDevourable();
         if (target == null) return false;
@@ -86,6 +130,8 @@ public class SlimeDevourHandler : MonoBehaviour
         currentTarget = null;
         rb.velocity = Vector2.zero;
         Time.timeScale = 1f;
+        if (baseForm.Animator != null)
+            baseForm.Animator.updateMode = AnimatorUpdateMode.Normal;
         baseForm.SetActionState(ActionState.Idle);
     }
 
@@ -120,6 +166,7 @@ public class SlimeDevourHandler : MonoBehaviour
         isPouncing = true;
         pounceEndTime = Time.fixedTime + pounceMaxDuration;
         baseForm.SetActionState(ActionState.SpecialAction);
+        baseForm.SetAnimatorBool("IsDevouring", true);
 
         Vector2 toTarget = (currentTarget.transform.position - transform.root.position).normalized;
         rb.velocity = toTarget * pounceSpeed;
@@ -131,6 +178,7 @@ public class SlimeDevourHandler : MonoBehaviour
         currentTarget = null;
         rb.velocity = Vector2.zero;
         baseForm.SetActionState(ActionState.Idle);
+        baseForm.SetAnimatorBool("IsDevouring", false);
         cooldownEndTime = Time.time + cooldownSeconds;
     }
 
@@ -138,6 +186,11 @@ public class SlimeDevourHandler : MonoBehaviour
     {
         isPouncing = false;
         rb.velocity = Vector2.zero;
+
+        yield return null;
+
+        if (baseForm.Animator != null)
+            baseForm.Animator.updateMode = AnimatorUpdateMode.UnscaledTime;
 
         Time.timeScale = 0f;
 
@@ -161,6 +214,10 @@ public class SlimeDevourHandler : MonoBehaviour
 
         Time.timeScale = 1f;
 
+        if (baseForm.Animator != null)
+            baseForm.Animator.updateMode = AnimatorUpdateMode.Normal;
+
+        baseForm.SetAnimatorBool("IsDevouring", false);
         Destroy(animal.gameObject);
         baseForm.SetActionState(ActionState.Idle);
         currentTarget = null;

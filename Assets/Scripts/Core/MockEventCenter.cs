@@ -10,6 +10,20 @@ public static class MockEventCenter
         OnFormUnlocked?.Invoke(newForm);
         Debug.Log($"解锁形态：{newForm}");
     }
+
+    public static event Action<DevourableAnimal> OnAnimalEnterRange;
+
+    public static void TriggerAnimalEnterRange(DevourableAnimal animal)
+    {
+        OnAnimalEnterRange?.Invoke(animal);
+    }
+
+    public static event Action<DevourableAnimal> OnAnimalExitRange;
+
+    public static void TriggerAnimalExitRange(DevourableAnimal animal)
+    {
+        OnAnimalExitRange?.Invoke(animal);
+    }
         
 }
 
