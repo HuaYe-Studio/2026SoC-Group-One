@@ -41,6 +41,7 @@
 ehthumbs.db
 Thumbs.db
 
+.vs/
 .vscode/
 ShaderGraphSettings.asset
 ProjectSettings/QualitySettings.asset
