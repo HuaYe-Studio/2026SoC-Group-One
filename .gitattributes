@@ -1,6 +1,7 @@
 # 自动检测文本文件，统一使用 LF
 * text=auto
-# 明确指定这些文件使用 LF（Unity 的核心文本资产）
+
+# Unity 核心文本资产，使用 LF
 *.cs text eol=lf
 *.unity text eol=lf
 *.prefab text eol=lf
@@ -9,16 +10,27 @@
 *.json text eol=lf
 *.shader text eol=lf
 *.txt text eol=lf
-# 二进制文件（防止 Git 自作聪明去转换它们）
-*.png binary
-*.jpg binary
+
+# 图像 - 用 LFS 管理
 *.psd filter=lfs diff=lfs merge=lfs -text
-*.fbx filter=lfs diff=lfs merge=lfs -text
+*.png filter=lfs diff=lfs merge=lfs -text
+*.jpg filter=lfs diff=lfs merge=lfs -text
+*.tga filter=lfs diff=lfs merge=lfs -text
+*.tif filter=lfs diff=lfs merge=lfs -text
+
+# 音频 - 用 LFS 管理
 *.wav filter=lfs diff=lfs merge=lfs -text
-*.mp3 binary
+*.mp3 filter=lfs diff=lfs merge=lfs -text
+*.ogg filter=lfs diff=lfs merge=lfs -text
+*.aiff filter=lfs diff=lfs merge=lfs -text
+
+# 模型 - 用 LFS 管理
+*.fbx filter=lfs diff=lfs merge=lfs -text
+*.obj filter=lfs diff=lfs merge=lfs -text
+*.blend filter=lfs diff=lfs merge=lfs -text
+
+# 仍然需要用 binary 标记但不走 LFS 的（通常因为不会太大，或必须作为普通对象）
 *.dll binary
 *.so binary
 *.a binary
 *.exe binary
-*.aiff filter=lfs diff=lfs merge=lfs -text
-*.tga filter=lfs diff=lfs merge=lfs -text
