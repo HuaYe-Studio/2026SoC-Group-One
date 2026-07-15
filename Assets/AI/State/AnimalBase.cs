@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// 动物AI基类，挂载到动物NPC的GameObject上。
+/// [FSM] 动物AI基类，挂载到动物NPC的GameObject上。
 /// 负责组装FSM、注册状态、提供感知与移动等共用能力给各子状态使用。
 /// 使用方式：子类继承后在Awake中配置各状态的构造参数。
 /// </summary>

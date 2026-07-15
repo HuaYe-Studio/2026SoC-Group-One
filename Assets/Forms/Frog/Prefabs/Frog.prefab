@@ -32,7 +32,7 @@ Transform:
   m_GameObject: {fileID: 1371001067666427009}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2.69, y: 0.84, z: 0}
+  m_LocalPosition: {x: -13.41, y: 0.89, z: 0}
   m_LocalScale: {x: 1.0798, y: 1.1539, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -201,7 +201,7 @@ MonoBehaviour:
   _fleeSafeDistance: 10
   _playerLayer:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 64
   _fleeSpeedMultiplier: 1.5
   _hopForce: 5
   _hopForwardSpeed: 2.35
@@ -215,6 +215,7 @@ MonoBehaviour:
   _idleHopIntervalMin: 1.5
   _idleHopIntervalMax: 4
   _animator: {fileID: 4469829590964368041}
+  _landingSettleTime: 0.15
 --- !u!70 &1884397430907925174
 CapsuleCollider2D:
   m_ObjectHideFlags: 0

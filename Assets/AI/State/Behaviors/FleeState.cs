@@ -1,8 +1,8 @@
 using UnityEngine;
 
 /// <summary>
-/// 逃跑状态：动物朝远离玩家的方向移动，速度比平时更快。
-/// 当玩家距离超出安全距离后，切换回闲置状态。
+/// [FSM] 逃跑状态：动物朝远离玩家的方向快速移动。
+/// 玩家超出安全距离后切回闲置。
 /// </summary>
 public class FleeState : IState
 {

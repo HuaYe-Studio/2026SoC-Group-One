@@ -1,9 +1,9 @@
 using UnityEngine;
 
 /// <summary>
-/// 觅食状态：青蛙以跳跃方式在出生点周围觅食移动。
-/// 每次落地后短暂停顿，连续跳跃若干次后切换至休息状态。
-/// 若检测到玩家则切换至逃跑状态。
+/// [FSM] 觅食状态：跳跃类动物在出生点周围跳跃移动。
+/// 落地停顿后起跳，连续 MaxHopsBeforeRest 次后切休息。
+/// 检测玩家→逃跑，检测食物→捕食。空中不计数。
 /// </summary>
 public class ForageState : IState
 {
@@ -16,7 +16,7 @@ public class ForageState : IState
     private bool _hasHopped;
 
     private const float PauseBetweenHops = 0.5f;
-    private const int MaxHopsBeforeRest = 4;
+    private const int MaxHopsBeforeRest = 1;
 
     public ForageState(FSM fsm, AnimalBase animal)
     {
@@ -47,16 +47,14 @@ public class ForageState : IState
             return;
         }
 
-        // 连续跳跃 4 次后休息
-        if (_hopCount >= MaxHopsBeforeRest)
+        // 跳跃后等待落地 + 短暂停顿，再判断下一跳或休息
+        if (_hasHopped && _animal.IsGrounded && Time.time >= _landTime + PauseBetweenHops)
         {
-            _fsm.ChangeState<RestState>();
-            return;
-        }
-
-        // 跳跃后等待落地 + 短暂停顿，再起跳下一次
-        if (_hasHopped && Time.time >= _landTime + PauseBetweenHops)
-        {
+            if (_hopCount >= MaxHopsBeforeRest)
+            {
+                _fsm.ChangeState<RestState>();
+                return;
+            }
             StartNextHop();
         }
     }
@@ -71,6 +69,9 @@ public class ForageState : IState
     /// </summary>
     private void StartNextHop()
     {
+        if (!_animal.IsGrounded)
+            return;
+
         _hopCount++;
 
         // 偏向出生点方向，防止越走越远

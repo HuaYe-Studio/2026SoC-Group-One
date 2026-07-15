@@ -1,8 +1,8 @@
 using UnityEngine;
 
 /// <summary>
-/// 休息状态：青蛙原地停留较长时间，模拟"歇息"行为。
-/// 超时后切换回觅食状态；若检测到玩家则切换至逃跑状态。
+/// [FSM] 休息状态：原地停留 3~6 秒。超时切回觅食。
+/// 检测玩家→逃跑，检测食物→捕食。
 /// </summary>
 public class RestState : IState
 {

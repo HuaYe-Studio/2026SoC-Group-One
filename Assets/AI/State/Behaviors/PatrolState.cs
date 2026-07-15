@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// 巡逻状态：动物在出生点周围的巡逻半径内随机移动。
+/// [FSM] 巡逻状态：动物在出生点周围随机巡逻。
 /// 到达目标点后切换回闲置状态；中途检测到玩家则切换至逃跑状态。
 /// </summary>
 public class PatrolState : IState

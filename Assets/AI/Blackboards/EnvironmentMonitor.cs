@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 环境监视器：挂载到动物NPC上，负责检测周围环境信息。
+/// [FSM/BT] 环境监视器：检测周围威胁、食物、地形、同类。
 /// 包括威胁、食物、地形、同类等，供各状态行为查询使用。
 /// </summary>
 public class EnvironmentMonitor : MonoBehaviour

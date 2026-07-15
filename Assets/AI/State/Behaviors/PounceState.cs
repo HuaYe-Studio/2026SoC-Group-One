@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// 捕食状态：动物朝检测到的食物猛扑过去。
+/// [FSM] 捕食状态：动物朝检测到的食物猛扑过去。
 /// 落地后若食物仍在附近则吃掉并返回闲置；若玩家出现则逃跑。
 /// </summary>
 public class PounceState : IState

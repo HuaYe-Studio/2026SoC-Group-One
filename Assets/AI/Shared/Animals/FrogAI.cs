@@ -2,9 +2,10 @@ using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// 青蛙AI：继承 AnimalBase，以跳跃方式移动。
-/// 使用 Forage / Rest 状态替代默认的 Patrol 状态，
-/// 覆写 PerformMove 实现跳跃式移动。
+/// [FSM] 青蛙AI：继承 AnimalBase，以跳跃方式移动。
+/// 集成 EnvironmentMonitor（环境监测）、Animator（动画控制）。
+/// 状态链：Idle → Forage → Rest → Forage → ...，检测食物时捕食，检测玩家时逃跑。
+/// 闲置时仅跳一次，觅食时落地后才计数，空中不切状态。
 /// </summary>
 [RequireComponent(typeof(FSM))]
 [RequireComponent(typeof(Rigidbody2D))]
@@ -28,6 +29,7 @@ public class FrogAI : AnimalBase
 
     [Header("Animation")]
     [SerializeField] private Animator _animator;
+    [SerializeField] private float _landingSettleTime = 0.15f;
 
     // Animator 参数：Int 枚举，0=Idle 1=Jump 2=Rest 3=Flee 4=Prey
     private const string AnimStateParam = "AnimState";
@@ -175,13 +177,19 @@ public class FrogAI : AnimalBase
     }
 
     /// <summary>
-    /// 等待落地后切回 Idle 动画，保证空中全程显示跳跃动画。
+    /// 等待落地并在地面停留一段时间后切回 Idle 动画。
     /// </summary>
     private System.Collections.IEnumerator ResetToIdleAnimation()
     {
-        // 等青蛙落地再切动画
+        // 等一帧物理更新，让 PerformGroundCheck 把 IsGrounded 置为 false
+        yield return null;
+
+        // 等青蛙落地
         while (!IsGrounded)
             yield return null;
+
+        // 落地后停顿一下，确保稳定着地再切动画
+        yield return new WaitForSeconds(_landingSettleTime);
 
         if (Fsm.CurrentStateType == typeof(IdleState))
             PlayAnimation("Idle");

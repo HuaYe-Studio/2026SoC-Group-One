@@ -1,5 +1,5 @@
 /// <summary>
-/// 状态接口，所有AI状态（Idle、Patrol、Flee等）需实现此接口。
+/// [FSM] 状态接口，所有AI状态需实现此接口。
 /// 每个状态有 Enter / Update / Exit 三个生命周期方法，
 /// 由 FSM 在对应时机调用。
 /// </summary>
