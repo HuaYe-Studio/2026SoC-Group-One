@@ -1,0 +1,53 @@
+{
+  "jobId": null,
+  "images": [
+    {
+      "index": "01",
+      "fileName": "01_第_1_帧.png",
+      "name": "第 1 帧",
+      "jobId": null
+    },
+    {
+      "index": "02",
+      "fileName": "02_第_2_帧.png",
+      "name": "第 2 帧",
+      "jobId": null
+    },
+    {
+      "index": "03",
+      "fileName": "03_第_3_帧.png",
+      "name": "第 3 帧",
+      "jobId": null
+    },
+    {
+      "index": "04",
+      "fileName": "04_第_4_帧.png",
+      "name": "第 4 帧",
+      "jobId": null
+    },
+    {
+      "index": "05",
+      "fileName": "05_第_5_帧.png",
+      "name": "第 5 帧",
+      "jobId": null
+    },
+    {
+      "index": "06",
+      "fileName": "06_第_6_帧.png",
+      "name": "第 6 帧",
+      "jobId": null
+    },
+    {
+      "index": "07",
+      "fileName": "07_第_7_帧.png",
+      "name": "第 7 帧",
+      "jobId": null
+    },
+    {
+      "index": "08",
+      "fileName": "08_第_8_帧.png",
+      "name": "第 8 帧",
+      "jobId": null
+    }
+  ]
+}

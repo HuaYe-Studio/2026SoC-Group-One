@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 通用有限状态机，为动物AI行为提供状态管理基础。
+/// [FSM] 通用有限状态机，为动物AI行为提供状态管理基础。
 /// 使用方式：先 RegisterState 注册状态，再 ChangeState 切换。
 /// 使用泛型约束确保类型安全，编译期即可发现状态类型错误。
 /// </summary>
