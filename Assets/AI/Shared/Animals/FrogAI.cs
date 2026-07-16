@@ -30,16 +30,11 @@ public class FrogAI : AnimalBase
     [SerializeField] private Animator _animator;
 
     // Animator 参数：Int 枚举，0=Idle 1=Jump 2=Rest 3=Flee 4=Prey
-    private const string AnimStateParam = "AnimState";
+    private const string AnimStateParam = "FROG_AnimState";
 
     private EnvironmentMonitor _monitor;
     private float _nextIdleHopTime;
     private bool _hasIdleHopped;
-
-    /// <summary>
-    /// 当前是否着地。
-    /// </summary>
-    public override bool IsGrounded { get; protected set; } = true;
 
     /// <summary>
     /// 环境监视器引用，供外部查询地形、同类等信息。
@@ -133,7 +128,7 @@ public class FrogAI : AnimalBase
     {
         ResetIdleHopTimer();
         Fsm.RegisterState(new IdleState(Fsm, this, () => Fsm.ChangeState<ForageState>(),
-            TryIdleHop, ResetIdleHopTimer));
+            null, null));
         Fsm.RegisterState(new ForageState(Fsm, this));
         Fsm.RegisterState(new RestState(Fsm, this));
         Fsm.RegisterState(new PounceState(Fsm, this));
