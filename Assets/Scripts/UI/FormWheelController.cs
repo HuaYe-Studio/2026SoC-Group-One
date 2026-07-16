@@ -159,7 +159,7 @@ public class FormWheelController : MonoBehaviour
             }
             if (tempCount >= 0 && tempCount >= _rankedOptions.Count)
             {
-                _currentSelection = 9 - tempCount > tempCount - _rankedOptions.Count + 1 ? _rankedOptions.Count - 1 : 0; // 如果选中的索引超出排序后的选项数组范围，选择最接近的有效选项
+                _currentSelection = _optionCount + 1 - tempCount > tempCount - _rankedOptions.Count + 1 ? _rankedOptions.Count - 1 : 0; // 如果选中的索引超出排序后的选项数组范围，选择最接近的有效选项
             }
             else
             {
