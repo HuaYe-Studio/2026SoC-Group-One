@@ -475,7 +475,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 100, y: 100}
+  m_SizeDelta: {x: 300, y: 300}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1392185321779986470
 CanvasRenderer:
@@ -505,7 +505,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u4F60\u597D"
+  m_text: Cancel
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 7d57826db70dd3149913dbae4c28dc06, type: 2}
   m_sharedMaterial: {fileID: 2153134278155080602, guid: 7d57826db70dd3149913dbae4c28dc06, type: 2}
@@ -532,13 +532,13 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 36
-  m_fontSizeBase: 36
+  m_fontSize: 72
+  m_fontSizeBase: 72
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 1
+  m_fontStyle: 0
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
@@ -646,7 +646,8 @@ MonoBehaviour:
   - {fileID: 4932386944794602959}
   _borader: {fileID: 8689373012168157458}
   _duration: 0.2
-  _scaleFactor: 1.2
+  _scaleFactor: 1.6
+  _selectedOptionText: {fileID: 3970280872399873308}
 --- !u!1 &3398637784676091327
 GameObject:
   m_ObjectHideFlags: 0

@@ -19,13 +19,15 @@ public class FormWheelController : MonoBehaviour
     [SerializeField] private float _wheelPanelRadius = 1f; // 轮盘面板的以屏幕中心为圆心的的半径比例(以150为基准)
     private int _currentSelection, _previousSelection = -1; // 当前和上一个选中的选项索引
     [SerializeField] private GameObject[] _optionsPositions; // 选项位置的数组，按顺时针顺序排列
-    [SerializeField] private GameObject[] _wheelOptions; // 轮盘面板的选项数组[按FormType顺序排列]
+    [SerializeField] private GameObject[] _wheelOptions; // 轮盘面板的选项数组[按FormType顺序排列,但第0个为取消区域]
     [SerializeField] private GameObject _borader; // 选项的边框
     [SerializeField] private float _duration = 0.2f; // 动效的持续时间
-    [SerializeField] private float _scaleFactor = 1.2f; // 选中选项的缩放因子
+    [SerializeField] private float _scaleFactor = 1.6f; // 选中选项的缩放因子
+    [SerializeField] private TMPro.TMP_Text _selectedOptionText; // 显示选中选项的文本
     private int _optionCount; // 选项数量
     private Vector2 _screenCenter; // 屏幕中心点坐标
     private List<GameObject> _rankedOptions = new List<GameObject>(); // 排序后的选项数组 
+    private PlayerController _playerController; // 玩家控制器的引用
 
     public static List<FormType> unlockedForms = new List<FormType>(); // 已解锁的形态列表
 
@@ -36,10 +38,13 @@ public class FormWheelController : MonoBehaviour
 
     void Awake()
     {
+        //初始化已解锁形态列表和排序后的选项数组
+
+        _rankedOptions.Add(_wheelOptions[0]);//确保存在取消区域，序号为0
         if (unlockedForms.Count == 0)// 如果解锁列表为空，默认解锁Slime形态
         {
             unlockedForms.Add(FormType.Slime); // 默认解锁Slime形态
-            _rankedOptions.Add(_wheelOptions[(int)FormType.Slime]); // 将Slime形态对应的选项添加到排序后的选项数组中
+            _rankedOptions.Add(_wheelOptions[(int)FormType.Slime + 1]); // 将Slime形态对应的选项添加到排序后的选项数组中
         }
 
         //此处需要和存档模块联动，以读取目前已解锁动物列表
@@ -49,6 +54,7 @@ public class FormWheelController : MonoBehaviour
     {
         _optionCount = _wheelOptions.Length; // 获取轮盘面板的选项数量
         _screenCenter = new Vector2(Screen.width / 2f, Screen.height / 2f);
+        _playerController = FindObjectOfType<PlayerController>();
     }
 
     // Update is called once per frame
@@ -81,10 +87,8 @@ public class FormWheelController : MonoBehaviour
         _previousSelection = -1; // 重置上一个选中的选项索引
         _wheelPanel.SetActive(true);
         Time.timeScale = 0f; // 暂停游戏
-        _borader.transform.position = _optionsPositions[0].transform.position; // 将边框移动到第一个选项位置
-        _borader.transform.localScale = Vector3.one * _scaleFactor; // 放大边框
 
-        for (int i = 0; i < _rankedOptions.Count; i++)
+        for (int i = 0; i < _rankedOptions.Count; i++)//轮盘展开的效果实现
         {
             _rankedOptions[i].SetActive(true);
             _rankedOptions[i].transform.position = _screenCenter; // 将选项移动到屏幕中心
@@ -94,6 +98,10 @@ public class FormWheelController : MonoBehaviour
                 .SetEase(Ease.OutBack) // 使用DoTween平滑移动选项到目标位置
                 .SetUpdate(true); // 设置为忽略时间缩放，确保在暂停游戏时仍然可以执行动画
         }
+
+        _borader.SetActive(true);
+        _borader.transform.position = _screenCenter; // 将边框移动到屏幕中心
+        _borader.transform.localScale = Vector2.one * _scaleFactor; // 放大边框
     }
 
     private void HideWheelPanel()
@@ -105,6 +113,10 @@ public class FormWheelController : MonoBehaviour
         }
         // 选中有效的选项，执行相应的操作
         Debug.Log("UI:Selected Option: " + _currentSelection);
+        if (_currentSelection > 0)
+        {
+            _playerController.SwitchToFormByType((FormType)(_currentSelection - 1)); // 切换到选中的形态，注意索引需要减1，因为取消区域占据了第0个位置
+        }
 
         for (int i = 0; i < _rankedOptions.Count; i++)
         {
@@ -145,14 +157,29 @@ public class FormWheelController : MonoBehaviour
             {
                 tempCount = Mathf.RoundToInt(angle / optionAngle); // 根据角度计算选中的选项索引
             }
-            _currentSelection = tempCount;
+            if (tempCount >= 0 && tempCount >= _rankedOptions.Count)
+            {
+                _currentSelection = 9 - tempCount > tempCount - _rankedOptions.Count + 1 ? _rankedOptions.Count - 1 : 0; // 如果选中的索引超出排序后的选项数组范围，选择最接近的有效选项
+            }
+            else
+            {
+                _currentSelection = tempCount; // 更新当前选中的选项索引
+            }
         }
 
-        if (_currentSelection >= 0 && _previousSelection >= 0 && _currentSelection < _optionCount)
+        if (_currentSelection >= 0 && _previousSelection >= 0 && _currentSelection < _optionCount && _currentSelection < _rankedOptions.Count && _previousSelection < _rankedOptions.Count)
         {
-            _rankedOptions[_currentSelection].transform.localScale = Vector3.one * _scaleFactor; // 放大当前选中的选项
-            _rankedOptions[_previousSelection].transform.localScale = Vector3.one; // 恢复
+            _rankedOptions[_currentSelection].transform.DOScale(Vector3.one * _scaleFactor, 0.05f).SetUpdate(true); // 放大当前选中的选项
+            _rankedOptions[_previousSelection].transform.DOScale(Vector3.one, 0.05f).SetUpdate(true); // 恢复
             _borader.transform.position = _rankedOptions[_currentSelection].transform.position; // 将边框移动到当前选中的选项位置
+            if (_currentSelection > 0)
+            {
+                _selectedOptionText.text = ((FormType)(_currentSelection - 1)).ToString(); // 更新显示的选中选项文本
+            }
+            else
+            {
+                _selectedOptionText.text = "Cancel"; // 如果选择的是取消区域，显示"取消"
+            }
         }
     }
 
@@ -161,7 +188,7 @@ public class FormWheelController : MonoBehaviour
         if (!unlockedForms.Contains(form))
         {
             unlockedForms.Add(form);
-            _rankedOptions.Add(_wheelOptions[(int)form]); // 将解锁的形态对应的选项添加到排序后的选项数组中
+            _rankedOptions.Add(_wheelOptions[(int)form + 1]); // 将解锁的形态对应的选项添加到排序后的选项数组中
         }
     }
 
