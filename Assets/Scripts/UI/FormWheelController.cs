@@ -159,7 +159,7 @@ public class FormWheelController : MonoBehaviour
             }
             if (tempCount >= 0 && tempCount >= _rankedOptions.Count)
             {
-                _currentSelection = _optionCount + 1 - tempCount > tempCount - _rankedOptions.Count + 1 ? _rankedOptions.Count - 1 : 0; // 如果选中的索引超出排序后的选项数组范围，选择最接近的有效选项
+                _currentSelection = _optionCount - tempCount > tempCount - _rankedOptions.Count + 1 ? _rankedOptions.Count - 1 : 0; // 如果选中的索引超出排序后的选项数组范围，选择最接近的有效选项
             }
             else
             {
@@ -167,7 +167,7 @@ public class FormWheelController : MonoBehaviour
             }
         }
 
-        if (_currentSelection >= 0 && _previousSelection >= 0 && _currentSelection < _optionCount && _currentSelection < _rankedOptions.Count && _previousSelection < _rankedOptions.Count)
+        if (_currentSelection >= 0 && _previousSelection >= 0 && _currentSelection < _rankedOptions.Count && _previousSelection < _rankedOptions.Count)
         {
             _rankedOptions[_currentSelection].transform.DOScale(Vector3.one * _scaleFactor, 0.05f).SetUpdate(true); // 放大当前选中的选项
             _rankedOptions[_previousSelection].transform.DOScale(Vector3.one, 0.05f).SetUpdate(true); // 恢复
