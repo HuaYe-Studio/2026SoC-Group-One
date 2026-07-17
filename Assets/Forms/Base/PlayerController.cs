@@ -121,12 +121,6 @@ public class PlayerController : MonoBehaviour
 
     private void HandleFormSwitch()
     {
-        for (int i = 0; i < formSwitchKeys.Length && i < allForms.Length; i++)
-        {
-            if (Input.GetKeyDown(formSwitchKeys[i]))
-                SwitchToForm(i);
-        }
-
         float scroll = Input.GetAxisRaw("Mouse ScrollWheel");
         if (scroll > 0.1f)
             CycleForm(1);
