@@ -115,7 +115,7 @@ AnimatorController:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: image-1783987278730-zirxiw90fbk
+  m_Name: Frog
   serializedVersion: 5
   m_AnimatorParameters:
   - m_Name: FROG_AnimState
