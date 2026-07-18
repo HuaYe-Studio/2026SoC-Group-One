@@ -11,13 +11,14 @@ GameObject:
   - component: {fileID: 1298122198914008995}
   - component: {fileID: 4090356231692950159}
   - component: {fileID: 4469829590964368041}
-  - component: {fileID: 683002642312063370}
   - component: {fileID: 3309423405724180643}
-  - component: {fileID: 8083986181480072364}
-  - component: {fileID: 3033960705642659447}
   - component: {fileID: 1884397430907925174}
   - component: {fileID: -4986256269079389672}
   - component: {fileID: 5321786757238909391}
+  - component: {fileID: 7138618881799844281}
+  - component: {fileID: 7967594907378560271}
+  - component: {fileID: 4664454892179609109}
+  - component: {fileID: 3274312556539779992}
   m_Layer: 7
   m_Name: Frog
   m_TagString: Frog
@@ -113,19 +114,6 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!114 &683002642312063370
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1371001067666427009}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 92e725a51a22c4a49bff577519fe16a2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _enableDebugLog: 0
 --- !u!50 &3309423405724180643
 Rigidbody2D:
   serializedVersion: 4
@@ -153,70 +141,6 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 4
---- !u!114 &8083986181480072364
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1371001067666427009}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 343a207dcfdec0c41bbff82411963b4f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _threatRadius: 8
-  _threatLayer:
-    serializedVersion: 2
-    m_Bits: 64
-  _fleeRadius: 5
-  _foodRadius: 10
-  _foodLayer:
-    serializedVersion: 2
-    m_Bits: 128
-  _groundCheckDistance: 1.5
-  _wallCheckDistance: 1
-  _groundLayer:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  _fellowRadius: 5
-  _fellowLayer:
-    serializedVersion: 2
-    m_Bits: 0
---- !u!114 &3033960705642659447
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1371001067666427009}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 922c84cf74313a24d9fbae401fda7d29, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _moveSpeed: 2
-  _patrolPauseMin: 1.5
-  _patrolPauseMax: 3
-  _patrolRadius: 3
-  _detectionRadius: 6
-  _fleeSafeDistance: 10
-  _playerLayer:
-    serializedVersion: 2
-    m_Bits: 64
-  _fleeSpeedMultiplier: 1.5
-  _hopForce: 5
-  _hopForwardSpeed: 2.35
-  _groundCheckWidth: 0.5
-  _groundCheckHeight: 0.08
-  _groundLayer:
-    serializedVersion: 2
-    m_Bits: 8
-  _idleHopForce: 5
-  _idleHopSpeed: 1.5
-  _idleHopIntervalMin: 1.5
-  _idleHopIntervalMax: 4
-  _animator: {fileID: 4469829590964368041}
 --- !u!70 &1884397430907925174
 CapsuleCollider2D:
   m_ObjectHideFlags: 0
@@ -310,3 +234,95 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 1.28, y: 1.28}
   m_EdgeRadius: 0
+--- !u!114 &7138618881799844281
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1371001067666427009}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7755a31e93841d42ac76f496e14e700, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _enableDebugLog: 0
+--- !u!114 &7967594907378560271
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1371001067666427009}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 77d2284fb26a85b4380ae6d804db4446, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _threatRadius: 8
+  _threatLayer:
+    serializedVersion: 2
+    m_Bits: 64
+  _fleeRadius: 5
+  _foodRadius: 10
+  _foodLayer:
+    serializedVersion: 2
+    m_Bits: 128
+  _groundCheckDistance: 1.5
+  _wallCheckDistance: 1
+  _groundLayer:
+    serializedVersion: 2
+    m_Bits: 8
+  _fellowRadius: 5
+  _fellowLayer:
+    serializedVersion: 2
+    m_Bits: 0
+--- !u!114 &4664454892179609109
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1371001067666427009}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c9ffd9f24c3f3744eb474998280cdf7c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _moveSpeed: 2
+  _patrolPauseMin: 1.5
+  _patrolPauseMax: 3
+  _patrolRadius: 3
+  _detectionRadius: 4.5
+  _fleeSafeDistance: 10
+  _playerLayer:
+    serializedVersion: 2
+    m_Bits: 64
+  _fleeSpeedMultiplier: 1.5
+  _hopForce: 5
+  _hopForwardSpeed: 2.35
+  _groundCheckWidth: 0.5
+  _groundCheckHeight: 0.08
+  _groundLayer:
+    serializedVersion: 2
+    m_Bits: 8
+  _idleHopForce: 5
+  _idleHopSpeed: 1.5
+  _idleHopIntervalMin: 1.5
+  _idleHopIntervalMax: 4
+  _animator: {fileID: 4469829590964368041}
+--- !u!114 &3274312556539779992
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1371001067666427009}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce5cc5ed19c2d3e428ec1f833faea3ae, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _restDurationMin: 3
+  _restDurationMax: 6
+  _enableDebugLog: 0

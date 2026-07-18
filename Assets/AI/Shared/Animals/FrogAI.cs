@@ -33,6 +33,8 @@ public class FrogAI : AnimalBase
     private const string AnimStateParam = "FROG_AnimState";
 
     private EnvironmentMonitor _monitor;
+    private Collider2D _collider;
+    private readonly RaycastHit2D[] _groundHits = new RaycastHit2D[4];
     private float _nextIdleHopTime;
     private bool _hasIdleHopped;
 
@@ -49,6 +51,7 @@ public class FrogAI : AnimalBase
     protected override void Awake()
     {
         _monitor = GetComponent<EnvironmentMonitor>();
+        _collider = GetComponent<Collider2D>();
 
         base.Awake();
     }
@@ -58,29 +61,52 @@ public class FrogAI : AnimalBase
         PerformGroundCheck();
     }
 
+    /// <summary>
+    /// 地面检测：从碰撞体底部向下做 BoxCast。
+    /// 排除自身碰撞体和触发器，防止 GroundLayer 配置失误（如勾了自身层）导致"着地"恒真。
+    /// </summary>
     private void PerformGroundCheck()
     {
-        Collider2D col = GetComponent<Collider2D>();
-        float width = col != null ? col.bounds.size.x * _groundCheckWidth : 0.4f;
+        float width = _collider != null ? _collider.bounds.size.x * _groundCheckWidth : 0.4f;
 
         Vector2 origin = new Vector2(transform.position.x,
-            col != null ? col.bounds.min.y : transform.position.y - 0.5f);
+            _collider != null ? _collider.bounds.min.y : transform.position.y - 0.5f);
 
         Vector2 size = new Vector2(width, _groundCheckHeight);
-        RaycastHit2D hit = Physics2D.BoxCast(origin, size, 0f, Vector2.down, 0.05f, _groundLayer);
 
-        IsGrounded = hit.collider != null;
+        ContactFilter2D filter = new ContactFilter2D();
+        filter.SetLayerMask(_groundLayer);
+        filter.useTriggers = false;
+
+        int count = Physics2D.BoxCast(origin, size, 0f, Vector2.down, filter, _groundHits, 0.05f);
+
+        IsGrounded = false;
+        for (int i = 0; i < count; i++)
+        {
+            if (_groundHits[i].collider != _collider)
+            {
+                IsGrounded = true;
+                break;
+            }
+        }
     }
 
     /// <summary>
     /// 青蛙以跳跃方式移动：着地时朝目标方向跳跃，空中不施加额外水平力。
+    /// 根据当前FSM状态选择跳跃动画，防止逃跑/捕食动画被 Jump 覆盖。
     /// </summary>
     public override void PerformMove(float direction, float speedMultiplier = 1f)
     {
         if (!IsGrounded)
             return;
 
-        PerformHop(direction, speedMultiplier);
+        string anim = "Jump";
+        if (Fsm.CurrentStateType == typeof(FleeState))
+            anim = "Flee";
+        else if (Fsm.CurrentStateType == typeof(PounceState))
+            anim = "Prey";
+
+        PerformHop(direction, speedMultiplier, anim);
     }
 
     /// <summary>
@@ -88,7 +114,8 @@ public class FrogAI : AnimalBase
     /// </summary>
     /// <param name="direction">跳跃水平方向（正=右，负=左）</param>
     /// <param name="speedMultiplier">速度倍率</param>
-    public void PerformHop(float direction, float speedMultiplier = 1f)
+    /// <param name="animName">跳跃期间播放的动画状态名，默认 Jump</param>
+    public void PerformHop(float direction, float speedMultiplier = 1f, string animName = "Jump")
     {
         Rb.velocity = new Vector2(
             direction * _hopForwardSpeed * speedMultiplier,
@@ -98,7 +125,7 @@ public class FrogAI : AnimalBase
         if (SpriteRenderer != null && Mathf.Abs(direction) > 0.05f)
             SpriteRenderer.flipX = direction < 0;
 
-        PlayAnimation("Jump");
+        PlayAnimation(animName);
     }
 
     /// <summary>
