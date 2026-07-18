@@ -44,6 +44,25 @@ public class SlimeDevourHandler : MonoBehaviour
             Debug.LogWarning("SlimeDevourHandler: No DevourEffectPlayer on Main Camera.");
     }
 
+    private void OnEnable()
+    {
+        // 订阅吞噬输入事件（空格键）
+        if (PlayerInputReader.Instance != null)
+            PlayerInputReader.Instance.OnEatSpit += TryHandleDevourInput;
+    }
+
+    private void OnDisable()
+    {
+        // 取消订阅，防止内存泄漏
+        if (PlayerInputReader.Instance != null)
+            PlayerInputReader.Instance.OnEatSpit -= TryHandleDevourInput;
+
+        // 清理范围内动物
+        foreach (DevourableAnimal animal in animalsInRange)
+            MockEventCenter.TriggerAnimalExitRange(animal);
+        animalsInRange.Clear();
+    }
+
     private void Update()
     {
         UpdateAnimalsInRange();
@@ -76,13 +95,6 @@ public class SlimeDevourHandler : MonoBehaviour
         }
     }
 
-    private void OnDisable()
-    {
-        foreach (DevourableAnimal animal in animalsInRange)
-            MockEventCenter.TriggerAnimalExitRange(animal);
-        animalsInRange.Clear();
-    }
-
     private void FixedUpdate()
     {
         if (!isPouncing) return;
@@ -107,20 +119,22 @@ public class SlimeDevourHandler : MonoBehaviour
         StartCoroutine(RunDevourSequence(animal));
     }
 
-    public bool TryHandleDevourInput()
+    /// <summary>
+    /// 由输入事件驱动调用（空格键按下）
+    /// </summary>
+    private void TryHandleDevourInput()
     {
-        if (baseForm.CurrentState == ActionState.SpecialAction) return false;
-        if (isPouncing) return false;
-        if (Time.time < cooldownEndTime) return false;
-        if (!Input.GetKeyDown(KeyCode.Space)) return false;
+        // 原有的检测逻辑（去掉 Input.GetKeyDown 检查）
+        if (baseForm.CurrentState == ActionState.SpecialAction) return;
+        if (isPouncing) return;
+        if (Time.time < cooldownEndTime) return;
 
         DevourableAnimal target = FindNearestDevourable();
-        if (target == null) return false;
+        if (target == null) return;
 
         currentTarget = target;
         currentTarget.IsTargeted = true;
         StartPounce();
-        return true;
     }
 
     public void CancelAll()

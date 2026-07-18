@@ -2,8 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;      // 必须添加，用于 InputAction 类型
 using DG.Tweening;
-
 
 /// <summary>
 /// 控制形态轮盘的显示与隐藏，以及选中形态的逻辑。
@@ -11,185 +11,209 @@ using DG.Tweening;
 /// </summary>
 public class FormWheelController : MonoBehaviour
 {
-    // Start is called before the first frame update
-    [SerializeField] private GameObject _wheelPanel; // 轮盘面板的引用
-    [SerializeField] private KeyCode _activateKey = KeyCode.Tab; // 激活轮盘面板的按键
-    [SerializeField] private float _centerRound = 0f; // 中心区域的半径
-    [SerializeField] private float _selectionRadius = 1000f; // 选项区域的半径
-    [SerializeField] private float _wheelPanelRadius = 1f; // 轮盘面板的以屏幕中心为圆心的的半径比例(以150为基准)
-    private int _currentSelection, _previousSelection = -1; // 当前和上一个选中的选项索引
-    [SerializeField] private GameObject[] _optionsPositions; // 选项位置的数组，按顺时针顺序排列
-    [SerializeField] private GameObject[] _wheelOptions; // 轮盘面板的选项数组[按FormType顺序排列,但第0个为取消区域]
-    [SerializeField] private GameObject _borader; // 选项的边框
-    [SerializeField] private float _duration = 0.2f; // 动效的持续时间
-    [SerializeField] private float _scaleFactor = 1.6f; // 选中选项的缩放因子
-    [SerializeField] private TMPro.TMP_Text _selectedOptionText; // 显示选中选项的文本
-    private int _optionCount; // 选项数量
-    private Vector2 _screenCenter; // 屏幕中心点坐标
-    private List<GameObject> _rankedOptions = new List<GameObject>(); // 排序后的选项数组 
-    private PlayerController _playerController; // 玩家控制器的引用
+    [SerializeField] private GameObject _wheelPanel;                // 轮盘面板的引用
+    [SerializeField] private float _centerRound = 0f;               // 中心区域的半径
+    [SerializeField] private float _selectionRadius = 1000f;        // 选项区域的半径
+    [SerializeField] private float _wheelPanelRadius = 1f;          // 轮盘面板的以屏幕中心为圆心的半径比例(以150为基准)
+    [SerializeField] private GameObject[] _optionsPositions;        // 选项位置的数组，按顺时针顺序排列
+    [SerializeField] private GameObject[] _wheelOptions;            // 轮盘面板的选项数组[按FormType顺序排列,但第0个为取消区域]
+    [SerializeField] private GameObject _borader;                   // 选项的边框
+    [SerializeField] private float _duration = 0.2f;                // 动效的持续时间
+    [SerializeField] private float _scaleFactor = 1.6f;             // 选中选项的缩放因子
+    [SerializeField] private TMPro.TMP_Text _selectedOptionText;    // 显示选中选项的文本
 
-    public static List<FormType> unlockedForms = new List<FormType>(); // 已解锁的形态列表
+    private int _currentSelection, _previousSelection = -1;
+    private int _optionCount;
+    private Vector2 _screenCenter;
+    private List<GameObject> _rankedOptions = new List<GameObject>();
+    private PlayerController _playerController;
 
-    void OnEnable()
-    {
-        MockEventCenter.OnFormUnlocked += AddUnlockedForm;
-    }
+    public static List<FormType> unlockedForms = new List<FormType>();
 
+    // ---------- Unity 生命周期 ----------
     void Awake()
     {
-        //初始化已解锁形态列表和排序后的选项数组
-
-        _rankedOptions.Add(_wheelOptions[0]);//确保存在取消区域，序号为0
-        if (unlockedForms.Count == 0)// 如果解锁列表为空，默认解锁Slime形态
+        // 初始化已解锁形态列表和排序后的选项数组
+        _rankedOptions.Add(_wheelOptions[0]); // 取消区域，序号0
+        if (unlockedForms.Count == 0)
         {
-            unlockedForms.Add(FormType.Slime); // 默认解锁Slime形态
-            _rankedOptions.Add(_wheelOptions[(int)FormType.Slime + 1]); // 将Slime形态对应的选项添加到排序后的选项数组中
+            unlockedForms.Add(FormType.Slime);
+            _rankedOptions.Add(_wheelOptions[(int)FormType.Slime + 1]);
         }
-
-        //此处需要和存档模块联动，以读取目前已解锁动物列表
+        // 此处需要和存档模块联动，以读取目前已解锁动物列表
     }
 
     void Start()
     {
-        _optionCount = _wheelOptions.Length; // 获取轮盘面板的选项数量
+        _optionCount = _wheelOptions.Length;
         _screenCenter = new Vector2(Screen.width / 2f, Screen.height / 2f);
         _playerController = FindObjectOfType<PlayerController>();
     }
 
-    // Update is called once per frame
-    void Update()
+    void OnEnable()
     {
-        if (Input.GetKeyDown(_activateKey))
-        {
-            ShowWheelPanel();
-        }
+        MockEventCenter.OnFormUnlocked += AddUnlockedForm;
 
-        if (Input.GetKey(_activateKey))
+        // 订阅 Tab 键的输入事件
+        if (PlayerInputReader.Instance != null)
         {
-            WheelSelect();
-        }
-
-        if (Input.GetKeyUp(_activateKey))
-        {
-            HideWheelPanel();
+            var action = PlayerInputReader.Instance.AnimalWheelAction;
+            action.started += OnWheelStart;      // 按下 Tab 瞬间
+            action.performed += OnWheelPerformed; // 按住 Tab 期间每帧
+            action.canceled += OnWheelCanceled;   // 松开 Tab 瞬间
         }
     }
 
     void OnDisable()
     {
         MockEventCenter.OnFormUnlocked -= AddUnlockedForm;
+
+        if (PlayerInputReader.Instance != null)
+        {
+            var action = PlayerInputReader.Instance.AnimalWheelAction;
+            action.started -= OnWheelStart;
+            action.performed -= OnWheelPerformed;
+            action.canceled -= OnWheelCanceled;
+        }
+
+        // 确保退出时恢复时间缩放
+        if (Time.timeScale == 0f)
+            Time.timeScale = 1f;
     }
 
+    // ---------- 事件回调 ----------
+    private void OnWheelStart(InputAction.CallbackContext ctx)
+    {
+        ShowWheelPanel();
+    }
+
+    private void OnWheelPerformed(InputAction.CallbackContext ctx)
+    {
+        // 按住期间，每帧更新选择（利用轮询鼠标位置）
+        WheelSelect();
+    }
+
+    private void OnWheelCanceled(InputAction.CallbackContext ctx)
+    {
+        HideWheelPanel();
+    }
+
+    // ---------- 原有核心方法（稍作调整） ----------
     private void ShowWheelPanel()
     {
-        _currentSelection = -1; // 重置当前选中的选项索引
-        _previousSelection = -1; // 重置上一个选中的选项索引
+        _currentSelection = -1;
+        _previousSelection = -1;
         _wheelPanel.SetActive(true);
         Time.timeScale = 0f; // 暂停游戏
 
-        for (int i = 0; i < _rankedOptions.Count; i++)//轮盘展开的效果实现
+        // 展开动画：每个选项从中心移动到目标位置
+        for (int i = 0; i < _rankedOptions.Count; i++)
         {
             _rankedOptions[i].SetActive(true);
-            _rankedOptions[i].transform.position = _screenCenter; // 将选项移动到屏幕中心
-            Vector2 directionToTarget = ((Vector2)_optionsPositions[i].transform.position - (Vector2)_screenCenter) * _wheelPanelRadius; // 计算从屏幕中心到目标位置的方向向量
+            _rankedOptions[i].transform.position = _screenCenter;
+            Vector2 directionToTarget = ((Vector2)_optionsPositions[i].transform.position - _screenCenter) * _wheelPanelRadius;
             _rankedOptions[i].transform
                 .DOMove(_screenCenter + directionToTarget, _duration)
-                .SetEase(Ease.OutBack) // 使用DoTween平滑移动选项到目标位置
-                .SetUpdate(true); // 设置为忽略时间缩放，确保在暂停游戏时仍然可以执行动画
+                .SetEase(Ease.OutBack)
+                .SetUpdate(true); // 忽略 Time.timeScale
         }
 
         _borader.SetActive(true);
-        _borader.transform.position = _screenCenter; // 将边框移动到屏幕中心
-        _borader.transform.localScale = Vector2.one * _scaleFactor; // 放大边框
+        _borader.transform.position = _screenCenter;
+        _borader.transform.localScale = Vector2.one * _scaleFactor;
     }
 
     private void HideWheelPanel()
     {
-
+        // 停止所有移动动画
         for (int i = 0; i < _rankedOptions.Count; i++)
         {
-            _rankedOptions[i].transform.DOKill(); // 停止选项的移动动画
-        }
-        // 选中有效的选项，执行相应的操作
-        Debug.Log("UI:Selected Option: " + _currentSelection);
-        if (_currentSelection > 0)
-        {
-            _playerController.SwitchToFormByType((FormType)(_currentSelection - 1)); // 切换到选中的形态，注意索引需要减1，因为取消区域占据了第0个位置
+            _rankedOptions[i].transform.DOKill();
         }
 
+        // 执行选中逻辑
+        if (_currentSelection > 0 && _currentSelection < _rankedOptions.Count)
+        {
+            FormType selectedForm = (FormType)(_currentSelection - 1);
+            Debug.Log($"UI: Selected Form: {selectedForm}");
+            _playerController.SwitchToFormByType(selectedForm);
+        }
+        else
+        {
+            Debug.Log("UI: Cancel selection");
+        }
+
+        // 重置选项位置到中心（隐藏）
         for (int i = 0; i < _rankedOptions.Count; i++)
         {
-            _rankedOptions[i].transform.position = _screenCenter; // 重置选项位置到屏幕中心
+            _rankedOptions[i].transform.position = _screenCenter;
         }
+
         _wheelPanel.SetActive(false);
         Time.timeScale = 1f; // 恢复游戏
-
     }
 
     private void WheelSelect()
     {
-        Vector2 mousePosition = (Vector2)Input.mousePosition;
+        // 使用新的 Input System 的鼠标位置
+        Vector2 mousePosition = PlayerInputReader.Instance.MouseScreenPosition;
         Vector2 direction = mousePosition - _screenCenter;
         float distance = direction.magnitude;
-        _previousSelection = _currentSelection; // 保存上一个选中的选项索引
 
+        _previousSelection = _currentSelection;
+
+        // 判断是否在有效选择区域内
         if (distance < _centerRound || distance > _selectionRadius)
         {
-            _currentSelection = -1; // 鼠标在中心区域内或超出选项区域，不选择任何选项
+            _currentSelection = -1;
             return;
+        }
+
+        // 计算角度（0~360）
+        float angle = Mathf.Atan2(direction.x, direction.y) * Mathf.Rad2Deg;
+        if (angle < 0f) angle += 360f;
+
+        float optionAngle = 360f / _optionCount;
+        int tempCount = Mathf.RoundToInt(angle / optionAngle);
+        if (tempCount >= _optionCount) tempCount = 0;
+
+        // 确保索引在已解锁选项范围内
+        if (tempCount >= _rankedOptions.Count)
+        {
+            // 如果选中的索引超出已解锁范围，选择最近的有效项（这里简化为选最后一个或取消）
+            _currentSelection = (_optionCount - tempCount > tempCount - _rankedOptions.Count + 1) 
+                ? _rankedOptions.Count - 1 
+                : 0;
         }
         else
         {
-            int tempCount;
-            float angle = Mathf.Atan2(direction.x, direction.y) * Mathf.Rad2Deg;
-            if (angle < 0f)
-            {
-                angle += 360f; // 将角度转换为0到360度之间
-            }
-
-            float optionAngle = 360f / _optionCount; // 每个选项的角度范围
-            if (Mathf.RoundToInt(angle / optionAngle) >= _optionCount)
-            {
-                tempCount = 0; // 选择第一个选项
-            }
-            else
-            {
-                tempCount = Mathf.RoundToInt(angle / optionAngle); // 根据角度计算选中的选项索引
-            }
-            if (tempCount >= 0 && tempCount >= _rankedOptions.Count)
-            {
-                _currentSelection = _optionCount - tempCount > tempCount - _rankedOptions.Count + 1 ? _rankedOptions.Count - 1 : 0; // 如果选中的索引超出排序后的选项数组范围，选择最接近的有效选项
-            }
-            else
-            {
-                _currentSelection = tempCount; // 更新当前选中的选项索引
-            }
+            _currentSelection = tempCount;
         }
 
-        if (_currentSelection >= 0 && _previousSelection >= 0 && _currentSelection < _rankedOptions.Count && _previousSelection < _rankedOptions.Count)
+        // 更新 UI 缩放和边框位置
+        if (_currentSelection >= 0 && _previousSelection >= 0 &&
+            _currentSelection < _rankedOptions.Count && _previousSelection < _rankedOptions.Count)
         {
-            _rankedOptions[_currentSelection].transform.DOScale(Vector3.one * _scaleFactor, 0.05f).SetUpdate(true); // 放大当前选中的选项
-            _rankedOptions[_previousSelection].transform.DOScale(Vector3.one, 0.05f).SetUpdate(true); // 恢复
-            _borader.transform.position = _rankedOptions[_currentSelection].transform.position; // 将边框移动到当前选中的选项位置
+            // 放大当前选中，恢复上一个
+            _rankedOptions[_currentSelection].transform.DOScale(Vector3.one * _scaleFactor, 0.05f).SetUpdate(true);
+            _rankedOptions[_previousSelection].transform.DOScale(Vector3.one, 0.05f).SetUpdate(true);
+            _borader.transform.position = _rankedOptions[_currentSelection].transform.position;
+
+            // 更新文字
             if (_currentSelection > 0)
-            {
-                _selectedOptionText.text = ((FormType)(_currentSelection - 1)).ToString(); // 更新显示的选中选项文本
-            }
+                _selectedOptionText.text = ((FormType)(_currentSelection - 1)).ToString();
             else
-            {
-                _selectedOptionText.text = "Cancel"; // 如果选择的是取消区域，显示"取消"
-            }
+                _selectedOptionText.text = "Cancel";
         }
     }
 
+    // ---------- 事件监听：解锁新形态 ----------
     private void AddUnlockedForm(FormType form)
     {
         if (!unlockedForms.Contains(form))
         {
             unlockedForms.Add(form);
-            _rankedOptions.Add(_wheelOptions[(int)form + 1]); // 将解锁的形态对应的选项添加到排序后的选项数组中
+            _rankedOptions.Add(_wheelOptions[(int)form + 1]);
         }
     }
-
 }

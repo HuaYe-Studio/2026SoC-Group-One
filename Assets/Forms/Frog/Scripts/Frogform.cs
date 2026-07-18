@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;   // 必须添加！
 
 public class FrogForm : BaseForm
 {
@@ -19,14 +20,36 @@ public class FrogForm : BaseForm
         fallGravityMultiplier = 1.2f;
     }
 
-    protected override void HandleInput()
+    private void OnEnable()
     {
-        if (Input.GetMouseButtonDown(0) && CanJump())
-            DoJump();
-
-        if (Input.GetMouseButtonUp(0))
-            ApplyJumpCut();
+        if (PlayerInputReader.Instance != null)
+        {
+            PlayerInputReader.Instance.Ability1Action.started += OnAbilityPressed;
+            PlayerInputReader.Instance.Ability1Action.canceled += OnAbilityReleased;
+        }
     }
+
+    private void OnDisable()
+    {
+        if (PlayerInputReader.Instance != null)
+        {
+            PlayerInputReader.Instance.Ability1Action.started -= OnAbilityPressed;
+            PlayerInputReader.Instance.Ability1Action.canceled -= OnAbilityReleased;
+        }
+    }
+
+    private void OnAbilityPressed(InputAction.CallbackContext ctx)
+    {
+        if (CanJump()) DoJump();
+    }
+
+    private void OnAbilityReleased(InputAction.CallbackContext ctx)
+    {
+        ApplyJumpCut();
+    }
+
+    // 删除原有的 HandleInput 方法，因为已由事件替代
+    // protected override void HandleInput() { }
 
     public override void DoMovement(float horizontal)
     {
