@@ -22,7 +22,7 @@ public class FrogForm : BaseForm
 
     private void OnEnable()
     {
-        if (PlayerInputReader.Instance != null)
+        if (PlayerInputReader.HasInstance)
         {
             PlayerInputReader.Instance.Ability1Action.started += OnAbilityPressed;
             PlayerInputReader.Instance.Ability1Action.canceled += OnAbilityReleased;
@@ -31,7 +31,7 @@ public class FrogForm : BaseForm
 
     private void OnDisable()
     {
-        if (PlayerInputReader.Instance != null)
+        if (PlayerInputReader.HasInstance)
         {
             PlayerInputReader.Instance.Ability1Action.started -= OnAbilityPressed;
             PlayerInputReader.Instance.Ability1Action.canceled -= OnAbilityReleased;

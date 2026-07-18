@@ -3,22 +3,26 @@ using UnityEngine.InputSystem;
 
 public class PlayerInputReader : MonoBehaviour
 {
+    private static PlayerInputReader _instance;
     private PlayerInputActions controls;
     private Camera mainCamera;
 
     // ---------- 单例 ----------
-    private static PlayerInputReader _instance;
     public static PlayerInputReader Instance
     {
         get
         {
             if (_instance == null)
             {
-                Debug.LogError("PlayerInputReader 尚未在场景中实例化！");
+                GameObject go = new GameObject("PlayerInputReader");
+                _instance = go.AddComponent<PlayerInputReader>();
+                DontDestroyOnLoad(go);
             }
             return _instance;
         }
     }
+
+    public static bool HasInstance => _instance != null;
 
     // ---------- 轮询值 ----------
     public Vector2 MoveValue { get; private set; }
@@ -27,7 +31,7 @@ public class PlayerInputReader : MonoBehaviour
 
     // ---------- 鼠标位置 ----------
     public Vector2 MouseScreenPosition { get; private set; }
-    public Vector3 MouseWorldPosition { get; private set; } // Vector3 但 Z 始终为 0
+    public Vector3 MouseWorldPosition { get; private set; }
 
     // ---------- 公开原始 Action ----------
     public InputAction Ability1Action => controls.Slime.Ability1;
@@ -41,6 +45,7 @@ public class PlayerInputReader : MonoBehaviour
     public event System.Action OnAbility2;
     public event System.Action OnAnimalWheel;
     public event System.Action OnMenu;
+    public event System.Action OnUICancel;  // UI Map 的 Cancel
 
     // ---------- 初始化 ----------
     private void Awake()
@@ -65,14 +70,39 @@ public class PlayerInputReader : MonoBehaviour
 
     private void OnEnable()
     {
-        controls.Slime.Interact.performed += ctx => OnInteract?.Invoke();
-        controls.Slime.EatSpit.performed += ctx => OnEatSpit?.Invoke();
-        controls.Slime.Ability1.performed += ctx => OnAbility1?.Invoke();
-        controls.Slime.Ability2.performed += ctx => OnAbility2?.Invoke();
-        controls.Slime.AnimalWheel.performed += ctx => OnAnimalWheel?.Invoke();
-        controls.Slime.Menu.performed += ctx => OnMenu?.Invoke();
+        // 订阅 Slime Map 的事件（使用命名方法）
+        controls.Slime.Interact.performed += OnInteractHandler;
+        controls.Slime.EatSpit.performed += OnEatSpitHandler;
+        controls.Slime.Ability1.performed += OnAbility1Handler;
+        controls.Slime.Ability2.performed += OnAbility2Handler;
+        controls.Slime.AnimalWheel.performed += OnAnimalWheelHandler;
+        controls.Slime.Menu.performed += OnMenuHandler;
+
+        // 订阅 UI Map 的 Cancel 事件
+        controls.UI.Cancel.performed += OnUICancelHandler;
     }
 
+    private void OnDisable()
+    {
+        // 取消所有事件订阅（防止内存泄漏）
+        controls.Slime.Interact.performed -= OnInteractHandler;
+        controls.Slime.EatSpit.performed -= OnEatSpitHandler;
+        controls.Slime.Ability1.performed -= OnAbility1Handler;
+        controls.Slime.Ability2.performed -= OnAbility2Handler;
+        controls.Slime.AnimalWheel.performed -= OnAnimalWheelHandler;
+        controls.Slime.Menu.performed -= OnMenuHandler;
+        controls.UI.Cancel.performed -= OnUICancelHandler;
+
+        controls?.Slime.Disable();
+        controls?.UI.Disable();
+    }
+
+    private void OnDestroy()
+    {
+        controls?.Dispose();
+    }
+
+    // ---------- Update 轮询 ----------
     private void Update()
     {
         MoveValue = controls.Slime.Move.ReadValue<Vector2>();
@@ -84,8 +114,8 @@ public class PlayerInputReader : MonoBehaviour
         {
             Vector3 screenPos = new Vector3(MouseScreenPosition.x, MouseScreenPosition.y, 0f);
             Vector3 worldPos = mainCamera.ScreenToWorldPoint(screenPos);
-            worldPos.z = 0f;              // 2D 游戏强制 Z=0
-            MouseWorldPosition = worldPos; // 整体赋值，不修改属性成员
+            worldPos.z = 0f;
+            MouseWorldPosition = worldPos;
         }
         else
         {
@@ -93,16 +123,14 @@ public class PlayerInputReader : MonoBehaviour
         }
     }
 
-    private void OnDisable()
-    {
-        controls?.Slime.Disable();
-        controls?.UI.Disable();
-    }
-
-    private void OnDestroy()
-    {
-        controls?.Dispose();
-    }
+    // ---------- 事件处理方法（命名方法，用于正确订阅/取消） ----------
+    private void OnInteractHandler(InputAction.CallbackContext ctx) => OnInteract?.Invoke();
+    private void OnEatSpitHandler(InputAction.CallbackContext ctx) => OnEatSpit?.Invoke();
+    private void OnAbility1Handler(InputAction.CallbackContext ctx) => OnAbility1?.Invoke();
+    private void OnAbility2Handler(InputAction.CallbackContext ctx) => OnAbility2?.Invoke();
+    private void OnAnimalWheelHandler(InputAction.CallbackContext ctx) => OnAnimalWheel?.Invoke();
+    private void OnMenuHandler(InputAction.CallbackContext ctx) => OnMenu?.Invoke();
+    private void OnUICancelHandler(InputAction.CallbackContext ctx) => OnUICancel?.Invoke();
 
     // ---------- 公开切换接口 ----------
     public void SwitchToGameplay()

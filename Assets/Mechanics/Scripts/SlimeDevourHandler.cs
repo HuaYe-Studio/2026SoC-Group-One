@@ -46,18 +46,19 @@ public class SlimeDevourHandler : MonoBehaviour
 
     private void OnEnable()
     {
-        // 订阅吞噬输入事件（空格键）
-        if (PlayerInputReader.Instance != null)
+        // 订阅吞噬按键事件（空格）
+        // 使用属性访问器确保实例存在
+        if (PlayerInputReader.HasInstance)
             PlayerInputReader.Instance.OnEatSpit += TryHandleDevourInput;
     }
 
     private void OnDisable()
     {
-        // 取消订阅，防止内存泄漏
-        if (PlayerInputReader.Instance != null)
+        // ⚠️ 直接检查私有静态字段，避免触发懒加载
+        if (PlayerInputReader.HasInstance)
             PlayerInputReader.Instance.OnEatSpit -= TryHandleDevourInput;
 
-        // 清理范围内动物
+        // 清理范围检测
         foreach (DevourableAnimal animal in animalsInRange)
             MockEventCenter.TriggerAnimalExitRange(animal);
         animalsInRange.Clear();
@@ -119,12 +120,8 @@ public class SlimeDevourHandler : MonoBehaviour
         StartCoroutine(RunDevourSequence(animal));
     }
 
-    /// <summary>
-    /// 由输入事件驱动调用（空格键按下）
-    /// </summary>
     private void TryHandleDevourInput()
     {
-        // 原有的检测逻辑（去掉 Input.GetKeyDown 检查）
         if (baseForm.CurrentState == ActionState.SpecialAction) return;
         if (isPouncing) return;
         if (Time.time < cooldownEndTime) return;

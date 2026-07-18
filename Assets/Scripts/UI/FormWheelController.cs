@@ -55,7 +55,7 @@ public class FormWheelController : MonoBehaviour
         MockEventCenter.OnFormUnlocked += AddUnlockedForm;
 
         // 订阅 Tab 键的输入事件
-        if (PlayerInputReader.Instance != null)
+        if (PlayerInputReader.HasInstance)
         {
             var action = PlayerInputReader.Instance.AnimalWheelAction;
             action.started += OnWheelStart;      // 按下 Tab 瞬间
@@ -68,7 +68,7 @@ public class FormWheelController : MonoBehaviour
     {
         MockEventCenter.OnFormUnlocked -= AddUnlockedForm;
 
-        if (PlayerInputReader.Instance != null)
+        if (PlayerInputReader.HasInstance)
         {
             var action = PlayerInputReader.Instance.AnimalWheelAction;
             action.started -= OnWheelStart;
