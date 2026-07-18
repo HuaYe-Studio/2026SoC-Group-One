@@ -22,9 +22,12 @@ public class BTRestAction : BTNode
 
     public override State Tick()
     {
-        // 首帧进入：停止移动并播放休息动画
+        // 首帧进入：必须先落地才开始休息计时，空中保持等待
         if (!_isResting)
         {
+            if (!_animal.IsGrounded)
+                return State.Running;
+
             _animal.StopMoving();
             _animal.PlayAnimation("Rest");
             _restEndTime = Time.time + Random.Range(_durationMin, _durationMax);

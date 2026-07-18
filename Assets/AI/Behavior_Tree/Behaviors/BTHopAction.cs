@@ -63,5 +63,8 @@ public class BTHopAction : BTNode
         // PerformHop 内部会把 FROG_AnimState 设为 1（Jump）
         _frog.PerformHop(direction);
         _hasHopped = true;
+
+        // 调试：确认起跳指令已执行及实际速度（问题定位后可删除）
+        Debug.Log($"{_frog.name} BT起跳: 方向={direction} 速度={_frog.Rb.velocity}");
     }
 }

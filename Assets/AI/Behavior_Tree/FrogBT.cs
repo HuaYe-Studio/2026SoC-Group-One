@@ -2,7 +2,7 @@ using UnityEngine;
 
 /// <summary>
 /// [BT] 青蛙行为树：挂载并启用后自动接管（禁用）FSM，用行为树驱动青蛙AI。
-/// 优先级从高到低：逃跑 > 捕食 > 觅食循环（跳一次 → 休息）。
+/// 优先级从高到低：逃跑 > 捕食 > 觅食循环（落地休息 → 跳一次）。
 /// 动画统一由 FrogAI.PlayAnimation 控制 Animator 整数参数
 /// FROG_AnimState：0=Idle 1=Jump 2=Rest 3=Flee 4=Prey。
 /// </summary>
@@ -18,6 +18,11 @@ public class FrogBT : MonoBehaviour
 
     private FrogAI _frog;
     private BTNode _root;
+
+    // 调试用：记录上次日志的分支/结果/着地，只在变化时输出
+    private string _lastBranch;
+    private BTNode.State _lastResult;
+    private bool _lastGrounded;
 
     private void Awake()
     {
@@ -46,10 +51,10 @@ public class FrogBT : MonoBehaviour
             new BTCondition(() => _frog.IsFoodDetected),
             new BTPounceAction(_frog));
 
-        // 分支3：默认觅食循环 → 跳一次 → 休息几秒 → 循环
+        // 分支3：默认觅食循环 → 落地后先休息几秒 → 跳一次 → 落地再休息，循环
         BTNode forageBranch = new BTSequence(
-            new BTHopAction(_frog),
-            new BTRestAction(_frog, _restDurationMin, _restDurationMax));
+            new BTRestAction(_frog, _restDurationMin, _restDurationMax),
+            new BTHopAction(_frog));
 
         return new BTSelector(fleeBranch, pounceBranch, forageBranch);
     }
@@ -59,6 +64,26 @@ public class FrogBT : MonoBehaviour
         BTNode.State result = _root.Tick();
 
         if (_enableDebugLog)
-            Debug.Log($"{gameObject.name} BT Tick: {result}");
+            LogStateChange(result);
+    }
+
+    /// <summary>
+    /// 只在分支、结果或着地状态发生变化时输出日志，避免刷屏。
+    /// </summary>
+    private void LogStateChange(BTNode.State result)
+    {
+        string branch = _frog.IsPlayerDetected ? "Flee逃跑"
+            : _frog.IsFoodDetected ? "Pounce捕食"
+            : "Forage觅食";
+
+        bool grounded = _frog.IsGrounded;
+
+        if (branch == _lastBranch && result == _lastResult && grounded == _lastGrounded)
+            return;
+
+        Debug.Log($"{gameObject.name} BT: 分支[{branch}] 结果[{result}] 着地[{grounded}]");
+        _lastBranch = branch;
+        _lastResult = result;
+        _lastGrounded = grounded;
     }
 }

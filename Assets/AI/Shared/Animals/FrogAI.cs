@@ -33,6 +33,8 @@ public class FrogAI : AnimalBase
     private const string AnimStateParam = "FROG_AnimState";
 
     private EnvironmentMonitor _monitor;
+    private Collider2D _collider;
+    private readonly RaycastHit2D[] _groundHits = new RaycastHit2D[4];
     private float _nextIdleHopTime;
     private bool _hasIdleHopped;
 
@@ -49,6 +51,7 @@ public class FrogAI : AnimalBase
     protected override void Awake()
     {
         _monitor = GetComponent<EnvironmentMonitor>();
+        _collider = GetComponent<Collider2D>();
 
         base.Awake();
     }
@@ -58,18 +61,34 @@ public class FrogAI : AnimalBase
         PerformGroundCheck();
     }
 
+    /// <summary>
+    /// 地面检测：从碰撞体底部向下做 BoxCast。
+    /// 排除自身碰撞体和触发器，防止 GroundLayer 配置失误（如勾了自身层）导致"着地"恒真。
+    /// </summary>
     private void PerformGroundCheck()
     {
-        Collider2D col = GetComponent<Collider2D>();
-        float width = col != null ? col.bounds.size.x * _groundCheckWidth : 0.4f;
+        float width = _collider != null ? _collider.bounds.size.x * _groundCheckWidth : 0.4f;
 
         Vector2 origin = new Vector2(transform.position.x,
-            col != null ? col.bounds.min.y : transform.position.y - 0.5f);
+            _collider != null ? _collider.bounds.min.y : transform.position.y - 0.5f);
 
         Vector2 size = new Vector2(width, _groundCheckHeight);
-        RaycastHit2D hit = Physics2D.BoxCast(origin, size, 0f, Vector2.down, 0.05f, _groundLayer);
 
-        IsGrounded = hit.collider != null;
+        ContactFilter2D filter = new ContactFilter2D();
+        filter.SetLayerMask(_groundLayer);
+        filter.useTriggers = false;
+
+        int count = Physics2D.BoxCast(origin, size, 0f, Vector2.down, filter, _groundHits, 0.05f);
+
+        IsGrounded = false;
+        for (int i = 0; i < count; i++)
+        {
+            if (_groundHits[i].collider != _collider)
+            {
+                IsGrounded = true;
+                break;
+            }
+        }
     }
 
     /// <summary>
