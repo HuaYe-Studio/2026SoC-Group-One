@@ -351,6 +351,7 @@ MonoBehaviour:
     m_Bits: 8
   jumpForce: 10
   jumpCutMultiplier: 0.5
+  airControlSpeed: 4
 --- !u!1 &6837292219011752717
 GameObject:
   m_ObjectHideFlags: 0

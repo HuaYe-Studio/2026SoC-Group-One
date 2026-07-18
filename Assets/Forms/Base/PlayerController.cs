@@ -111,7 +111,7 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
-        float horizontal = Input.GetAxisRaw("Horizontal");
+        float horizontal = PlayerInputReader.Instance.MoveValue.x;
 
         if (ActiveForm != null)
             ActiveForm.ProcessInput(horizontal);
@@ -121,7 +121,7 @@ public class PlayerController : MonoBehaviour
 
     private void HandleFormSwitch()
     {
-        float scroll = Input.GetAxisRaw("Mouse ScrollWheel");
+        float scroll = PlayerInputReader.Instance.ScrollValue;
         if (scroll > 0.1f)
             CycleForm(1);
         else if (scroll < -0.1f)
