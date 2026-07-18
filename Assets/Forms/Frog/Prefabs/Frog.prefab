@@ -176,8 +176,8 @@ MonoBehaviour:
   _wallCheckDistance: 1
   _groundLayer:
     serializedVersion: 2
-    m_Bits: 4294967295
-  _fellowRadius: 5
+    m_Bits: 8
+  _fellowRadius: 5.09
   _fellowLayer:
     serializedVersion: 2
     m_Bits: 0
@@ -201,7 +201,7 @@ MonoBehaviour:
   _fleeSafeDistance: 10
   _playerLayer:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 64
   _fleeSpeedMultiplier: 1.5
   _hopForce: 5
   _hopForwardSpeed: 2.35
