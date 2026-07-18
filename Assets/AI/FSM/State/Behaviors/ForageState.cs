@@ -15,7 +15,6 @@ public class ForageState : IState
     private bool _hasHopped;
     private bool _hasLeftGround;
 
-    private const float PauseBetweenHops = 0.5f;
     private const int MaxHopsBeforeRest = 1;
 
     public ForageState(FSM fsm, AnimalBase animal)
@@ -29,7 +28,6 @@ public class ForageState : IState
         _hopCount = 0;
         _hasHopped = false;
         _hasLeftGround = false;
-        StartNextHop();
     }
 
     public void OnUpdate()
@@ -48,12 +46,20 @@ public class ForageState : IState
             return;
         }
 
+        // 尚未起跳：必须先着地才允许跳（防止空中进入该状态直接误判落地）
+        if (!_hasHopped)
+        {
+            if (_animal.IsGrounded)
+                StartNextHop();
+            return;
+        }
+
         // 追踪是否已经离地（防止地面检测过宽导致"落地"误判）
-        if (_hasHopped && !_animal.IsGrounded)
+        if (!_animal.IsGrounded)
             _hasLeftGround = true;
 
         // 必须离过地 + 重新着地，才算真实落地
-        if (_hasHopped && _hasLeftGround && _animal.IsGrounded && Time.time > _landTime)
+        if (_hasLeftGround && _animal.IsGrounded && Time.time > _landTime)
         {
             if (_hopCount >= MaxHopsBeforeRest)
             {

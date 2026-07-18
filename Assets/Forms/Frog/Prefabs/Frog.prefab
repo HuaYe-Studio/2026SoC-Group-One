@@ -197,7 +197,7 @@ MonoBehaviour:
   _patrolPauseMin: 1.5
   _patrolPauseMax: 3
   _patrolRadius: 3
-  _detectionRadius: 6
+  _detectionRadius: 4.5
   _fleeSafeDistance: 10
   _playerLayer:
     serializedVersion: 2

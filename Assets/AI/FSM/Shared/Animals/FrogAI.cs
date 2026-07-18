@@ -74,13 +74,20 @@ public class FrogAI : AnimalBase
 
     /// <summary>
     /// 青蛙以跳跃方式移动：着地时朝目标方向跳跃，空中不施加额外水平力。
+    /// 根据当前FSM状态选择跳跃动画，防止逃跑/捕食动画被 Jump 覆盖。
     /// </summary>
     public override void PerformMove(float direction, float speedMultiplier = 1f)
     {
         if (!IsGrounded)
             return;
 
-        PerformHop(direction, speedMultiplier);
+        string anim = "Jump";
+        if (Fsm.CurrentStateType == typeof(FleeState))
+            anim = "Flee";
+        else if (Fsm.CurrentStateType == typeof(PounceState))
+            anim = "Prey";
+
+        PerformHop(direction, speedMultiplier, anim);
     }
 
     /// <summary>
@@ -88,7 +95,8 @@ public class FrogAI : AnimalBase
     /// </summary>
     /// <param name="direction">跳跃水平方向（正=右，负=左）</param>
     /// <param name="speedMultiplier">速度倍率</param>
-    public void PerformHop(float direction, float speedMultiplier = 1f)
+    /// <param name="animName">跳跃期间播放的动画状态名，默认 Jump</param>
+    public void PerformHop(float direction, float speedMultiplier = 1f, string animName = "Jump")
     {
         Rb.velocity = new Vector2(
             direction * _hopForwardSpeed * speedMultiplier,
@@ -98,7 +106,7 @@ public class FrogAI : AnimalBase
         if (SpriteRenderer != null && Mathf.Abs(direction) > 0.05f)
             SpriteRenderer.flipX = direction < 0;
 
-        PlayAnimation("Jump");
+        PlayAnimation(animName);
     }
 
     /// <summary>

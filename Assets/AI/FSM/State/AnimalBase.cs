@@ -16,7 +16,7 @@ public class AnimalBase : MonoBehaviour
     [SerializeField] private float _patrolRadius = 3f;
 
     [Header("Detection")]
-    [SerializeField] private float _detectionRadius = 6f;
+    [SerializeField] private float _detectionRadius = 4.5f;
     [SerializeField] private float _fleeSafeDistance = 10f;
     [SerializeField] private LayerMask _playerLayer;
 

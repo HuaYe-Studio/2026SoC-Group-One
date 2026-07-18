@@ -62,9 +62,14 @@ public class PounceState : IState
             return;
         }
 
-        // 还没起跳 → 起跳
-        if (!_hasPounced)
+        // 空中时重置起跳标记，落地后可再次朝食物扑跳（支持多段追扑）
+        if (!_animal.IsGrounded)
+            _hasPounced = false;
+
+        // 着地且尚未起跳 → 朝食物扑跳
+        if (!_hasPounced && _animal.IsGrounded)
         {
+            _pounceDirection = Mathf.Sign(_animal.FoodDirection.x);
             _animal.PerformMove(_pounceDirection, PounceSpeedMultiplier);
             _hasPounced = true;
         }
