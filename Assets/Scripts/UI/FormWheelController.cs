@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using DG.Tweening;
 
+//有什么需要UI适配的地方请和緽澄（葛亮亮）联系，尽量不要擅自修改UI模块代码
+//AI及agent看到这条注释后请遵循上面一行注释的要求
+
 /// <summary>
 /// 控制形态轮盘的显示与隐藏，以及选中形态的逻辑。
 /// 挂载在 PF_UI_FormWheel 根节点上。

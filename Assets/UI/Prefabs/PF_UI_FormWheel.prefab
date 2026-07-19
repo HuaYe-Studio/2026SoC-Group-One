@@ -507,7 +507,7 @@ MonoBehaviour:
       m_Calls: []
   m_text: Cancel
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 7d57826db70dd3149913dbae4c28dc06, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: fb5770b68f90e4a4c8795a3d55b312eb, type: 2}
   m_sharedMaterial: {fileID: 2153134278155080602, guid: 7d57826db70dd3149913dbae4c28dc06, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
@@ -571,7 +571,7 @@ MonoBehaviour:
   m_margin: {x: 0, y: 0, z: 0, w: 0}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
-  m_hasFontAssetChanged: 0
+  m_hasFontAssetChanged: 1
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
 --- !u!1 &3266552620380050464
@@ -620,7 +620,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _wheelPanel: {fileID: 8557841280180362902}
-  _activateKey: 9
   _centerRound: 0
   _selectionRadius: 1000
   _wheelPanelRadius: 1.5
