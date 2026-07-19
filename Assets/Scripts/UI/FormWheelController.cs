@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;      // 必须添加，用于 InputAction 类型
 using DG.Tweening;
 
 /// <summary>
@@ -27,6 +26,7 @@ public class FormWheelController : MonoBehaviour
     private Vector2 _screenCenter;
     private List<GameObject> _rankedOptions = new List<GameObject>();
     private PlayerController _playerController;
+    private bool _isWheelOpen;
 
     public static List<FormType> unlockedForms = new List<FormType>();
 
@@ -54,13 +54,10 @@ public class FormWheelController : MonoBehaviour
     {
         MockEventCenter.OnFormUnlocked += AddUnlockedForm;
 
-        // 订阅 Tab 键的输入事件
         if (PlayerInputReader.HasInstance)
         {
-            var action = PlayerInputReader.Instance.AnimalWheelAction;
-            action.started += OnWheelStart;      // 按下 Tab 瞬间
-            action.performed += OnWheelPerformed; // 按住 Tab 期间每帧
-            action.canceled += OnWheelCanceled;   // 松开 Tab 瞬间
+            PlayerInputReader.Instance.OnAnimalWheelStarted += ShowWheelPanel;
+            PlayerInputReader.Instance.OnAnimalWheelCanceled += HideWheelPanel;
         }
     }
 
@@ -70,10 +67,8 @@ public class FormWheelController : MonoBehaviour
 
         if (PlayerInputReader.HasInstance)
         {
-            var action = PlayerInputReader.Instance.AnimalWheelAction;
-            action.started -= OnWheelStart;
-            action.performed -= OnWheelPerformed;
-            action.canceled -= OnWheelCanceled;
+            PlayerInputReader.Instance.OnAnimalWheelStarted -= ShowWheelPanel;
+            PlayerInputReader.Instance.OnAnimalWheelCanceled -= HideWheelPanel;
         }
 
         // 确保退出时恢复时间缩放
@@ -81,28 +76,18 @@ public class FormWheelController : MonoBehaviour
             Time.timeScale = 1f;
     }
 
-    // ---------- 事件回调 ----------
-    private void OnWheelStart(InputAction.CallbackContext ctx)
+    void Update()
     {
-        ShowWheelPanel();
+        if (_isWheelOpen)
+            WheelSelect();
     }
 
-    private void OnWheelPerformed(InputAction.CallbackContext ctx)
-    {
-        // 按住期间，每帧更新选择（利用轮询鼠标位置）
-        WheelSelect();
-    }
-
-    private void OnWheelCanceled(InputAction.CallbackContext ctx)
-    {
-        HideWheelPanel();
-    }
-
-    // ---------- 原有核心方法（稍作调整） ----------
+    // ---------- 核心方法 ----------
     private void ShowWheelPanel()
     {
         _currentSelection = -1;
         _previousSelection = -1;
+        _isWheelOpen = true;
         _wheelPanel.SetActive(true);
         Time.timeScale = 0f; // 暂停游戏
 
@@ -125,6 +110,8 @@ public class FormWheelController : MonoBehaviour
 
     private void HideWheelPanel()
     {
+        _isWheelOpen = false;
+
         // 停止所有移动动画
         for (int i = 0; i < _rankedOptions.Count; i++)
         {
@@ -181,8 +168,8 @@ public class FormWheelController : MonoBehaviour
         if (tempCount >= _rankedOptions.Count)
         {
             // 如果选中的索引超出已解锁范围，选择最近的有效项（这里简化为选最后一个或取消）
-            _currentSelection = (_optionCount - tempCount > tempCount - _rankedOptions.Count + 1) 
-                ? _rankedOptions.Count - 1 
+            _currentSelection = (_optionCount - tempCount > tempCount - _rankedOptions.Count + 1)
+                ? _rankedOptions.Count - 1
                 : 0;
         }
         else
