@@ -19,36 +19,46 @@ public class FormWheelController : MonoBehaviour
     [SerializeField] private float _wheelPanelRadius = 1f;          // 轮盘面板的以屏幕中心为圆心的半径比例(以150为基准)
     [SerializeField] private GameObject[] _optionsPositions;        // 选项位置的数组，按顺时针顺序排列
     [SerializeField] private GameObject[] _wheelOptions;            // 轮盘面板的选项数组[按FormType顺序排列,但第0个为取消区域]
+    [SerializeField] private FormType[] _wheelOptionFormTypes;      // 与_wheelOptions平行，显式声明每个选项对应的FormType（索引0忽略）
     [SerializeField] private GameObject _borader;                   // 选项的边框
     [SerializeField] private float _duration = 0.2f;                // 动效的持续时间
     [SerializeField] private float _scaleFactor = 1.6f;             // 选中选项的缩放因子
     [SerializeField] private TMPro.TMP_Text _selectedOptionText;    // 显示选中选项的文本
 
     private int _currentSelection, _previousSelection = -1;
-    private int _optionCount;
     private Vector2 _screenCenter;
     private List<GameObject> _rankedOptions = new List<GameObject>();
+    private List<FormType> _unlockedFormTypes = new List<FormType>();
+    private Dictionary<FormType, GameObject> _formTypeToWheelOption = new Dictionary<FormType, GameObject>();
     private PlayerController _playerController;
     private bool _isWheelOpen;
-
-    public static List<FormType> unlockedForms = new List<FormType>();
 
     // ---------- Unity 生命周期 ----------
     void Awake()
     {
+        // 按 FormType 枚举顺序构建映射：索引0=取消，索引1起对应 (int)FormType + 1
+        foreach (FormType ft in System.Enum.GetValues(typeof(FormType)))
+        {
+            int idx = (int)ft + 1;
+            if (idx < _wheelOptions.Length)
+                _formTypeToWheelOption[ft] = _wheelOptions[idx];
+        }
+
         // 初始化已解锁形态列表和排序后的选项数组
         _rankedOptions.Add(_wheelOptions[0]); // 取消区域，序号0
-        if (unlockedForms.Count == 0)
+        if (_unlockedFormTypes.Count == 0)
         {
-            unlockedForms.Add(FormType.Slime);
-            _rankedOptions.Add(_wheelOptions[(int)FormType.Slime + 1]);
+            if (_formTypeToWheelOption.TryGetValue(FormType.Slime, out var slimeOption))
+            {
+                _unlockedFormTypes.Add(FormType.Slime);
+                _rankedOptions.Add(slimeOption);
+            }
         }
         // 此处需要和存档模块联动，以读取目前已解锁动物列表
     }
 
     void Start()
     {
-        _optionCount = _wheelOptions.Length;
         _screenCenter = new Vector2(Screen.width / 2f, Screen.height / 2f);
         _playerController = FindObjectOfType<PlayerController>();
     }
@@ -124,7 +134,7 @@ public class FormWheelController : MonoBehaviour
         // 执行选中逻辑
         if (_currentSelection > 0 && _currentSelection < _rankedOptions.Count)
         {
-            FormType selectedForm = (FormType)(_currentSelection - 1);
+            FormType selectedForm = _unlockedFormTypes[_currentSelection - 1];
             Debug.Log($"UI: Selected Form: {selectedForm}");
             _playerController.SwitchToFormByType(selectedForm);
         }
@@ -163,15 +173,15 @@ public class FormWheelController : MonoBehaviour
         float angle = Mathf.Atan2(direction.x, direction.y) * Mathf.Rad2Deg;
         if (angle < 0f) angle += 360f;
 
-        float optionAngle = 360f / _optionCount;
+        int totalCount = _wheelOptions.Length;
+        float optionAngle = 360f / totalCount;
         int tempCount = Mathf.RoundToInt(angle / optionAngle);
-        if (tempCount >= _optionCount) tempCount = 0;
+        if (tempCount >= totalCount) tempCount = 0;
 
-        // 确保索引在已解锁选项范围内
+        // 夹紧到已解锁选项范围内
         if (tempCount >= _rankedOptions.Count)
         {
-            // 如果选中的索引超出已解锁范围，选择最近的有效项（这里简化为选最后一个或取消）
-            _currentSelection = (_optionCount - tempCount > tempCount - _rankedOptions.Count + 1)
+            _currentSelection = (totalCount - tempCount > tempCount - _rankedOptions.Count + 1)
                 ? _rankedOptions.Count - 1
                 : 0;
         }
@@ -191,7 +201,7 @@ public class FormWheelController : MonoBehaviour
 
             // 更新文字
             if (_currentSelection > 0)
-                _selectedOptionText.text = ((FormType)(_currentSelection - 1)).ToString();
+                _selectedOptionText.text = _unlockedFormTypes[_currentSelection - 1].ToString();
             else
                 _selectedOptionText.text = "Cancel";
         }
@@ -200,10 +210,10 @@ public class FormWheelController : MonoBehaviour
     // ---------- 事件监听：解锁新形态 ----------
     private void AddUnlockedForm(FormType form)
     {
-        if (!unlockedForms.Contains(form))
+        if (!_unlockedFormTypes.Contains(form) && _formTypeToWheelOption.TryGetValue(form, out var option))
         {
-            unlockedForms.Add(form);
-            _rankedOptions.Add(_wheelOptions[(int)form + 1]);
+            _unlockedFormTypes.Add(form);
+            _rankedOptions.Add(option);
         }
     }
 }

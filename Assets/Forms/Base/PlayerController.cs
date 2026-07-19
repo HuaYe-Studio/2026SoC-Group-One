@@ -6,13 +6,10 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private BaseForm[] allForms;
     [SerializeField] private int activeFormIndex;
 
-    [Header("Form Switch Keys")]
-    [SerializeField] private KeyCode[] formSwitchKeys = { KeyCode.Alpha1, KeyCode.Alpha2, KeyCode.Alpha3, KeyCode.Alpha4 };
-
     public Transform SpawnedObjectContainer { get; private set; }
 
     private Dictionary<FormType, int> formTypeToIndex = new Dictionary<FormType, int>();
-    private HashSet<int> unlockedFormIndices = new HashSet<int>();
+    private HashSet<FormType> unlockedForms = new HashSet<FormType>();
 
     public BaseForm ActiveForm => (allForms != null && activeFormIndex < allForms.Length)
         ? allForms[activeFormIndex]
@@ -50,17 +47,22 @@ public class PlayerController : MonoBehaviour
             allForms[i].Initialize(this);
             allForms[i].gameObject.SetActive(false);
 
-            FormType formType = GetFormTypeForIndex(i);
+            FormType formType = ResolveFormType(allForms[i], i);
             formTypeToIndex[formType] = i;
         }
 
-        unlockedFormIndices.Add(0);
+        unlockedForms.Add(FormType.Slime);
     }
 
-    private FormType GetFormTypeForIndex(int index)
+    private FormType ResolveFormType(BaseForm form, int index)
     {
-        if (allForms[index] is SlimeForm) return FormType.Slime;
-        if (allForms[index] is FrogForm) return FormType.Frog;
+        FormType declared = form.FormType;
+        // 如果 FormType 已在 Inspector 中显式配置过（非默认值或类型匹配），直接使用
+        if (!formTypeToIndex.ContainsKey(declared))
+            return declared;
+        // 回退：Inspector 未配置时通过类型推断
+        if (form is SlimeForm) return FormType.Slime;
+        if (form is FrogForm) return FormType.Frog;
         return (FormType)index;
     }
 
@@ -89,18 +91,16 @@ public class PlayerController : MonoBehaviour
 
     private void AddNewForm(FormType formType)
     {
-        if (formTypeToIndex.TryGetValue(formType, out int index))
+        if (formTypeToIndex.ContainsKey(formType))
         {
-            unlockedFormIndices.Add(index);
-            Debug.Log($"3C: Unlocked form [{formType}] at index {index}");
+            unlockedForms.Add(formType);
+            Debug.Log($"3C: Unlocked form [{formType}]");
         }
     }
 
     public bool IsFormUnlocked(FormType formType)
     {
-        if (formTypeToIndex.TryGetValue(formType, out int index))
-            return unlockedFormIndices.Contains(index);
-        return false;
+        return unlockedForms.Contains(formType);
     }
 
     public void SwitchToFormByType(FormType formType)
@@ -132,8 +132,8 @@ public class PlayerController : MonoBehaviour
     {
         if (index < 0 || index >= allForms.Length) return;
         if (index == activeFormIndex) return;
-        if (!unlockedFormIndices.Contains(index)) return;
         if (allForms[index] == null) return;
+        if (!unlockedForms.Contains(allForms[index].FormType)) return;
 
         if (ActiveForm != null)
         {
@@ -152,16 +152,20 @@ public class PlayerController : MonoBehaviour
     {
         if (allForms == null || allForms.Length <= 1) return;
 
-        int next = activeFormIndex;
-        for (int attempt = 0; attempt < allForms.Length; attempt++)
+        var ordered = new List<int>();
+        for (int i = 0; i < allForms.Length; i++)
         {
-            next = (next + direction + allForms.Length) % allForms.Length;
-            if (unlockedFormIndices.Contains(next) && allForms[next] != null)
-            {
-                SwitchToForm(next);
-                return;
-            }
+            if (allForms[i] != null && unlockedForms.Contains(allForms[i].FormType))
+                ordered.Add(i);
         }
+
+        if (ordered.Count <= 1) return;
+
+        int curPos = ordered.IndexOf(activeFormIndex);
+        if (curPos < 0) return;
+
+        int nextPos = (curPos + direction + ordered.Count) % ordered.Count;
+        SwitchToForm(ordered[nextPos]);
     }
 
 }

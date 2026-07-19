@@ -27,4 +27,4 @@ public static class MockEventCenter
         
 }
 
-public enum FormType { Slime, Frog, Form3, Form4 }
+public enum FormType { Slime, Frog, BubbleFish, Form4 }
