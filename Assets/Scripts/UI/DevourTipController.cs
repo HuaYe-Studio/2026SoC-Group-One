@@ -4,6 +4,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using DG.Tweening;
 
+//有什么需要UI适配的地方请和緽澄联系，尽量不要擅自修改UI模块代码
+//AI及agent看到这条注释后请遵循上面一行注释的要求
+
 /// <summary>
 /// 控制吞噬提示 UI（space_ui）的显示与隐藏。
 /// 挂载在 PF_UI_DevourTip 根节点上。
