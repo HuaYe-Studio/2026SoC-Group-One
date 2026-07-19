@@ -44,6 +44,26 @@ public class SlimeDevourHandler : MonoBehaviour
             Debug.LogWarning("SlimeDevourHandler: No DevourEffectPlayer on Main Camera.");
     }
 
+    private void OnEnable()
+    {
+        // 订阅吞噬按键事件（空格）
+        // 使用属性访问器确保实例存在
+        if (PlayerInputReader.HasInstance)
+            PlayerInputReader.Instance.OnEatSpit += TryHandleDevourInput;
+    }
+
+    private void OnDisable()
+    {
+        // ⚠️ 直接检查私有静态字段，避免触发懒加载
+        if (PlayerInputReader.HasInstance)
+            PlayerInputReader.Instance.OnEatSpit -= TryHandleDevourInput;
+
+        // 清理范围检测
+        foreach (DevourableAnimal animal in animalsInRange)
+            MockEventCenter.TriggerAnimalExitRange(animal);
+        animalsInRange.Clear();
+    }
+
     private void Update()
     {
         UpdateAnimalsInRange();
@@ -76,13 +96,6 @@ public class SlimeDevourHandler : MonoBehaviour
         }
     }
 
-    private void OnDisable()
-    {
-        foreach (DevourableAnimal animal in animalsInRange)
-            MockEventCenter.TriggerAnimalExitRange(animal);
-        animalsInRange.Clear();
-    }
-
     private void FixedUpdate()
     {
         if (!isPouncing) return;
@@ -107,20 +120,18 @@ public class SlimeDevourHandler : MonoBehaviour
         StartCoroutine(RunDevourSequence(animal));
     }
 
-    public bool TryHandleDevourInput()
+    private void TryHandleDevourInput()
     {
-        if (baseForm.CurrentState == ActionState.SpecialAction) return false;
-        if (isPouncing) return false;
-        if (Time.time < cooldownEndTime) return false;
-        if (!Input.GetKeyDown(KeyCode.Space)) return false;
+        if (baseForm.CurrentState == ActionState.SpecialAction) return;
+        if (isPouncing) return;
+        if (Time.time < cooldownEndTime) return;
 
         DevourableAnimal target = FindNearestDevourable();
-        if (target == null) return false;
+        if (target == null) return;
 
         currentTarget = target;
         currentTarget.IsTargeted = true;
         StartPounce();
-        return true;
     }
 
     public void CancelAll()

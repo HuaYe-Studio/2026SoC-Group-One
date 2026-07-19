@@ -47,11 +47,8 @@ public class SlimeForm : BaseForm
             devourHandler.CancelAll();
     }
 
-    protected override void HandleInput()
-    {
-        if (devourHandler != null)
-            devourHandler.TryHandleDevourInput();
-    }
+    // 删除原来的 HandleInput 方法，因为吞噬输入已由事件驱动
+    // protected override void HandleInput() { }
 
     private void LateUpdate()
     {
