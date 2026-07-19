@@ -11,6 +11,10 @@ public enum ActionState
 
 public abstract class BaseForm : MonoBehaviour
 {
+    [Header("Identity")]
+    [SerializeField] private FormType formType;
+    public FormType FormType => formType;
+
     [Header("Movement")]
     [SerializeField] protected float moveSpeed = 5f;
 
