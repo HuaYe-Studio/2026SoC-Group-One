@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.InputSystem;   // 必须添加！
 
 public class FrogForm : BaseForm
 {
@@ -24,8 +23,8 @@ public class FrogForm : BaseForm
     {
         if (PlayerInputReader.HasInstance)
         {
-            PlayerInputReader.Instance.Ability1Action.started += OnAbilityPressed;
-            PlayerInputReader.Instance.Ability1Action.canceled += OnAbilityReleased;
+            PlayerInputReader.Instance.OnAbility1Started += OnAbilityPressed;
+            PlayerInputReader.Instance.OnAbility1Canceled += OnAbilityReleased;
         }
     }
 
@@ -33,17 +32,17 @@ public class FrogForm : BaseForm
     {
         if (PlayerInputReader.HasInstance)
         {
-            PlayerInputReader.Instance.Ability1Action.started -= OnAbilityPressed;
-            PlayerInputReader.Instance.Ability1Action.canceled -= OnAbilityReleased;
+            PlayerInputReader.Instance.OnAbility1Started -= OnAbilityPressed;
+            PlayerInputReader.Instance.OnAbility1Canceled -= OnAbilityReleased;
         }
     }
 
-    private void OnAbilityPressed(InputAction.CallbackContext ctx)
+    private void OnAbilityPressed()
     {
         if (CanJump()) DoJump();
     }
 
-    private void OnAbilityReleased(InputAction.CallbackContext ctx)
+    private void OnAbilityReleased()
     {
         ApplyJumpCut();
     }
