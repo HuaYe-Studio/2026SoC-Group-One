@@ -17,7 +17,7 @@ GameObject:
   - component: {fileID: -4986256269079389672}
   - component: {fileID: 4664454892179609109}
   - component: {fileID: -8152437610293847561}
-  - component: {fileID: -9283746501928374650}
+  - component: {fileID: -9223372036854775808}
   - component: {fileID: 3274312556539779992}
   m_Layer: 7
   m_Name: Frog
@@ -268,6 +268,49 @@ MonoBehaviour:
   _idleHopIntervalMin: 1.5
   _idleHopIntervalMax: 4
   _animator: {fileID: 4469829590964368041}
+--- !u!114 &-8152437610293847561
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1371001067666427009}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7755a31e93841d42ac76f496e14e700, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _enableDebugLog: 0
+--- !u!114 &-9223372036854775808
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1371001067666427009}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 77d2284fb26a85b4380ae6d804db4446, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _threatRadius: 8
+  _threatLayer:
+    serializedVersion: 2
+    m_Bits: 64
+  _fleeRadius: 5
+  _foodRadius: 10
+  _foodLayer:
+    serializedVersion: 2
+    m_Bits: 0
+  _groundCheckDistance: 1.5
+  _wallCheckDistance: 1
+  _groundLayer:
+    serializedVersion: 2
+    m_Bits: 8
+  _fellowRadius: 5
+  _fellowLayer:
+    serializedVersion: 2
+    m_Bits: 0
 --- !u!114 &3274312556539779992
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -283,46 +326,3 @@ MonoBehaviour:
   _restDurationMin: 3
   _restDurationMax: 6
   _enableDebugLog: 0
---- !u!114 &-8152437610293847561
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1371001067666427009}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d7755a31e93841d42ac76f496e14e700, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  _enableDebugLog: 0
---- !u!114 &-9283746501928374650
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1371001067666427009}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 77d2284fb26a85b4380ae6d804db4446, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  _threatRadius: 8
-  _threatLayer:
-    serializedVersion: 2
-    m_Bits: 0
-  _fleeRadius: 5
-  _foodRadius: 10
-  _foodLayer:
-    serializedVersion: 2
-    m_Bits: 0
-  _groundCheckDistance: 1.5
-  _wallCheckDistance: 1
-  _groundLayer:
-    serializedVersion: 2
-    m_Bits: 0
-  _fellowRadius: 5
-  _fellowLayer:
-    serializedVersion: 2
-    m_Bits: 0
