@@ -10,21 +10,36 @@ using UnityEngine;
 public class BTFleeAction : BTNode
 {
     private readonly FrogAI _frog;
+    private readonly AnimalBase _animal; // 通用基类引用（用于非青蛙动物）
 
     // ---- 内部状态 ----
     private int _urgencyLevel;          // 紧迫度等级：0=普通 1=慌张 2=恐慌
     private bool _wasGroundedLastFrame;
+    private float _nextMoveTime;        // 永不着地动物（如鱼）用的移动冷却计时
+    private float _pushUntil;           // 极近距离强推逃生截止时间
+    private float _pushDirection;       // 强推时的逃跑方向
     private Vector2 _lastPlayerPos;
-    private Vector2 _playerVelocity;    // 通过两帧位置差估算的玩家速度
+    private Vector2 _playerVelocity;
 
     // ---- 常量 ----
-    private const float UrgencyUpDistance = 3.5f;    // 玩家在此距离内每次落地都会提升紧迫度
-    private const float UrgencyDecayDistance = 8f;    // 玩家超过此距离后逐步降低紧迫度
-    private const int UrgencyMaxLevel = 2;            // 最高恐慌等级
+    private const float UrgencyUpDistance = 3.5f;
+    private const float UrgencyDecayDistance = 8f;
+    private const int UrgencyMaxLevel = 2;
+    private const float ContinuousMoveInterval = 0.5f; // 永不着地动物每 0.5s 更新一次逃跑方向
+    private const float PushDuration = 1.0f;            // 极近距离强推持续时长
+    private const float PushThreshold = 0.3f;           // 玩家和鱼横向差小于此值时触发强推
 
+    /// <summary>青蛙专用构造（使用 PerformHop + 地形感知）。</summary>
     public BTFleeAction(FrogAI frog)
     {
         _frog = frog;
+        _animal = frog;
+    }
+
+    /// <summary>通用动物构造（使用 PerformMove，无地形感知）。</summary>
+    public BTFleeAction(AnimalBase animal)
+    {
+        _animal = animal;
     }
 
     /// <summary>当前紧迫度等级（0=普通，1=慌张，2=恐慌）。仅用于调试。</summary>
@@ -35,49 +50,86 @@ public class BTFleeAction : BTNode
 
     public override State Tick()
     {
-        // ---- 追踪玩家速度（无论是否被检测到都更新） ----
+        // ---- 追踪玩家速度 ----
         UpdatePlayerVelocity();
 
         // ---- 逃脱评估 ----
-        if (!_frog.IsPlayerDetected || _frog.PlayerDistance > _frog.FleeSafeDistance)
+        if (!_animal.IsPlayerDetected || _animal.PlayerDistance > _animal.FleeSafeDistance)
         {
-            _frog.StopMoving();
-            _frog.PlayAnimation("Idle");
+            _animal.StopMoving();
+            _animal.PlayAnimation("Idle");
             ResetInternalState();
             return State.Success;
         }
 
-        // ---- 着地瞬间：提升紧迫度 + 起跳 ----
-        if (_frog.IsGrounded && !_wasGroundedLastFrame)
+        // ---- 极近距离强推：防止鱼卡在玩家正上方原地抖 ----
+        // 玩家和鱼横向差极小时，方向判断 Sign(toFlee.x) 会变成 0，导致不移动
+        // 此时先强制朝玩家反方向推一段距离，脱离死区
+        float horizontalGap = _animal.PlayerDirection.x;
+        if (Mathf.Abs(horizontalGap) < PushThreshold && Time.time >= _pushUntil)
+        {
+            _pushDirection = -Mathf.Sign(horizontalGap) == 0 ? -1f : -Mathf.Sign(horizontalGap);
+            _pushUntil = Time.time + PushDuration;
+        }
+
+        if (Time.time < _pushUntil)
+        {
+            // 强推阶段：以基础速度朝固定方向跑，不每 0.5s 换向
+            float speedMult = _animal.FleeSpeedMultiplier;
+            if (_frog != null)
+                _frog.PerformHop(_pushDirection, speedMult, "Flee");
+            else
+                _animal.PerformMove(_pushDirection, speedMult);
+
+            _wasGroundedLastFrame = _animal.IsGrounded;
+            return State.Running;
+        }
+
+        // ---- 移动触发 ----
+        // 青蛙等跳跃动物：着地瞬间触发一次跳
+        bool justLanded = _animal.IsGrounded && !_wasGroundedLastFrame;
+
+        // 鱼等永不着地动物：每 0.5s 定时更新逃跑方向，而不是只触发一次就停住
+        bool timerElapsed = _animal.IsGrounded && _wasGroundedLastFrame && Time.time >= _nextMoveTime;
+
+        if (justLanded || timerElapsed)
         {
             EscalateUrgency();
-            PerformFleeHop();
+            PerformFleeMove();
+
+            if (timerElapsed)
+                _nextMoveTime = Time.time + ContinuousMoveInterval;
         }
-        _wasGroundedLastFrame = _frog.IsGrounded;
+
+        _wasGroundedLastFrame = _animal.IsGrounded;
 
         return State.Running;
     }
 
     /// <summary>
-    /// 执行一次智能逃跑跳跃。
-    /// 计算方向（含预测+地形感知）、速度倍率（含紧迫度加成）、播放 Flee 动画。
+    /// 执行一次智能逃跑移动。
+    /// 青蛙：计算方向（含预测+地形感知）、速度倍率，调用 PerformHop。
+    /// 其他动物：直接朝反方向 PerformMove。
     /// </summary>
-    private void PerformFleeHop()
+    private void PerformFleeMove()
     {
         // 1. 基础逃跑方向（远离玩家）
-        float baseFleeDirection = -Mathf.Sign(_frog.PlayerDirection.x);
+        float baseFleeDirection = -Mathf.Sign(_animal.PlayerDirection.x);
 
         // 2. 玩家预测：玩家快速接近时，额外偏转逃跑方向
         float predictedDirection = PredictFleeDirection(baseFleeDirection);
 
-        // 3. 地形感知：前方有墙 → 尝试反向跳；前方有沟 → 尝试更远跨越跳
-        float finalDirection = ApplyTerrainAwareness(predictedDirection);
+        // 3. 地形感知（仅青蛙）：前方有墙 → 尝试反向跳；前方有沟 → 尝试更远跨越跳
+        float finalDirection = _frog != null ? ApplyTerrainAwareness(predictedDirection) : predictedDirection;
 
         // 4. 计算速度倍率（含紧迫度加成）
         float speedMultiplier = CalculateSpeedMultiplier();
 
-        // 5. 起跳
-        _frog.PerformHop(finalDirection, speedMultiplier, "Flee");
+        // 5. 执行移动
+        if (_frog != null)
+            _frog.PerformHop(finalDirection, speedMultiplier, "Flee");
+        else
+            _animal.PerformMove(finalDirection, speedMultiplier);
     }
 
     /// <summary>
@@ -89,9 +141,8 @@ public class BTFleeAction : BTNode
         if (Mathf.Abs(_playerVelocity.x) < 0.5f)
             return baseDirection;
 
-        // 玩家朝自己移动时（PlayerDirection.x > 0 表示玩家在右侧，玩家 velocity.x < 0 表示玩家向左移动即朝自己）
-        bool playerChasing = (_frog.PlayerDirection.x > 0 && _playerVelocity.x < 0)
-                          || (_frog.PlayerDirection.x < 0 && _playerVelocity.x > 0);
+        bool playerChasing = (_animal.PlayerDirection.x > 0 && _playerVelocity.x < 0)
+                          || (_animal.PlayerDirection.x < 0 && _playerVelocity.x > 0);
 
         if (!playerChasing)
             return baseDirection;
@@ -129,9 +180,9 @@ public class BTFleeAction : BTNode
     }
 
     /// <summary>
-    /// 根据紧迫度等级计算最终跳跃速度倍率。
+    /// 根据紧迫度等级计算最终速度倍率。
     /// 基础倍率 × 紧迫度加成（1.0x / 1.33x / 1.67x）。
-    /// 前方有沟时额外 ×1.3 尝试跨越。
+    /// 青蛙前方有沟时额外 ×1.3 尝试跨越。
     /// </summary>
     private float CalculateSpeedMultiplier()
     {
@@ -139,10 +190,10 @@ public class BTFleeAction : BTNode
         float[] urgencyMultipliers = { 1f, 1.33f, 1.67f };
         float urgencyBonus = urgencyMultipliers[Mathf.Clamp(_urgencyLevel, 0, UrgencyMaxLevel)];
 
-        // 前方有沟 → 额外 1.3 倍尝试跨越
-        float gapBonus = (_frog.Monitor != null && _frog.Monitor.IsGapAhead) ? 1.3f : 1f;
+        // 前方有沟 → 额外 1.3 倍尝试跨越（仅青蛙）
+        float gapBonus = (_frog != null && _frog.Monitor != null && _frog.Monitor.IsGapAhead) ? 1.3f : 1f;
 
-        return _frog.FleeSpeedMultiplier * urgencyBonus * gapBonus;
+        return _animal.FleeSpeedMultiplier * urgencyBonus * gapBonus;
     }
 
     /// <summary>
@@ -152,11 +203,11 @@ public class BTFleeAction : BTNode
     /// </summary>
     private void EscalateUrgency()
     {
-        if (_frog.PlayerDistance < UrgencyUpDistance)
+        if (_animal.PlayerDistance < UrgencyUpDistance)
         {
             _urgencyLevel = Mathf.Min(_urgencyLevel + 1, UrgencyMaxLevel);
         }
-        else if (_frog.PlayerDistance > UrgencyDecayDistance)
+        else if (_animal.PlayerDistance > UrgencyDecayDistance)
         {
             _urgencyLevel = Mathf.Max(_urgencyLevel - 1, 0);
         }
@@ -167,17 +218,16 @@ public class BTFleeAction : BTNode
     /// </summary>
     private void UpdatePlayerVelocity()
     {
-        if (!_frog.IsPlayerDetected)
+        if (!_animal.IsPlayerDetected)
         {
             _playerVelocity = Vector2.zero;
             return;
         }
 
-        Vector2 currentPlayerPos = _frog.transform.position + (Vector3)_frog.PlayerDirection * _frog.PlayerDistance;
+        Vector2 currentPlayerPos = _animal.transform.position + (Vector3)_animal.PlayerDirection * _animal.PlayerDistance;
 
         if (Time.frameCount > 1)
         {
-            // 只有帧数 > 1 时才能计算差值（防止第一帧除零）
             _playerVelocity = (currentPlayerPos - _lastPlayerPos) / Time.deltaTime;
         }
 
@@ -192,6 +242,7 @@ public class BTFleeAction : BTNode
     {
         _urgencyLevel = 0;
         _wasGroundedLastFrame = false;
+        _nextMoveTime = 0f;
         _playerVelocity = Vector2.zero;
         _lastPlayerPos = Vector2.zero;
     }
