@@ -18,6 +18,7 @@ public class FrogBT : MonoBehaviour
 
     private FrogAI _frog;
     private BTNode _root;
+    private BTFleeAction _fleeAction; // 持有引用以便调试时读取内部状态
 
     // 调试用：记录上次日志的分支/结果/着地，只在变化时输出
     private string _lastBranch;
@@ -42,9 +43,10 @@ public class FrogBT : MonoBehaviour
     private BTNode BuildTree()
     {
         // 分支1：检测到玩家 → 逃跑（最高优先级）
+        _fleeAction = new BTFleeAction(_frog);
         BTNode fleeBranch = new BTSequence(
             new BTCondition(() => _frog.IsPlayerDetected),
-            new BTFleeAction(_frog));
+            _fleeAction);
 
         // 分支2：检测到食物 → 捕食
         BTNode pounceBranch = new BTSequence(
@@ -76,6 +78,7 @@ public class FrogBT : MonoBehaviour
 
     /// <summary>
     /// 只在分支、结果或着地状态发生变化时输出日志，避免刷屏。
+    /// 逃跑时额外输出紧迫度/玩家速度/地形信息。
     /// </summary>
     private void LogStateChange(BTNode.State result)
     {
@@ -88,7 +91,13 @@ public class FrogBT : MonoBehaviour
         if (branch == _lastBranch && result == _lastResult && grounded == _lastGrounded)
             return;
 
-        Debug.Log($"{gameObject.name} BT: 分支[{branch}] 结果[{result}] 着地[{grounded}]");
+        string extra = "";
+        if (branch == "Flee逃跑" && _fleeAction != null)
+            extra = $" 紧迫度[{_fleeAction.UrgencyLevel}] 玩家速度[{_fleeAction.PlayerVelocity.x:F1}]" +
+                    $" 墙[{( _frog.Monitor != null && _frog.Monitor.IsWallAhead ? "有" : "无" )}]" +
+                    $" 沟[{( _frog.Monitor != null && _frog.Monitor.IsGapAhead ? "有" : "无" )}]";
+
+        Debug.Log($"{gameObject.name} BT: 分支[{branch}] 结果[{result}] 着地[{grounded}]{extra}");
         _lastBranch = branch;
         _lastResult = result;
         _lastGrounded = grounded;
