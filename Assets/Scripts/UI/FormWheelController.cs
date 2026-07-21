@@ -16,17 +16,15 @@ public class FormWheelController : MonoBehaviour
     [SerializeField] private GameObject _wheelPanel;                // 轮盘面板的引用
     [SerializeField] private float _centerRound = 0f;               // 中心区域的半径
     [SerializeField] private float _selectionRadius = 1000f;        // 选项区域的半径
-    [SerializeField] private float _wheelPanelRadius = 1f;          // 轮盘面板的以屏幕中心为圆心的半径比例(以150为基准)
-    [SerializeField] private GameObject[] _optionsPositions;        // 选项位置的数组，按顺时针顺序排列
+    [SerializeField] private float _wheelPanelRadius = 1f;          // 轮盘面板的以屏幕中心为圆心的半径比例
     [SerializeField] private GameObject[] _wheelOptions;            // 轮盘面板的选项数组[按FormType顺序排列,但第0个为取消区域]
-    [SerializeField] private FormType[] _wheelOptionFormTypes;      // 与_wheelOptions平行，显式声明每个选项对应的FormType（索引0忽略）
     [SerializeField] private GameObject _borader;                   // 选项的边框
     [SerializeField] private float _duration = 0.2f;                // 动效的持续时间
     [SerializeField] private float _scaleFactor = 1.6f;             // 选中选项的缩放因子
     [SerializeField] private TMPro.TMP_Text _selectedOptionText;    // 显示选中选项的文本
 
     private int _currentSelection, _previousSelection = -1;
-    private Vector2 _screenCenter;
+    private Vector2 _screenCenter;//屏幕中心坐标
     private List<GameObject> _rankedOptions = new List<GameObject>();
     private List<FormType> _unlockedFormTypes = new List<FormType>();
     private Dictionary<FormType, GameObject> _formTypeToWheelOption = new Dictionary<FormType, GameObject>();
@@ -98,20 +96,25 @@ public class FormWheelController : MonoBehaviour
     // ---------- 核心方法 ----------
     private void ShowWheelPanel()
     {
+        _screenCenter = new Vector2(Screen.width/2f,Screen.height/2f);//更新屏幕中心的位置
         _currentSelection = -1;
         _previousSelection = -1;
         _isWheelOpen = true;
         _wheelPanel.SetActive(true);
+        float radius = _wheelPanelRadius * (150f/1440f)*Screen.height;//计算轮盘半径
+        float anglePerOption = 360f / _wheelOptions.Length;
         Time.timeScale = 0f; // 暂停游戏
 
         // 展开动画：每个选项从中心移动到目标位置
         for (int i = 0; i < _rankedOptions.Count; i++)
         {
+            float angle = anglePerOption * i * Mathf.Deg2Rad;
+            Vector2 targetPosition = _screenCenter + new Vector2(Mathf.Sin(angle), Mathf.Cos(angle)) * radius;//获得选项的目标位置，这里的（x，y）三角函数坐标没问题
+
             _rankedOptions[i].SetActive(true);
             _rankedOptions[i].transform.position = _screenCenter;
-            Vector2 directionToTarget = ((Vector2)_optionsPositions[i].transform.position - _screenCenter) * _wheelPanelRadius;
             _rankedOptions[i].transform
-                .DOMove(_screenCenter + directionToTarget, _duration)
+                .DOMove(targetPosition, _duration)
                 .SetEase(Ease.OutBack)
                 .SetUpdate(true); // 忽略 Time.timeScale
         }
@@ -169,7 +172,7 @@ public class FormWheelController : MonoBehaviour
             return;
         }
 
-        // 计算角度（0~360）
+        // 计算鼠标角度（0~360）
         float angle = Mathf.Atan2(direction.x, direction.y) * Mathf.Rad2Deg;
         if (angle < 0f) angle += 360f;
 
@@ -217,3 +220,12 @@ public class FormWheelController : MonoBehaviour
         }
     }
 }
+
+/*
+//重构轮盘选项，未完成
+public struct WheelOption
+{
+    public Vector2 targetPostion;
+
+}
+*/
