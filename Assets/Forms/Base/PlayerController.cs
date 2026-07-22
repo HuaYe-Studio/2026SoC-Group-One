@@ -145,6 +145,8 @@ public class PlayerController : MonoBehaviour
         allForms[index].gameObject.SetActive(true);
         allForms[index].OnFormActivated();
 
+        MockEventCenter.TriggerFormChange((FormType)index);
+
         Debug.Log($"3C: Switched to form [{index}]");
     }
 

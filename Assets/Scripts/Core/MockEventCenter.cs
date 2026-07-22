@@ -24,6 +24,13 @@ public static class MockEventCenter
     {
         OnAnimalExitRange?.Invoke(animal);
     }
+
+    public static event Action<FormType> OnFormChanged;
+
+    public static void TriggerFormChange(FormType formType)
+    {
+        OnFormChanged?.Invoke(formType);
+    }
         
 }
 
