@@ -91,7 +91,7 @@ public class FrogForm : BaseForm
     {
         if (IsGrounded && (currentState == ActionState.Falling || currentState == ActionState.Jumping))
         {
-            currentState = ActionState.Idle;
+            currentState = Mathf.Abs(rb.velocity.x) > 0.1f ? ActionState.Moving : ActionState.Idle;
             _isBigJump = false;
         }
     }
