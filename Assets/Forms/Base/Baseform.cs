@@ -135,12 +135,15 @@ public abstract class BaseForm : MonoBehaviour
     {
         if (currentState == ActionState.Jumping && rb.velocity.y < 0)
             currentState = ActionState.Falling;
+
+        if (!IsGrounded && (currentState == ActionState.Idle || currentState == ActionState.Moving))
+            currentState = ActionState.Falling;
     }
 
     protected virtual void HandleLanding()
     {
         if (IsGrounded && (currentState == ActionState.Falling || currentState == ActionState.Jumping))
-            currentState = ActionState.Idle;
+            currentState = Mathf.Abs(rb.velocity.x) > 0.1f ? ActionState.Moving : ActionState.Idle;
     }
 
     protected virtual void ApplyGravity()

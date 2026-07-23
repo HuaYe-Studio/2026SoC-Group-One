@@ -116,16 +116,6 @@ public class PlayerController : MonoBehaviour
         if (ActiveForm != null)
             ActiveForm.ProcessInput(horizontal);
 
-        HandleFormSwitch();
-    }
-
-    private void HandleFormSwitch()
-    {
-        float scroll = PlayerInputReader.Instance.ScrollValue;
-        if (scroll > 0.1f)
-            CycleForm(1);
-        else if (scroll < -0.1f)
-            CycleForm(-1);
     }
 
     public void SwitchToForm(int index)
