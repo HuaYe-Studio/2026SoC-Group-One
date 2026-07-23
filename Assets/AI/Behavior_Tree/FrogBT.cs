@@ -51,14 +51,24 @@ public class FrogBT : MonoBehaviour
         // 分支2：检测到食物 → 捕食
         BTNode pounceBranch = new BTSequence(
             new BTCondition(() => _frog.IsFoodDetected),
-            new BTPounceAction(_frog));
+            new BTChaseAction(_frog, 1.8f, 0.6f));
 
         // 分支3：默认觅食循环 → 落地后先休息几秒 → 跳一次 → 落地再休息，循环
         BTNode forageBranch = new BTSequence(
             new BTRestAction(_frog, _restDurationMin, _restDurationMax),
-            new BTHopAction(_frog, () => _enableDebugLog));
+            new BTMoveAction(_frog, GetForageDirection, 1f, () => _enableDebugLog));
 
         return new BTSelector(fleeBranch, pounceBranch, forageBranch);
+    }
+
+    /// <summary>
+    /// 觅食跳跃方向：70% 概率朝出生点，30% 纯随机。
+    /// </summary>
+    private float GetForageDirection()
+    {
+        Vector2 toSpawn = _frog.SpawnPosition - (Vector2)_frog.transform.position;
+        float biasDirection = Mathf.Sign(toSpawn.x);
+        return Random.value < 0.7f ? biasDirection : (Random.value < 0.5f ? 1f : -1f);
     }
 
     private void Update()
