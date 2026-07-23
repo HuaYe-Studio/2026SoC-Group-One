@@ -26,7 +26,7 @@ public class FormWheelController : MonoBehaviour
     private int _currentSelection, _previousSelection = -1;
     private Vector2 _screenCenter;//屏幕中心坐标
     private List<GameObject> _rankedOptions = new List<GameObject>();
-    private List<FormType> _unlockedFormTypes = new List<FormType>();
+    public static List<FormType> unlockedFormTypes = new List<FormType>();
     private Dictionary<FormType, GameObject> _formTypeToWheelOption = new Dictionary<FormType, GameObject>();
     private PlayerController _playerController;
     private bool _isWheelOpen;
@@ -44,11 +44,11 @@ public class FormWheelController : MonoBehaviour
 
         // 初始化已解锁形态列表和排序后的选项数组
         _rankedOptions.Add(_wheelOptions[0]); // 取消区域，序号0
-        if (_unlockedFormTypes.Count == 0)
+        if (unlockedFormTypes.Count == 0)
         {
             if (_formTypeToWheelOption.TryGetValue(FormType.Slime, out var slimeOption))
             {
-                _unlockedFormTypes.Add(FormType.Slime);
+                unlockedFormTypes.Add(FormType.Slime);
                 _rankedOptions.Add(slimeOption);
             }
         }
@@ -96,12 +96,12 @@ public class FormWheelController : MonoBehaviour
     // ---------- 核心方法 ----------
     private void ShowWheelPanel()
     {
-        _screenCenter = new Vector2(Screen.width/2f,Screen.height/2f);//更新屏幕中心的位置
+        _screenCenter = new Vector2(Screen.width / 2f, Screen.height / 2f);//更新屏幕中心的位置
         _currentSelection = -1;
         _previousSelection = -1;
         _isWheelOpen = true;
         _wheelPanel.SetActive(true);
-        float radius = _wheelPanelRadius * (150f/1440f)*Screen.height;//计算轮盘半径
+        float radius = _wheelPanelRadius * (150f / 1440f) * Screen.height;//计算轮盘半径
         float anglePerOption = 360f / _wheelOptions.Length;
         Time.timeScale = 0f; // 暂停游戏
 
@@ -137,7 +137,7 @@ public class FormWheelController : MonoBehaviour
         // 执行选中逻辑
         if (_currentSelection > 0 && _currentSelection < _rankedOptions.Count)
         {
-            FormType selectedForm = _unlockedFormTypes[_currentSelection - 1];
+            FormType selectedForm = unlockedFormTypes[_currentSelection - 1];
             Debug.Log($"UI: Selected Form: {selectedForm}");
             _playerController.SwitchToFormByType(selectedForm);
         }
@@ -204,7 +204,7 @@ public class FormWheelController : MonoBehaviour
 
             // 更新文字
             if (_currentSelection > 0)
-                _selectedOptionText.text = _unlockedFormTypes[_currentSelection - 1].ToString();
+                _selectedOptionText.text = unlockedFormTypes[_currentSelection - 1].ToString();
             else
                 _selectedOptionText.text = "Cancel";
         }
@@ -213,9 +213,9 @@ public class FormWheelController : MonoBehaviour
     // ---------- 事件监听：解锁新形态 ----------
     private void AddUnlockedForm(FormType form)
     {
-        if (!_unlockedFormTypes.Contains(form) && _formTypeToWheelOption.TryGetValue(form, out var option))
+        if (!unlockedFormTypes.Contains(form) && _formTypeToWheelOption.TryGetValue(form, out var option))
         {
-            _unlockedFormTypes.Add(form);
+            unlockedFormTypes.Add(form);
             _rankedOptions.Add(option);
         }
     }
