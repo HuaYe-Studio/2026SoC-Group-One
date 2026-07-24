@@ -168,7 +168,7 @@ MonoBehaviour:
   _formImage: {fileID: 4050002540177904479}
   _roundBorader: {fileID: 2658535886207679847}
   _formIcons:
-  - {fileID: 21300000, guid: 2bf69191532884b4fbb5b4ae0a40e99e, type: 3}
+  - {fileID: 21300000, guid: ac941ce9f1ec53b4c85cd75c8bd0d427, type: 3}
   - {fileID: 21300000, guid: b9005a52b0727524ca963aa00c9a3392, type: 3}
   _progressImage:
   - {fileID: 4419700849510927607}

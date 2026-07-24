@@ -47,9 +47,6 @@ public class FrogForm : BaseForm
         ApplyJumpCut();
     }
 
-    // 删除原有的 HandleInput 方法，因为已由事件替代
-    // protected override void HandleInput() { }
-
     public override void DoMovement(float horizontal)
     {
         if (!CanMove()) return;

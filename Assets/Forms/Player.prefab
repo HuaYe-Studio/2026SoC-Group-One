@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 7125327682567490769}
   - component: {fileID: 2091084545104360566}
   - component: {fileID: 7002593809756338887}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: SlimeForm
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -77,7 +77,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: 2bf69191532884b4fbb5b4ae0a40e99e, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9c58e4f5f4a3e1842a5b7e409f0786a3, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -120,7 +120,7 @@ BoxCollider2D:
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: -0.01564397, y: 0.014079511}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -131,7 +131,7 @@ BoxCollider2D:
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 1, y: 1}
+  m_Size: {x: 0.8247876, y: 0.702765}
   m_EdgeRadius: 0
 --- !u!114 &7125327682567490769
 MonoBehaviour:
@@ -145,6 +145,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dd6817ff358d5ad4a94ee1da0f85abda, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  formType: 0
   moveSpeed: 5
   gravityScale: 1
   fallGravityMultiplier: 1.5
@@ -209,7 +210,8 @@ GameObject:
   - component: {fileID: 7412494972103317132}
   - component: {fileID: 9142873672165975866}
   - component: {fileID: 8842012382244513926}
-  m_Layer: 0
+  - component: {fileID: 389382289352285113}
+  m_Layer: 6
   m_Name: FrogForm
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -225,7 +227,7 @@ Transform:
   m_GameObject: {fileID: 5612210870665603907}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.215, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -272,7 +274,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 7482667652216324306, guid: 75f5f34dc1b5347e0b8351032682f224, type: 3}
+  m_Sprite: {fileID: 21300000, guid: b9005a52b0727524ca963aa00c9a3392, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -318,8 +320,8 @@ BoxCollider2D:
   m_Offset: {x: 0, y: 0.21133333}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0.5, y: 0.28866667}
-    oldSize: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    oldSize: {x: 1.6, y: 1.6}
     newSize: {x: 1, y: 1}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
@@ -340,6 +342,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 31e80c00c0ad53a4fb99dc3930d257b4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  formType: 0
   moveSpeed: 5
   gravityScale: 1
   fallGravityMultiplier: 1.5
@@ -352,6 +355,27 @@ MonoBehaviour:
   jumpForce: 10
   jumpCutMultiplier: 0.5
   airControlSpeed: 4
+--- !u!95 &389382289352285113
+Animator:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5612210870665603907}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: a10ede11550f4015973c57345f09ee8d, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &6837292219011752717
 GameObject:
   m_ObjectHideFlags: 0
@@ -363,7 +387,7 @@ GameObject:
   - component: {fileID: 2838083659676168268}
   - component: {fileID: 8139496476503272819}
   - component: {fileID: 1506354432520958816}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Player
   m_TagString: Player
   m_Icon: {fileID: 0}
@@ -403,7 +427,6 @@ MonoBehaviour:
   - {fileID: 7125327682567490769}
   - {fileID: 8842012382244513926}
   activeFormIndex: 0
-  formSwitchKeys: 31000000320000003300000034000000
 --- !u!50 &1506354432520958816
 Rigidbody2D:
   serializedVersion: 4
