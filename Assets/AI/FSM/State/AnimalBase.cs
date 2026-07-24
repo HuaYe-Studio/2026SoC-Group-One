@@ -44,6 +44,17 @@ public class AnimalBase : MonoBehaviour
     public Vector2 SpawnPosition => _spawnPosition;
 
     /// <summary>
+    /// 环境感知器，延迟获取。青蛙和鱼都挂载 EnvironmentMonitor。
+    /// </summary>
+    public EnvironmentMonitor Monitor { get; private set; }
+
+    /// <summary>
+    /// 当前动物的 Animator 引用。子类在 Awake 中赋值。
+    /// 供外部系统（如吞噬处理器）在 TimeScale=0 时临时切换更新模式并播放动画。
+    /// </summary>
+    public Animator Animator { get; protected set; }
+
+    /// <summary>
     /// 当前是否检测到玩家在探测范围内。
     /// </summary>
     public bool IsPlayerDetected { get; private set; }
@@ -89,6 +100,7 @@ public class AnimalBase : MonoBehaviour
         Fsm = GetComponent<FSM>();
         _rb = GetComponent<Rigidbody2D>();
         _spriteRenderer = GetComponent<SpriteRenderer>();
+        Monitor = GetComponent<EnvironmentMonitor>();
 
         _spawnPosition = transform.position;
 
@@ -154,7 +166,12 @@ public class AnimalBase : MonoBehaviour
         _rb.velocity = new Vector2(direction * _moveSpeed * speedMultiplier, _rb.velocity.y);
 
         if (_spriteRenderer != null && Mathf.Abs(direction) > 0.05f)
-            _spriteRenderer.flipX = direction < 0;
+        {
+            // 方向与上次朝向一致时不更新 flipX，防止每帧方向在 0 附近抖动导致翻转抽搐
+            bool wantFlipX = direction < 0;
+            if (wantFlipX != _spriteRenderer.flipX)
+                _spriteRenderer.flipX = wantFlipX;
+        }
     }
 
     /// <summary>
