@@ -22,6 +22,7 @@ public class SlimeDevourHandler : MonoBehaviour
 
     private DevourableAnimal currentTarget;
     private bool isPouncing;
+    private bool _devourSequenceRunning;
     private float pounceEndTime;
     private float cooldownEndTime;
 
@@ -106,6 +107,13 @@ public class SlimeDevourHandler : MonoBehaviour
             return;
         }
 
+        float dist = Vector2.Distance(transform.root.position, currentTarget.transform.position);
+        if (dist < 0.5f)
+        {
+            StartCoroutine(RunDevourSequence(currentTarget));
+            return;
+        }
+
         Vector2 toTarget = (currentTarget.transform.position - transform.root.position).normalized;
         rb.velocity = toTarget * pounceSpeed;
     }
@@ -116,6 +124,8 @@ public class SlimeDevourHandler : MonoBehaviour
 
         DevourableAnimal animal = other.GetComponent<DevourableAnimal>();
         if (animal != currentTarget) return;
+
+        if (_devourSequenceRunning) return;
 
         StartCoroutine(RunDevourSequence(animal));
     }
@@ -138,6 +148,7 @@ public class SlimeDevourHandler : MonoBehaviour
     {
         StopAllCoroutines();
         isPouncing = false;
+        _devourSequenceRunning = false;
         currentTarget = null;
         rb.velocity = Vector2.zero;
         Time.timeScale = 1f;
@@ -177,7 +188,7 @@ public class SlimeDevourHandler : MonoBehaviour
         isPouncing = true;
         pounceEndTime = Time.fixedTime + pounceMaxDuration;
         baseForm.SetActionState(ActionState.SpecialAction);
-        baseForm.SetAnimatorBool("IsDevouring", true);
+        baseForm.SetAnimatorBool("IsSwooping", true);
 
         Vector2 toTarget = (currentTarget.transform.position - transform.root.position).normalized;
         rb.velocity = toTarget * pounceSpeed;
@@ -189,16 +200,23 @@ public class SlimeDevourHandler : MonoBehaviour
         currentTarget = null;
         rb.velocity = Vector2.zero;
         baseForm.SetActionState(ActionState.Idle);
-        baseForm.SetAnimatorBool("IsDevouring", false);
+        baseForm.SetAnimatorBool("IsSwooping", false);
         cooldownEndTime = Time.time + cooldownSeconds;
     }
 
     private IEnumerator RunDevourSequence(DevourableAnimal animal)
     {
+        _devourSequenceRunning = true;
         isPouncing = false;
         rb.velocity = Vector2.zero;
 
+        // 记录吐出方向：B→A（飞扑反方向）
+        Vector2 spitDirection = (transform.root.position - animal.transform.position).normalized;
+
         yield return null;
+
+        // 动物进入被吞噬状态
+        animal.PlayBeingDevoured();
 
         if (baseForm.Animator != null)
             baseForm.Animator.updateMode = AnimatorUpdateMode.UnscaledTime;
@@ -215,8 +233,15 @@ public class SlimeDevourHandler : MonoBehaviour
         else
             yield return new WaitForSecondsRealtime(1.0f);
 
-        MockEventCenter.TriggerFormUnlock(animal.GrantedForm);
-        playerController.SwitchToFormByType(animal.GrantedForm);
+        bool isNewForm = !playerController.IsFormUnlocked(animal.GrantedForm);
+        if (isNewForm)
+        {
+            MockEventCenter.TriggerFormUnlock(animal.GrantedForm);
+            playerController.SwitchToFormByType(animal.GrantedForm);
+        }
+
+        // 吐出动物
+        animal.PlayBeingSpitOut(spitDirection);
 
         if (effectPlayer != null)
             yield return effectPlayer.PlayZoomOut();
@@ -228,10 +253,10 @@ public class SlimeDevourHandler : MonoBehaviour
         if (baseForm.Animator != null)
             baseForm.Animator.updateMode = AnimatorUpdateMode.Normal;
 
-        baseForm.SetAnimatorBool("IsDevouring", false);
-        Destroy(animal.gameObject);
+        baseForm.SetAnimatorBool("IsSwooping", false);
         baseForm.SetActionState(ActionState.Idle);
         currentTarget = null;
         cooldownEndTime = Time.time + cooldownSeconds;
+        _devourSequenceRunning = false;
     }
 }
