@@ -32,26 +32,23 @@ public class FrogAI : AnimalBase
     // Animator 参数：Int 枚举，0=Idle 1=Jump 2=Rest 3=Flee 4=Prey
     private const string AnimStateParam = "FROG_AnimState";
 
-    private EnvironmentMonitor _monitor;
     private Collider2D _collider;
     private readonly RaycastHit2D[] _groundHits = new RaycastHit2D[4];
     private float _nextIdleHopTime;
     private bool _hasIdleHopped;
 
-    /// <summary>
-    /// 环境监视器引用，供外部查询地形、同类等信息。
-    /// </summary>
-    public EnvironmentMonitor Monitor => _monitor;
-
     // 覆写基类食物属性，数据来源于 EnvironmentMonitor
-    public override bool IsFoodDetected => _monitor != null && _monitor.IsFoodDetected;
-    public override Vector2 FoodDirection => _monitor != null ? _monitor.FoodDirection : Vector2.zero;
-    public override float FoodDistance => _monitor != null ? _monitor.FoodDistance : 0f;
+    public override bool IsFoodDetected => Monitor != null && Monitor.IsFoodDetected;
+    public override Vector2 FoodDirection => Monitor != null ? Monitor.FoodDirection : Vector2.zero;
+    public override float FoodDistance => Monitor != null ? Monitor.FoodDistance : 0f;
 
     protected override void Awake()
     {
-        _monitor = GetComponent<EnvironmentMonitor>();
         _collider = GetComponent<Collider2D>();
+
+        // 暴露 Animator 给基类，供吞噬系统等外部调用
+        if (_animator != null)
+            Animator = _animator;
 
         base.Awake();
     }

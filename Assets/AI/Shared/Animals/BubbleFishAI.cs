@@ -31,6 +31,10 @@ public class BubbleFishAI : AnimalBase
     {
         base.Awake();
 
+        // 暴露 Animator 给基类，供吞噬系统等外部调用
+        if (_animator != null)
+            Animator = _animator;
+
         // 泡泡鱼不受重力影响；手动控制速度，drag 必须为 0，否则物理阻尼会抵消 velocity
         if (Rb != null)
         {

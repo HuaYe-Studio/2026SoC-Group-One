@@ -218,20 +218,8 @@ public class BTFleeAction : BTNode
     /// </summary>
     private void UpdatePlayerVelocity()
     {
-        if (!_animal.IsPlayerDetected)
-        {
-            _playerVelocity = Vector2.zero;
-            return;
-        }
-
-        Vector2 currentPlayerPos = _animal.transform.position + (Vector3)_animal.PlayerDirection * _animal.PlayerDistance;
-
-        if (Time.frameCount > 1)
-        {
-            _playerVelocity = (currentPlayerPos - _lastPlayerPos) / Time.deltaTime;
-        }
-
-        _lastPlayerPos = currentPlayerPos;
+        _playerVelocity = Vector2.zero;
+        return;
     }
 
     /// <summary>
