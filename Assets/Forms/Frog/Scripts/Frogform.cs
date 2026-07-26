@@ -6,10 +6,20 @@ public class FrogForm : BaseForm
     [SerializeField] private float jumpForce = 14f;
     [SerializeField] private float jumpCutMultiplier = 0.4f;
 
+    [Header("Jump Feel")]
+    [SerializeField] private float coyoteTime = 0.1f;
+    [SerializeField] private float jumpBufferTime = 0.1f;
+
     [Header("Air Control")]
     [SerializeField] private float airControlSpeed = 4f;
 
+    [Header("Audio")]
+    [SerializeField] private AudioClip jumpClip;
+    [SerializeField] private AudioClip landClip;
+
     private bool _isBigJump;
+    private float _coyoteTimer;
+    private float _jumpBufferTimer;
 
     public override void Initialize(PlayerController ctrl)
     {
@@ -39,7 +49,10 @@ public class FrogForm : BaseForm
 
     private void OnAbilityPressed()
     {
-        if (CanJump()) DoJump();
+        if (CanJump())
+            DoJump();
+        else
+            _jumpBufferTimer = jumpBufferTime;
     }
 
     private void OnAbilityReleased()
@@ -65,17 +78,23 @@ public class FrogForm : BaseForm
 
     private bool CanJump() =>
         currentState == ActionState.Idle ||
-        currentState == ActionState.Moving;
+        currentState == ActionState.Moving ||
+        _coyoteTimer > 0f;
 
     private void DoJump()
     {
         if (!CanJump()) return;
+
+        _coyoteTimer = 0f;
+        _jumpBufferTimer = 0f;
 
         rb.velocity = new Vector2(rb.velocity.x, jumpForce);
         currentState = ActionState.Jumping;
         ignoreGroundUntil = Time.fixedTime + 0.1f;
         IsGrounded = false;
         _isBigJump = true;
+
+        PlaySFX(jumpClip);
     }
 
     private void ApplyJumpCut()
@@ -88,14 +107,38 @@ public class FrogForm : BaseForm
     {
         if (IsGrounded && (currentState == ActionState.Falling || currentState == ActionState.Jumping))
         {
-            currentState = Mathf.Abs(rb.velocity.x) > 0.1f ? ActionState.Moving : ActionState.Idle;
             _isBigJump = false;
+
+            if (_jumpBufferTimer > 0f)
+            {
+                _jumpBufferTimer = 0f;
+                DoJump();
+                return;
+            }
+
+            currentState = Mathf.Abs(rb.velocity.x) > 0.1f ? ActionState.Moving : ActionState.Idle;
+
+            PlaySFX(landClip);
         }
+    }
+
+    protected override void UpdateAirState()
+    {
+        bool wasIdleOrMoving = currentState == ActionState.Idle || currentState == ActionState.Moving;
+
+        base.UpdateAirState();
+
+        if (wasIdleOrMoving && currentState == ActionState.Falling)
+            _coyoteTimer = coyoteTime;
     }
 
     protected override void FixedUpdate()
     {
         base.FixedUpdate();
+
+        if (_coyoteTimer > 0f) _coyoteTimer -= Time.fixedDeltaTime;
+        if (_jumpBufferTimer > 0f) _jumpBufferTimer -= Time.fixedDeltaTime;
+
         SyncAnimator();
     }
 

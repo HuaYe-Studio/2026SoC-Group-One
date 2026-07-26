@@ -114,7 +114,6 @@ GameObject:
   - component: {fileID: 9177859073190475680}
   - component: {fileID: 2781056170776103299}
   - component: {fileID: 5343090594687219269}
-  - component: {fileID: -690048509021500621}
   m_Layer: 15
   m_Name: PF_Mech_Signboard
   m_TagString: Untagged
@@ -248,19 +247,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiHint: {fileID: 2823092198915370642}
---- !u!114 &-690048509021500621
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3135210052081597010}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5fe696c3d1cd76248a41efabe5c3b31d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  uiHint: {fileID: 0}
 --- !u!1 &8452731590256469743
 GameObject:
   m_ObjectHideFlags: 0

@@ -9,7 +9,12 @@ public class SlimeForm : BaseForm
     [Header("Devour")]
     [SerializeField] private SlimeDevourHandler devourHandler;
 
+    [Header("Audio")]
+    [SerializeField] private AudioClip walkClip;
+    [SerializeField] private float walkSoundInterval = 0.4f;
+
     private float _currentVelocityX;
+    private float _nextWalkSoundTime;
 
     public override void Initialize(PlayerController ctrl)
     {
@@ -34,6 +39,12 @@ public class SlimeForm : BaseForm
 
         if (currentState == ActionState.Idle || currentState == ActionState.Moving)
             currentState = Mathf.Abs(horizontal) > 0.1f ? ActionState.Moving : ActionState.Idle;
+
+        if (currentState == ActionState.Moving && IsGrounded && Time.time >= _nextWalkSoundTime)
+        {
+            PlaySFX(walkClip);
+            _nextWalkSoundTime = Time.time + walkSoundInterval;
+        }
     }
 
     public override void OnFormActivated()

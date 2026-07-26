@@ -155,6 +155,11 @@ public abstract class BaseForm : MonoBehaviour
     public virtual void OnFormActivated() { }
     public virtual void OnFormDeactivated() { }
 
+    protected void PlaySFX(AudioClip clip, float volume = 1f)
+    {
+        AudioManager.Instance?.PlaySFX(clip, volume);
+    }
+
     protected GameObject SpawnPersistent(GameObject prefab, Vector3 position, Quaternion rotation)
     {
         if (controller == null || controller.SpawnedObjectContainer == null)
