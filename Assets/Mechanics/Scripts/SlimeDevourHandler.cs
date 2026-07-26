@@ -14,6 +14,11 @@ public class SlimeDevourHandler : MonoBehaviour
     [SerializeField] private float pounceMaxDuration = 0.6f;
     [SerializeField] private float cooldownSeconds = 0.5f;
 
+    [Header("Audio")]
+    [SerializeField] private AudioClip pounceClip;
+    [SerializeField] private AudioClip devourClip;
+    [SerializeField] private AudioClip spitClip;
+
     private SlimeForm slimeForm;
     private BaseForm baseForm;
     private Rigidbody2D rb;
@@ -192,6 +197,8 @@ public class SlimeDevourHandler : MonoBehaviour
 
         Vector2 toTarget = (currentTarget.transform.position - transform.root.position).normalized;
         rb.velocity = toTarget * pounceSpeed;
+
+        AudioManager.Instance?.PlaySFX(pounceClip);
     }
 
     private void CancelPounce()
@@ -228,6 +235,8 @@ public class SlimeDevourHandler : MonoBehaviour
         else
             yield return new WaitForSecondsRealtime(0.4f);
 
+        AudioManager.Instance?.PlaySFX(devourClip);
+
         if (effectPlayer != null)
             yield return effectPlayer.PlayDevour(animal);
         else
@@ -241,6 +250,7 @@ public class SlimeDevourHandler : MonoBehaviour
         }
 
         // 吐出动物
+        AudioManager.Instance?.PlaySFX(spitClip);
         animal.PlayBeingSpitOut(spitDirection);
 
         if (effectPlayer != null)
