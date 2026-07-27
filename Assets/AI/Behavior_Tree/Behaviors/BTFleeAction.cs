@@ -70,6 +70,12 @@ public class BTFleeAction : BTNode
         if (Time.time < _pushUntil)
         {
             // 强推阶段：以基础速度朝固定方向跑，不每 0.5s 换向
+            // 只在地面执行，防止空中连续施加速度造成"二段跳"
+            if (!_animal.IsGrounded)
+            {
+                _animal.StopMoving();
+                return State.Running;
+            }
             float speedMult = _animal.FleeSpeedMultiplier;
             if (_frog != null)
                 _frog.PerformHop(_pushDirection, speedMult, "Flee");
