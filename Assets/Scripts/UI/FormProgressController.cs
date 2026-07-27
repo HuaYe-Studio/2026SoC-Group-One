@@ -29,7 +29,7 @@ public class FormProgressController : MonoBehaviour
     [SerializeField] private float _elasticity = 0.5f;//弹性
     [SerializeField] private float _radius = 90f;//progress排布半径
 
-    private int _count = FormWheelController.unlockedFormTypes.Count;//解锁形态的进度的计数，使用unlockedFormTypes.Count会有逻辑先后先后问题，所以这里自维护一个计数
+    private int _count;//解锁形态的进度的计数，使用unlockedFormTypes.Count会有逻辑先后先后问题，所以这里自维护一个计数
 
     void OnEnable()
     {
@@ -49,6 +49,7 @@ public class FormProgressController : MonoBehaviour
         ProgressUpdate(FormType.Slime);//初始更新
 
         //这里要和存档系统联动，读取开始的形态，目前默认slime
+        _count=FormWheelController.unlockedFormTypes.Count;
         _formImage.sprite = _formIcons[(int)FormType.Slime];
     }
 
