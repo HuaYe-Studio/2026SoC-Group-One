@@ -44,6 +44,11 @@ public class AnimalBase : MonoBehaviour
     public Vector2 SpawnPosition => _spawnPosition;
 
     /// <summary>
+    /// AI 认知黑板：所有语义化感知与内部状态统一存放处。
+    /// </summary>
+    public Blackboard Board { get; private set; } = new Blackboard();
+
+    /// <summary>
     /// 环境感知器，延迟获取。青蛙和鱼都挂载 EnvironmentMonitor。
     /// </summary>
     public EnvironmentMonitor Monitor { get; private set; }
@@ -56,18 +61,19 @@ public class AnimalBase : MonoBehaviour
 
     /// <summary>
     /// 当前是否检测到玩家在探测范围内。
+    /// 数据来源：EnvironmentMonitor 写入 Blackboard。
     /// </summary>
-    public bool IsPlayerDetected { get; private set; }
+    public bool IsPlayerDetected => Board.IsPlayerVisible;
 
     /// <summary>
-    /// 玩家相对于动物的方向（归一化），仅在IsPlayerDetected为true时有效。
+    /// 玩家相对于动物的方向（归一化），仅在 IsPlayerDetected 为 true 时有效。
     /// </summary>
-    public Vector2 PlayerDirection { get; private set; }
+    public Vector2 PlayerDirection => Board.PlayerDirection;
 
     /// <summary>
-    /// 到玩家的距离，仅在IsPlayerDetected为true时有效。
+    /// 到玩家的距离，仅在 IsPlayerDetected 为 true 时有效。
     /// </summary>
-    public float PlayerDistance { get; private set; }
+    public float PlayerDistance => Board.PlayerDistance;
 
     /// <summary>
     /// 当前是否检测到食物。默认返回false，子类可覆写以接入EnvironmentMonitor。
@@ -94,6 +100,22 @@ public class AnimalBase : MonoBehaviour
     /// </summary>
     /// <param name="stateName">动画状态名或Trigger名</param>
     public virtual void PlayAnimation(string stateName) { }
+
+    /// <summary>
+    /// 被吞噬时由 DevourableAnimal 调用：清空威胁认知并进入眩晕。
+    /// 防止被吐出后 AI 立即因贴脸玩家而受惊蹿出。
+    /// </summary>
+    /// <param name="stunDuration">眩晕时长（秒），从时间恢复流动后起算</param>
+    public virtual void OnDevoured(float stunDuration)
+    {
+        Board.ClearThreat();
+        Board.StunUntilTime = Time.time + stunDuration;
+        StopMoving();
+
+        // FSM 驱动时同步切到眩晕状态（BT 驱动时 FSM 已禁用，由黑板眩晕标记生效）
+        if (Fsm != null && Fsm.enabled)
+            Fsm.ChangeState<StunnedState>();
+    }
 
     protected virtual void Awake()
     {
@@ -132,28 +154,7 @@ public class AnimalBase : MonoBehaviour
         if (_playerTransform == null)
         {
             FindPlayer();
-            return;
         }
-
-        UpdatePlayerDetection();
-    }
-
-    private void UpdatePlayerDetection()
-    {
-        if (_playerTransform == null)
-        {
-            IsPlayerDetected = false;
-            return;
-        }
-
-        Vector2 toPlayer = _playerTransform.position - transform.position;
-        float distance = toPlayer.magnitude;
-
-        PlayerDirection = toPlayer.normalized;
-        PlayerDistance = distance;
-
-        Collider2D hit = Physics2D.OverlapCircle(transform.position, _detectionRadius, _playerLayer);
-        IsPlayerDetected = hit != null;
     }
 
     /// <summary>

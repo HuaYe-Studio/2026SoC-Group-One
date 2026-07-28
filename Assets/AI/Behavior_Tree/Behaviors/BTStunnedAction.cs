@@ -1,50 +1,48 @@
 using UnityEngine;
 
 /// <summary>
-/// [BT] 眩晕节点：原地僵直一段时间，期间不移动、不感知。
-/// 被吞噬/受击后由外部触发，超时后返回 Success。
-/// 注意：Reset() 只重置计时，不调用物理副作用。
+/// [BT] 眩晕节点：黑板驱动的原地僵直，直到 Board.StunUntilTime 到期。
+/// 被吞噬/受击后由外部（DevourableAnimal → AnimalBase.OnDevoured）写入眩晕时间，
+/// 本节点只负责在眩晕期间钉住动物、播放眩晕动画。
+/// 注意：Reset() 只重置动画标记，不调用物理副作用。
 /// </summary>
 public class BTStunnedAction : BTNode
 {
     private readonly AnimalBase _animal;
-    private readonly float _stunDuration;
+    private readonly Blackboard _bb;
 
-    private float _stunEndTime;
-    private bool _isStunned;
+    private bool _isPlayingAnim;
 
     /// <param name="animal">动物实例</param>
-    /// <param name="stunDuration">眩晕时长（秒）</param>
-    public BTStunnedAction(AnimalBase animal, float stunDuration = 0.5f)
+    public BTStunnedAction(AnimalBase animal)
     {
         _animal = animal;
-        _stunDuration = stunDuration;
+        _bb = animal.Board;
     }
 
     public override State Tick()
     {
-        // 首帧进入：记录结束时间，播放眩晕动画
-        if (!_isStunned)
-        {
-            _animal.StopMoving();
-            _animal.PlayAnimation("Stunned");
-            _stunEndTime = Time.time + _stunDuration;
-            _isStunned = true;
-            return State.Running;
-        }
-
         // 眩晕结束
-        if (Time.time >= _stunEndTime)
+        if (!_bb.IsStunned)
         {
-            _isStunned = false;
+            _isPlayingAnim = false;
             return State.Success;
         }
 
+        // 首次进入：播放眩晕动画
+        if (!_isPlayingAnim)
+        {
+            _animal.PlayAnimation("Stunned");
+            _isPlayingAnim = true;
+        }
+
+        // 眩晕期间持续钉住水平速度，防止残留冲量或被击退漂移
+        _animal.StopMoving();
         return State.Running;
     }
 
     public override void Reset()
     {
-        _isStunned = false;
+        _isPlayingAnim = false;
     }
 }

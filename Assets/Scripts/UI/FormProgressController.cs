@@ -34,7 +34,7 @@ public class FormProgressController : MonoBehaviour
     void OnEnable()
     {
         MockEventCenter.OnFormChanged += FormChanged;
-        MockEventCenter.OnFormUnlocked += ProgressUpdate;
+        MockEventCenter.OnFormUnlocked += ProgressUpdateForEvent;
     }
 
     void Awake()
@@ -45,11 +45,10 @@ public class FormProgressController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        RadialArrangement(50,210,_radius,_roundBorader.transform.position,_progressImage);
-        ProgressUpdate(FormType.Slime);//初始更新
+        RadialArrangement(50, 210, _radius, _roundBorader.transform.position, _progressImage);
+        ProgressUpdate(true);//初始更新
 
         //这里要和存档系统联动，读取开始的形态，目前默认slime
-        _count=FormWheelController.unlockedFormTypes.Count;
         _formImage.sprite = _formIcons[(int)FormType.Slime];
     }
 
@@ -62,7 +61,7 @@ public class FormProgressController : MonoBehaviour
     void OnDisable()
     {
         MockEventCenter.OnFormChanged -= FormChanged;
-        MockEventCenter.OnFormUnlocked -= ProgressUpdate;
+        MockEventCenter.OnFormUnlocked -= ProgressUpdateForEvent;
     }
 
     private void FormChanged(FormType formType)
@@ -77,49 +76,54 @@ public class FormProgressController : MonoBehaviour
         _formImage.transform.DOPunchScale(Vector3.one * (_scaleFactor - 1), _duration, 1, _elasticity).SetUpdate(true);
     }
 
-    private void ProgressUpdate(FormType formType)
+    private void ProgressUpdateForEvent(FormType formType)
     {
-        _count++;
+        ProgressUpdate(false);
+    }
+
+    private void ProgressUpdate(bool isStart)
+    {
+        _count = isStart ? FormWheelController.unlockedFormTypes.Count : _count + 1;
         for (int i = 0; i < _progressImage.Length; i++)
         {
-            _progressImage[i].sprite = i<_count? _onImage:_offImage;
+            _progressImage[i].sprite = i < _count ? _onImage : _offImage;
         }
     }
 
     //扇形排布方法，以+Y为0点，顺时针为正，传入起始角度，终点角度，半径，中心，以及需要排布的Object数组
     //如有需要，可单独写在一个脚本里作公共方法
-    private void RadialArrangement(float startAngle,float endAngle,float radius,Vector2 center,GameObject[] gameObjects)
+    private void RadialArrangement(float startAngle, float endAngle, float radius, Vector2 center, GameObject[] gameObjects)
     {
         int count = gameObjects.Length;
-        float angleStep = (endAngle - startAngle)/(count - 1);
+        float angleStep = (endAngle - startAngle) / (count - 1);
 
         float angle;
         float rad;
-        for(int i = 0;i<count;i++)
+        for (int i = 0; i < count; i++)
         {
             angle = startAngle + angleStep * i;
-            rad = angle *Mathf.Deg2Rad;
+            rad = angle * Mathf.Deg2Rad;
 
-            gameObjects[i].transform.position = center + new Vector2(Mathf.Sin(rad),Mathf.Cos(rad))*(radius/1440*Screen.height);
-            gameObjects[i].transform.rotation = Quaternion.Euler(0,0,-angle);
+            gameObjects[i].transform.position = center + new Vector2(Mathf.Sin(rad), Mathf.Cos(rad)) * (radius / 1440 * Screen.height);
+            gameObjects[i].transform.rotation = Quaternion.Euler(0, 0, -angle);
         }
     }
 
     //针对组件对象的重载
-    private void RadialArrangement(float startAngle,float endAngle,float radius,Vector2 center,Component[] Components)
+    private void RadialArrangement(float startAngle, float endAngle, float radius, Vector2 center, Component[] Components)
     {
         int count = Components.Length;
-        float angleStep = (endAngle - startAngle)/(count - 1);
+        float angleStep = (endAngle - startAngle) / (count - 1);
 
         float angle;
         float rad;
-        for(int i = 0;i<count;i++)
+        for (int i = 0; i < count; i++)
         {
             angle = startAngle + angleStep * i;
-            rad = angle *Mathf.Deg2Rad;
+            rad = angle * Mathf.Deg2Rad;
 
-            Components[i].transform.position = center + new Vector2(Mathf.Sin(rad),Mathf.Cos(rad))*(radius/1440*Screen.height);
-            Components[i].transform.rotation = Quaternion.Euler(0,0,-angle);
+            Components[i].transform.position = center + new Vector2(Mathf.Sin(rad), Mathf.Cos(rad)) * (radius / 1440 * Screen.height);
+            Components[i].transform.rotation = Quaternion.Euler(0, 0, -angle);
         }
     }
 }

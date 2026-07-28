@@ -5,6 +5,7 @@ using UnityEngine;
 /// 优先级：被吞噬眩晕 > 太近回避 > 绕玩家巡游 > 自由巡游。
 /// 设计思路：鱼不"看到玩家就跑远"，而是绕玩家自然游动，太近时轻轻避开一小段，
 /// 给玩家留出接近窗口，也不会被玩家压在一侧。
+/// 所有感知判断统一从 Blackboard 读取语义化认知状态。
 /// </summary>
 [RequireComponent(typeof(BubbleFishAI))]
 public class BubbleFishBT : MonoBehaviour
@@ -40,23 +41,20 @@ public class BubbleFishBT : MonoBehaviour
 
     private BTNode BuildTree()
     {
+        Blackboard bb = _fish.Board;
+
         BTNode stunnedBranch = new BTSequence(
-            new BTCondition(() => _fish.IsDevoured),
-            new BTStunnedAction(_fish, 0.5f),
-            new BTAction(() =>
-            {
-                _fish.ClearDevoured();
-                return BTNode.State.Success;
-            })
+            new BTCondition(() => bb.IsStunned),
+            new BTStunnedAction(_fish)
         );
 
         BTNode avoidBranch = new BTSequence(
-            new BTCondition(() => _fish.IsPlayerDetected && _fish.PlayerDistance < _avoidDistance),
+            new BTCondition(() => bb.IsPlayerVisible && bb.PlayerDistance < _avoidDistance),
             new BTAvoidAction(_fish, _avoidStep)
         );
 
         BTNode circleBranch = new BTSequence(
-            new BTCondition(() => _fish.IsPlayerDetected),
+            new BTCondition(() => bb.IsPlayerVisible),
             new BTCircleAroundAction(_fish)
         );
 
@@ -81,15 +79,17 @@ public class BubbleFishBT : MonoBehaviour
 
     private void LogStateChange(BTNode.State result)
     {
-        string branch = _fish.IsDevoured ? "Stunned"
-            : _fish.IsPlayerDetected && _fish.PlayerDistance < _avoidDistance ? "Avoid"
-            : _fish.IsPlayerDetected ? "Circle"
+        Blackboard bb = _fish.Board;
+
+        string branch = bb.IsStunned ? "Stunned"
+            : bb.IsPlayerVisible && bb.PlayerDistance < _avoidDistance ? "Avoid"
+            : bb.IsPlayerVisible ? "Circle"
             : "Wander";
 
         if (branch == _lastBranch && result == _lastResult)
             return;
 
-        Debug.Log($"{gameObject.name} BT: [{branch}] 距玩家[{_fish.PlayerDistance:F1}m]");
+        Debug.Log($"{gameObject.name} BT: [{branch}] 距玩家[{bb.PlayerDistance:F1}m] 威胁值[{bb.ThreatLevel:F0}]");
         _lastBranch = branch;
         _lastResult = result;
     }

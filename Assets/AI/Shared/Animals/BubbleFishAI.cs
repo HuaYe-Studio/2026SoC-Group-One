@@ -104,30 +104,6 @@ public class BubbleFishAI : AnimalBase
     }
 
     /// <summary>
-    /// 被吞噬时由外部调用，切换到眩晕状态（FSM 模式）。
-    /// 如果当前由 BT 驱动，则直接设置标记供 BT 条件读取。
-    /// </summary>
-    public void OnDevoured()
-    {
-        // 两种模式兼容：FSM 切状态，BT 设标记
-        Fsm.ChangeState<StunnedState>();
-        IsDevoured = true;
-    }
-
-    /// <summary>
-    /// 是否刚被吞噬（供 BT 条件节点读取，读取后自动清除）。
-    /// </summary>
-    public bool IsDevoured { get; private set; }
-
-    /// <summary>
-    /// 清除被吞噬标记，由 BT 眩晕节点在完成后调用。
-    /// </summary>
-    public void ClearDevoured()
-    {
-        IsDevoured = false;
-    }
-
-    /// <summary>
     /// 游动速度（供 BT 节点读取）。
     /// </summary>
     public float SwimSpeed => _swimSpeed;

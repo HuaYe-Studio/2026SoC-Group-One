@@ -2,7 +2,8 @@ using UnityEngine;
 
 /// <summary>
 /// [BT] 青蛙行为树：挂载并启用后自动接管（禁用）FSM，用行为树驱动青蛙AI。
-/// 优先级从高到低：逃跑 > 捕食 > 觅食循环（落地休息 → 跳一次）。
+/// 优先级从高到低：逃跑 > 搜索（威胁记忆）> 捕食 > 觅食循环（落地休息 → 跳一次）。
+/// 所有感知判断统一从 Blackboard 读取语义化认知状态。
 /// 动画统一由 FrogAI.PlayAnimation 控制 Animator 整数参数
 /// FROG_AnimState：0=Idle 1=Jump 2=Rest 3=Flee 4=Prey。
 /// </summary>
@@ -12,6 +13,10 @@ public class FrogBT : MonoBehaviour
     [Header("Rest")]
     [SerializeField] private float _restDurationMin = 3f;
     [SerializeField] private float _restDurationMax = 6f;
+
+    [Header("Search")]
+    [Tooltip("威胁值高于此值时触发搜索行为")]
+    [SerializeField] private float _searchThreatThreshold = 30f;
 
     [Header("Debug")]
     [SerializeField] private bool _enableDebugLog;
@@ -38,27 +43,40 @@ public class FrogBT : MonoBehaviour
     }
 
     /// <summary>
-    /// 组装青蛙行为树。感知数据复用 AnimalBase / EnvironmentMonitor。
+    /// 组装青蛙行为树。感知数据统一从 Blackboard 读取。
     /// </summary>
     private BTNode BuildTree()
     {
-        // 分支1：检测到玩家 → 逃跑（最高优先级）
+        Blackboard bb = _frog.Board;
+
+        // 分支0：被吞噬/受击眩晕中 → 原地僵直（最高优先级）
+        BTNode stunnedBranch = new BTSequence(
+            new BTCondition(() => bb.IsStunned),
+            new BTStunnedAction(_frog));
+
+        // 分支1：玩家可见且威胁足够高 → 逃跑
         _fleeAction = new BTFleeAction(_frog);
         BTNode fleeBranch = new BTSequence(
-            new BTCondition(() => _frog.IsPlayerDetected),
+            new BTCondition(() => bb.IsThreatUrgent),
             _fleeAction);
 
-        // 分支2：检测到食物 → 捕食
+        // 分支2：玩家不可见但有威胁记忆 → 前往最后已知位置搜索
+        BTNode searchBranch = new BTSequence(
+            new BTCondition(() => bb.ShouldSearch && bb.ThreatLevel >= _searchThreatThreshold),
+            new BTSearchAction(_frog, 1f, 1.2f)
+        );
+
+        // 分支3：检测到食物 → 捕食
         BTNode pounceBranch = new BTSequence(
-            new BTCondition(() => _frog.IsFoodDetected),
+            new BTCondition(() => bb.IsFoodDetected),
             new BTChaseAction(_frog, 1.8f, 0.6f));
 
-        // 分支3：默认觅食循环 → 落地后先休息几秒 → 跳一次 → 落地再休息，循环
+        // 分支4：默认觅食循环 → 落地后先休息几秒 → 跳一次 → 落地再休息，循环
         BTNode forageBranch = new BTSequence(
             new BTRestAction(_frog, _restDurationMin, _restDurationMax),
             new BTMoveAction(_frog, GetForageDirection, 1f, () => _enableDebugLog));
 
-        return new BTSelector(fleeBranch, pounceBranch, forageBranch);
+        return new BTSelector(stunnedBranch, fleeBranch, searchBranch, pounceBranch, forageBranch);
     }
 
     /// <summary>
@@ -88,12 +106,16 @@ public class FrogBT : MonoBehaviour
 
     /// <summary>
     /// 只在分支、结果或着地状态发生变化时输出日志，避免刷屏。
-    /// 逃跑时额外输出紧迫度/玩家速度/地形信息。
+    /// 逃跑时额外输出紧迫度/威胁值/地形信息。
     /// </summary>
     private void LogStateChange(BTNode.State result)
     {
-        string branch = _frog.IsPlayerDetected ? "Flee逃跑"
-            : _frog.IsFoodDetected ? "Pounce捕食"
+        Blackboard bb = _frog.Board;
+
+        string branch = bb.IsStunned ? "Stunned眩晕"
+            : bb.IsThreatUrgent ? "Flee逃跑"
+            : bb.ShouldSearch ? "Search搜索"
+            : bb.IsFoodDetected ? "Pounce捕食"
             : "Forage觅食";
 
         bool grounded = _frog.IsGrounded;
@@ -103,9 +125,8 @@ public class FrogBT : MonoBehaviour
 
         string extra = "";
         if (branch == "Flee逃跑" && _fleeAction != null)
-            extra = $" 紧迫度[{_fleeAction.UrgencyLevel}] 玩家速度[{_fleeAction.PlayerVelocity.x:F1}]" +
-                    $" 墙[{( _frog.Monitor != null && _frog.Monitor.IsWallAhead ? "有" : "无" )}]" +
-                    $" 沟[{( _frog.Monitor != null && _frog.Monitor.IsGapAhead ? "有" : "无" )}]";
+            extra = $" 紧迫度[{_fleeAction.UrgencyLevel}] 威胁值[{bb.ThreatLevel:F0}]" +
+                    $" 墙[{(bb.IsWallAhead ? "有" : "无")}] 沟[{(bb.IsGapAhead ? "有" : "无")}]";
 
         Debug.Log($"{gameObject.name} BT: 分支[{branch}] 结果[{result}] 着地[{grounded}]{extra}");
         _lastBranch = branch;

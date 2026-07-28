@@ -5,7 +5,8 @@ public class DevourableAnimal : MonoBehaviour
     [SerializeField] private FormType grantedForm = FormType.Frog;
 
     [Header("Spit")]
-    [SerializeField] private float spitForce = 10f;
+    [Tooltip("被吐出后的眩晕时长（秒），期间 AI 不感知不行动，防止受惊蹿出")]
+    [SerializeField] private float stunDurationAfterSpit = 2.5f;
 
     public FormType GrantedForm => grantedForm;
     public bool IsTargeted { get; set; }
@@ -13,18 +14,26 @@ public class DevourableAnimal : MonoBehaviour
 
     private Rigidbody2D _rb;
     private Animator _animator;
+    private AnimalBase _animalBase;
 
     private void Awake()
     {
         SpriteRenderer = GetComponent<SpriteRenderer>();
         _rb = GetComponent<Rigidbody2D>();
         _animator = GetComponent<Animator>();
+        _animalBase = GetComponent<AnimalBase>();
     }
 
     public void PlayBeingDevoured()
     {
         if (_rb != null)
             _rb.velocity = Vector2.zero;
+
+        // 通知 AI：清空威胁认知并进入眩晕
+        // 眩晕计时从时间恢复流动后起算（吞噬演出期间 Time.timeScale=0，Time.time 冻结）
+        if (_animalBase != null)
+            _animalBase.OnDevoured(stunDurationAfterSpit);
+
         SafeSetTrigger("Devoured");
     }
 
@@ -37,8 +46,11 @@ public class DevourableAnimal : MonoBehaviour
         }
         transform.localScale = Vector3.one;
 
+        // 吐出时不再施加冲量：动物处于眩晕状态，原地落下即可，
+        // 避免"交换位置后突然蹿出去"的观感问题
         if (_rb != null)
-            _rb.velocity = direction.normalized * spitForce;
+            _rb.velocity = Vector2.zero;
+
         SafeSetTrigger("SpitOut");
     }
 
