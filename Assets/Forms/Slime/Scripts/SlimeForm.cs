@@ -49,11 +49,13 @@ public class SlimeForm : BaseForm
 
     public override void OnFormActivated()
     {
+        base.OnFormActivated();
         _currentVelocityX = rb != null ? rb.velocity.x : 0f;
     }
 
     public override void OnFormDeactivated()
     {
+        base.OnFormDeactivated();
         if (devourHandler != null)
             devourHandler.CancelAll();
     }

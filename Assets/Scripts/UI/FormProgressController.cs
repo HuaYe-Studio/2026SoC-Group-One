@@ -66,8 +66,11 @@ public class FormProgressController : MonoBehaviour
 
     private void FormChanged(FormType formType)
     {
+        int iconIndex = (int)formType;
+        if (iconIndex < 0 || iconIndex >= _formIcons.Length) return;
+
         _formImage.transform.DOKill(true);
-        _formImage.sprite = _formIcons[(int)formType];
+        _formImage.sprite = _formIcons[iconIndex];
 
         //日后切换形态过程的动画做好后这里有可能，可能，要做适配
         _formImage.transform.DOPunchScale(Vector3.one * (_scaleFactor - 1), _duration, 1, _elasticity).SetUpdate(true);

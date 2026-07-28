@@ -29,25 +29,7 @@ public class FrogForm : BaseForm
         fallGravityMultiplier = 1.2f;
     }
 
-    private void OnEnable()
-    {
-        if (PlayerInputReader.HasInstance)
-        {
-            PlayerInputReader.Instance.OnAbility1Started += OnAbilityPressed;
-            PlayerInputReader.Instance.OnAbility1Canceled += OnAbilityReleased;
-        }
-    }
-
-    private void OnDisable()
-    {
-        if (PlayerInputReader.HasInstance)
-        {
-            PlayerInputReader.Instance.OnAbility1Started -= OnAbilityPressed;
-            PlayerInputReader.Instance.OnAbility1Canceled -= OnAbilityReleased;
-        }
-    }
-
-    private void OnAbilityPressed()
+    public void OnJumpPressed()
     {
         if (CanJump())
             DoJump();
@@ -55,7 +37,7 @@ public class FrogForm : BaseForm
             _jumpBufferTimer = jumpBufferTime;
     }
 
-    private void OnAbilityReleased()
+    public void OnJumpReleased()
     {
         ApplyJumpCut();
     }

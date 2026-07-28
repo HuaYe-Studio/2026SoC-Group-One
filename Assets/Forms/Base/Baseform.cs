@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using AbilitySystem;
 using UnityEngine;
 public enum ActionState
 {
@@ -33,6 +35,10 @@ public abstract class BaseForm : MonoBehaviour
     protected SpriteRenderer spriteRenderer;
     protected Animator animator;
     protected PlayerController controller;
+
+    [Header("Ability Input")]
+    [SerializeField] private List<AbilityInputBinding> abilityBindings = new();
+    private Dictionary<AbilityInputBinding, System.Action> bindingHandlers = new();
 
     protected ActionState currentState = ActionState.Idle;
     protected float ignoreGroundUntil;
@@ -152,8 +158,136 @@ public abstract class BaseForm : MonoBehaviour
         rb.gravityScale = falling ? gravityScale * fallGravityMultiplier : gravityScale;
     }
 
-    public virtual void OnFormActivated() { }
-    public virtual void OnFormDeactivated() { }
+    public virtual void OnFormActivated()
+    {
+        RegisterAbilityBindings();
+    }
+
+    public virtual void OnFormDeactivated()
+    {
+        UnregisterAbilityBindings();
+    }
+
+    private void RegisterAbilityBindings()
+    {
+        if (!PlayerInputReader.HasInstance) return;
+
+        if (bindingHandlers.Count > 0)
+            UnregisterAbilityBindings();
+
+        foreach (var binding in abilityBindings)
+        {
+            System.Action handler = () => binding.onInputFired.Invoke();
+            bindingHandlers[binding] = handler;
+            SubscribeToSlot(binding.inputSlot, binding.phase, handler);
+        }
+    }
+
+    private void UnregisterAbilityBindings()
+    {
+        if (!PlayerInputReader.HasInstance)
+        {
+            bindingHandlers.Clear();
+            return;
+        }
+
+        foreach (var kvp in bindingHandlers)
+            UnsubscribeFromSlot(kvp.Key.inputSlot, kvp.Key.phase, kvp.Value);
+        bindingHandlers.Clear();
+    }
+
+    private void SubscribeToSlot(InputActionSlot slot, InputPhase phase, System.Action handler)
+    {
+        var reader = PlayerInputReader.Instance;
+        switch (slot)
+        {
+            case InputActionSlot.Ability1:
+                switch (phase)
+                {
+                    case InputPhase.Started: reader.OnAbility1Started += handler; break;
+                    case InputPhase.Performed: reader.OnAbility1Performed += handler; break;
+                    case InputPhase.Canceled: reader.OnAbility1Canceled += handler; break;
+                    case InputPhase.Triggered: reader.OnAbility1 += handler; break;
+                }
+                break;
+            case InputActionSlot.Ability2:
+                switch (phase)
+                {
+                    case InputPhase.Started: reader.OnAbility2Started += handler; break;
+                    case InputPhase.Performed: reader.OnAbility2Performed += handler; break;
+                    case InputPhase.Canceled: reader.OnAbility2Canceled += handler; break;
+                    case InputPhase.Triggered: reader.OnAbility2 += handler; break;
+                }
+                break;
+            case InputActionSlot.EatSpit:
+                switch (phase)
+                {
+                    case InputPhase.Started: reader.OnEatSpitStarted += handler; break;
+                    case InputPhase.Canceled: reader.OnEatSpitCanceled += handler; break;
+                    case InputPhase.Triggered: reader.OnEatSpit += handler; break;
+                    default: Debug.LogWarning($"AbilitySystem: Invalid phase [{phase}] for EatSpit."); break;
+                }
+                break;
+            case InputActionSlot.Interact:
+                if (phase == InputPhase.Triggered) reader.OnInteract += handler;
+                else Debug.LogWarning($"AbilitySystem: Invalid phase [{phase}] for Interact, only Triggered is supported.");
+                break;
+            case InputActionSlot.AnimalWheel:
+                switch (phase)
+                {
+                    case InputPhase.Started: reader.OnAnimalWheelStarted += handler; break;
+                    case InputPhase.Canceled: reader.OnAnimalWheelCanceled += handler; break;
+                    case InputPhase.Triggered: reader.OnAnimalWheel += handler; break;
+                    default: Debug.LogWarning($"AbilitySystem: Invalid phase [{phase}] for AnimalWheel."); break;
+                }
+                break;
+        }
+    }
+
+    private void UnsubscribeFromSlot(InputActionSlot slot, InputPhase phase, System.Action handler)
+    {
+        var reader = PlayerInputReader.Instance;
+        switch (slot)
+        {
+            case InputActionSlot.Ability1:
+                switch (phase)
+                {
+                    case InputPhase.Started: reader.OnAbility1Started -= handler; break;
+                    case InputPhase.Performed: reader.OnAbility1Performed -= handler; break;
+                    case InputPhase.Canceled: reader.OnAbility1Canceled -= handler; break;
+                    case InputPhase.Triggered: reader.OnAbility1 -= handler; break;
+                }
+                break;
+            case InputActionSlot.Ability2:
+                switch (phase)
+                {
+                    case InputPhase.Started: reader.OnAbility2Started -= handler; break;
+                    case InputPhase.Performed: reader.OnAbility2Performed -= handler; break;
+                    case InputPhase.Canceled: reader.OnAbility2Canceled -= handler; break;
+                    case InputPhase.Triggered: reader.OnAbility2 -= handler; break;
+                }
+                break;
+            case InputActionSlot.EatSpit:
+                switch (phase)
+                {
+                    case InputPhase.Started: reader.OnEatSpitStarted -= handler; break;
+                    case InputPhase.Canceled: reader.OnEatSpitCanceled -= handler; break;
+                    case InputPhase.Triggered: reader.OnEatSpit -= handler; break;
+                }
+                break;
+            case InputActionSlot.Interact:
+                if (phase == InputPhase.Triggered) reader.OnInteract -= handler;
+                break;
+            case InputActionSlot.AnimalWheel:
+                switch (phase)
+                {
+                    case InputPhase.Started: reader.OnAnimalWheelStarted -= handler; break;
+                    case InputPhase.Canceled: reader.OnAnimalWheelCanceled -= handler; break;
+                    case InputPhase.Triggered: reader.OnAnimalWheel -= handler; break;
+                }
+                break;
+        }
+    }
 
     protected void PlaySFX(AudioClip clip, float volume = 1f)
     {

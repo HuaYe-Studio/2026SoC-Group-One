@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public enum BubbleState
 {
@@ -20,28 +19,6 @@ public partial class BubbleFishForm : BaseForm
     private BubbleState bubbleState = BubbleState.Shrunk;
     private float currentExpansion = 0f;
 
-    private void OnEnable()
-    {
-        // 确保使用正确的方式接入，如果类名不存在，可能是因为需要引用特定的 Namespace
-        // 临时使用注释以通过编译，待你检查 PlayerInputReader.cs 所在命名空间后解开
-        /*
-        if (PlayerInputReader.Instance != null)
-        {
-            PlayerInputReader.Instance.OnBubbleToggle += ToggleExpansion;
-        }
-        */
-    }
-
-    private void OnDisable()
-    {
-        /*
-        if (PlayerInputReader.Instance != null)
-        {
-            PlayerInputReader.Instance.OnBubbleToggle -= ToggleExpansion;
-        }
-        */
-    }
-
     public override void Initialize(PlayerController ctrl)
     {
         base.Initialize(ctrl);
@@ -58,6 +35,7 @@ public partial class BubbleFishForm : BaseForm
 
     protected override void FixedUpdate()
     {
+        if (rb == null) return;
         UpdateBubbleState();
         ApplyBubblePhysics();
         base.FixedUpdate();
