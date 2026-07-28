@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6441379671313839232}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: CurrentState
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -56,7 +56,7 @@ GameObject:
   - component: {fileID: 4866673469627833909}
   - component: {fileID: 4104987913981057248}
   - component: {fileID: 4050002540177904479}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: FormImage
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -130,7 +130,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7132858894026194473}
   - component: {fileID: 4718717929614274247}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: PF_UI_FormProgress
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -170,6 +170,7 @@ MonoBehaviour:
   _formIcons:
   - {fileID: 21300000, guid: ac941ce9f1ec53b4c85cd75c8bd0d427, type: 3}
   - {fileID: 21300000, guid: b9005a52b0727524ca963aa00c9a3392, type: 3}
+  - {fileID: 21300000, guid: ca58ea39b5f62134e833f53d48cb2319, type: 3}
   _progressImage:
   - {fileID: 4419700849510927607}
   - {fileID: 5992768902681857027}
@@ -196,7 +197,7 @@ GameObject:
   - component: {fileID: 3524282612351211162}
   - component: {fileID: 7542901107155603853}
   - component: {fileID: 4419700849510927607}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Progress_0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -271,7 +272,7 @@ GameObject:
   - component: {fileID: 7681115732472057251}
   - component: {fileID: 4830084066037388996}
   - component: {fileID: 5992768902681857027}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Progress_1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -346,7 +347,7 @@ GameObject:
   - component: {fileID: 5576859380247691170}
   - component: {fileID: 5469051253087710757}
   - component: {fileID: 314305812668892862}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Progress_3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -421,7 +422,7 @@ GameObject:
   - component: {fileID: 1474841192445506869}
   - component: {fileID: 6626541143306294107}
   - component: {fileID: 3536457803720697064}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Progress_5
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -496,7 +497,7 @@ GameObject:
   - component: {fileID: 2147507692774675630}
   - component: {fileID: 9003045409133255826}
   - component: {fileID: 176980987984183809}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Progress_4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -572,7 +573,7 @@ GameObject:
   - component: {fileID: 8128309014286649799}
   - component: {fileID: 1570046994798225106}
   - component: {fileID: 4692991396839212125}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Canvas
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -673,7 +674,7 @@ GameObject:
   - component: {fileID: 8765236371563647379}
   - component: {fileID: 6062076856333368737}
   - component: {fileID: 874651880040596830}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Progress_6
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -748,7 +749,7 @@ GameObject:
   - component: {fileID: 141599082731420267}
   - component: {fileID: 7316419587192986820}
   - component: {fileID: 282433706839342209}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Progress_2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -823,7 +824,7 @@ GameObject:
   - component: {fileID: 8902255373976644867}
   - component: {fileID: 1434951266648995180}
   - component: {fileID: 2658535886207679847}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Borader
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -898,7 +899,7 @@ GameObject:
   - component: {fileID: 3195409042613717983}
   - component: {fileID: 4070363319530851631}
   - component: {fileID: 8764186043674974493}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Progress_7
   m_TagString: Untagged
   m_Icon: {fileID: 0}

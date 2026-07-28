@@ -192,15 +192,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8010264352765468477, guid: 7b469c166b249c946be3b1eb9dd21f08, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 8010264352765468477, guid: 7b469c166b249c946be3b1eb9dd21f08, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 8010264352765468477, guid: 7b469c166b249c946be3b1eb9dd21f08, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 8010264352765468477, guid: 7b469c166b249c946be3b1eb9dd21f08, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -1494,6 +1494,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 821364179661146706, guid: 7ca10d0636bc3734b8d3d52a271a73c0, type: 3}
+      propertyPath: m_Name
+      value: BubbleFishForm
+      objectReference: {fileID: 0}
     - target: {fileID: 2838083659676168268, guid: 7ca10d0636bc3734b8d3d52a271a73c0, type: 3}
       propertyPath: m_LocalPosition.x
       value: -7.01
@@ -1534,29 +1538,9 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 4789497493976429904, guid: 7ca10d0636bc3734b8d3d52a271a73c0, type: 3}
-      propertyPath: m_TagString
-      value: Player
-      objectReference: {fileID: 0}
-    - target: {fileID: 5612210870665603907, guid: 7ca10d0636bc3734b8d3d52a271a73c0, type: 3}
-      propertyPath: m_TagString
-      value: Player
-      objectReference: {fileID: 0}
     - target: {fileID: 6837292219011752717, guid: 7ca10d0636bc3734b8d3d52a271a73c0, type: 3}
       propertyPath: m_Name
       value: Player
-      objectReference: {fileID: 0}
-    - target: {fileID: 8830129102625074582, guid: 7ca10d0636bc3734b8d3d52a271a73c0, type: 3}
-      propertyPath: m_Sprite
-      value: 
-      objectReference: {fileID: 21300000, guid: 9c58e4f5f4a3e1842a5b7e409f0786a3, type: 3}
-    - target: {fileID: 8842012382244513926, guid: 7ca10d0636bc3734b8d3d52a271a73c0, type: 3}
-      propertyPath: jumpForce
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 8842012382244513926, guid: 7ca10d0636bc3734b8d3d52a271a73c0, type: 3}
-      propertyPath: jumpBufferTime
-      value: 0.2
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
