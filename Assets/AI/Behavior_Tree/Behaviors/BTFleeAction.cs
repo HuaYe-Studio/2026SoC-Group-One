@@ -1,16 +1,17 @@
 using UnityEngine;
 
 /// <summary>
-/// [BT] 逃跑节点：智能逃离玩家，综合地形感知、紧迫度升级、玩家预测。
+/// [BT] 逃跑节点：智能逃离玩家，综合地形感知、紧迫度升级。
 /// 紧急度随连续跳次数递增（1.5x → 2.0x → 2.5x），拉远距离后逐步衰减。
 /// 前方遇墙时尝试反向跳跃，遇沟时尝试更远跨越跳跃。
-/// 根据玩家速度做简单预判，提前修正逃跑方向。
+/// 感知数据统一从 Blackboard 读取。
 /// 注意：Reset() 只重置内部状态，绝不调用 StopMoving 等物理副作用。
 /// </summary>
 public class BTFleeAction : BTNode
 {
     private readonly FrogAI _frog;
     private readonly AnimalBase _animal; // 通用基类引用（用于非青蛙动物）
+    private readonly Blackboard _bb;
 
     // ---- 内部状态 ----
     private int _urgencyLevel;          // 紧迫度等级：0=普通 1=慌张 2=恐慌
@@ -18,8 +19,6 @@ public class BTFleeAction : BTNode
     private float _nextMoveTime;        // 永不着地动物（如鱼）用的移动冷却计时
     private float _pushUntil;           // 极近距离强推逃生截止时间
     private float _pushDirection;       // 强推时的逃跑方向
-    private Vector2 _lastPlayerPos;
-    private Vector2 _playerVelocity;
 
     // ---- 常量 ----
     private const float UrgencyUpDistance = 3.5f;
@@ -34,27 +33,23 @@ public class BTFleeAction : BTNode
     {
         _frog = frog;
         _animal = frog;
+        _bb = frog.Board;
     }
 
     /// <summary>通用动物构造（使用 PerformMove，无地形感知）。</summary>
     public BTFleeAction(AnimalBase animal)
     {
         _animal = animal;
+        _bb = animal.Board;
     }
 
     /// <summary>当前紧迫度等级（0=普通，1=慌张，2=恐慌）。仅用于调试。</summary>
     public int UrgencyLevel => _urgencyLevel;
 
-    /// <summary>估算的玩家速度。仅用于调试。</summary>
-    public Vector2 PlayerVelocity => _playerVelocity;
-
     public override State Tick()
     {
-        // ---- 追踪玩家速度 ----
-        UpdatePlayerVelocity();
-
         // ---- 逃脱评估 ----
-        if (!_animal.IsPlayerDetected || _animal.PlayerDistance > _animal.FleeSafeDistance)
+        if (!_bb.IsPlayerVisible || _bb.PlayerDistance > _animal.FleeSafeDistance)
         {
             _animal.StopMoving();
             _animal.PlayAnimation("Idle");
@@ -65,7 +60,7 @@ public class BTFleeAction : BTNode
         // ---- 极近距离强推：防止鱼卡在玩家正上方原地抖 ----
         // 玩家和鱼横向差极小时，方向判断 Sign(toFlee.x) 会变成 0，导致不移动
         // 此时先强制朝玩家反方向推一段距离，脱离死区
-        float horizontalGap = _animal.PlayerDirection.x;
+        float horizontalGap = _bb.PlayerDirection.x;
         if (Mathf.Abs(horizontalGap) < PushThreshold && Time.time >= _pushUntil)
         {
             _pushDirection = -Mathf.Sign(horizontalGap) == 0 ? -1f : -Mathf.Sign(horizontalGap);
@@ -75,6 +70,12 @@ public class BTFleeAction : BTNode
         if (Time.time < _pushUntil)
         {
             // 强推阶段：以基础速度朝固定方向跑，不每 0.5s 换向
+            // 只在地面执行，防止空中连续施加速度造成"二段跳"
+            if (!_animal.IsGrounded)
+            {
+                _animal.StopMoving();
+                return State.Running;
+            }
             float speedMult = _animal.FleeSpeedMultiplier;
             if (_frog != null)
                 _frog.PerformHop(_pushDirection, speedMult, "Flee");
@@ -108,24 +109,21 @@ public class BTFleeAction : BTNode
 
     /// <summary>
     /// 执行一次智能逃跑移动。
-    /// 青蛙：计算方向（含预测+地形感知）、速度倍率，调用 PerformHop。
+    /// 青蛙：计算方向（含地形感知）、速度倍率，调用 PerformHop。
     /// 其他动物：直接朝反方向 PerformMove。
     /// </summary>
     private void PerformFleeMove()
     {
         // 1. 基础逃跑方向（远离玩家）
-        float baseFleeDirection = -Mathf.Sign(_animal.PlayerDirection.x);
+        float baseFleeDirection = -Mathf.Sign(_bb.PlayerDirection.x);
 
-        // 2. 玩家预测：玩家快速接近时，额外偏转逃跑方向
-        float predictedDirection = PredictFleeDirection(baseFleeDirection);
+        // 2. 地形感知（仅青蛙）：前方有墙 → 尝试反向跳
+        float finalDirection = _frog != null ? ApplyTerrainAwareness(baseFleeDirection) : baseFleeDirection;
 
-        // 3. 地形感知（仅青蛙）：前方有墙 → 尝试反向跳；前方有沟 → 尝试更远跨越跳
-        float finalDirection = _frog != null ? ApplyTerrainAwareness(predictedDirection) : predictedDirection;
-
-        // 4. 计算速度倍率（含紧迫度加成）
+        // 3. 计算速度倍率（含紧迫度加成）
         float speedMultiplier = CalculateSpeedMultiplier();
 
-        // 5. 执行移动
+        // 4. 执行移动
         if (_frog != null)
             _frog.PerformHop(finalDirection, speedMultiplier, "Flee");
         else
@@ -133,49 +131,20 @@ public class BTFleeAction : BTNode
     }
 
     /// <summary>
-    /// 玩家预测：根据玩家水平速度预判其接近趋势，修正逃跑方向。
-    /// 玩家向自己快速移动时，额外偏转 30% 方向权重，避免被堵截。
-    /// </summary>
-    private float PredictFleeDirection(float baseDirection)
-    {
-        if (Mathf.Abs(_playerVelocity.x) < 0.5f)
-            return baseDirection;
-
-        bool playerChasing = (_animal.PlayerDirection.x > 0 && _playerVelocity.x < 0)
-                          || (_animal.PlayerDirection.x < 0 && _playerVelocity.x > 0);
-
-        if (!playerChasing)
-            return baseDirection;
-
-        // 玩家速度越快，偏转越明显（最多偏转 30%）
-        float chaseIntensity = Mathf.Clamp01(Mathf.Abs(_playerVelocity.x) / 5f);
-        float deviation = 0.3f * chaseIntensity;
-
-        // 偏转方向：偏向玩家运动方向的反方向（让玩家更难以预测逃跑路线）
-        float deviationDirection = -Mathf.Sign(_playerVelocity.x);
-
-        // 混合基础方向和偏转方向
-        float blended = baseDirection * (1f - deviation) + deviationDirection * deviation;
-        return blended;
-    }
-
-    /// <summary>
-    /// 地形感知：利用 EnvironmentMonitor 的地形检测结果调整逃跑方向。
-    /// 前方有墙 → 尝试反向跳；前方有沟 → 尝试更远跨越跳（速度×1.3）。
+    /// 地形感知：利用 Blackboard 的地形感知结果调整逃跑方向。
+    /// 前方有墙 → 尝试反向跳（换个方向逃跑）。
     /// </summary>
     private float ApplyTerrainAwareness(float direction)
     {
-        if (_frog.Monitor == null)
+        if (_frog == null)
             return direction;
 
         // 前方有墙 → 尝试反向跳（换个方向逃跑）
-        if (_frog.Monitor.IsWallAhead)
+        if (_bb.IsWallAhead)
         {
             return -direction;
         }
 
-        // 前方有沟 → 不做方向改变，但可以在这里增加跳跃力度（由 CalculateSpeedMultiplier 统一处理）
-        // 目前保持方向不变，返回原方向
         return direction;
     }
 
@@ -191,7 +160,7 @@ public class BTFleeAction : BTNode
         float urgencyBonus = urgencyMultipliers[Mathf.Clamp(_urgencyLevel, 0, UrgencyMaxLevel)];
 
         // 前方有沟 → 额外 1.3 倍尝试跨越（仅青蛙）
-        float gapBonus = (_frog != null && _frog.Monitor != null && _frog.Monitor.IsGapAhead) ? 1.3f : 1f;
+        float gapBonus = (_frog != null && _bb.IsGapAhead) ? 1.3f : 1f;
 
         return _animal.FleeSpeedMultiplier * urgencyBonus * gapBonus;
     }
@@ -203,23 +172,14 @@ public class BTFleeAction : BTNode
     /// </summary>
     private void EscalateUrgency()
     {
-        if (_animal.PlayerDistance < UrgencyUpDistance)
+        if (_bb.PlayerDistance < UrgencyUpDistance)
         {
             _urgencyLevel = Mathf.Min(_urgencyLevel + 1, UrgencyMaxLevel);
         }
-        else if (_animal.PlayerDistance > UrgencyDecayDistance)
+        else if (_bb.PlayerDistance > UrgencyDecayDistance)
         {
             _urgencyLevel = Mathf.Max(_urgencyLevel - 1, 0);
         }
-    }
-
-    /// <summary>
-    /// 通过两帧位置差估算玩家速度（仅在玩家被检测到时有效）。
-    /// </summary>
-    private void UpdatePlayerVelocity()
-    {
-        _playerVelocity = Vector2.zero;
-        return;
     }
 
     /// <summary>
@@ -231,7 +191,5 @@ public class BTFleeAction : BTNode
         _urgencyLevel = 0;
         _wasGroundedLastFrame = false;
         _nextMoveTime = 0f;
-        _playerVelocity = Vector2.zero;
-        _lastPlayerPos = Vector2.zero;
     }
 }

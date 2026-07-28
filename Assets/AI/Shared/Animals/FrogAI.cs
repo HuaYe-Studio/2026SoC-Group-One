@@ -37,10 +37,10 @@ public class FrogAI : AnimalBase
     private float _nextIdleHopTime;
     private bool _hasIdleHopped;
 
-    // 覆写基类食物属性，数据来源于 EnvironmentMonitor
-    public override bool IsFoodDetected => Monitor != null && Monitor.IsFoodDetected;
-    public override Vector2 FoodDirection => Monitor != null ? Monitor.FoodDirection : Vector2.zero;
-    public override float FoodDistance => Monitor != null ? Monitor.FoodDistance : 0f;
+    // 覆写基类食物属性，数据来源于 Blackboard（由 EnvironmentMonitor 写入）
+    public override bool IsFoodDetected => Board.IsFoodDetected;
+    public override Vector2 FoodDirection => Board.FoodDirection;
+    public override float FoodDistance => Board.FoodDistance;
 
     protected override void Awake()
     {
@@ -157,6 +157,7 @@ public class FrogAI : AnimalBase
         Fsm.RegisterState(new RestState(Fsm, this));
         Fsm.RegisterState(new PounceState(Fsm, this));
         Fsm.RegisterState(new FleeState(Fsm, this));
+        Fsm.RegisterState(new StunnedState(Fsm, this, 0.5f));
     }
 
     /// <summary>

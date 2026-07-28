@@ -234,6 +234,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   grantedForm: 1
+  stunDurationAfterSpit: 2.5
 --- !u!114 &4664454892179609109
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -293,11 +294,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 77d2284fb26a85b4380ae6d804db4446, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _threatRadius: 8
+  _visionRadius: 8
+  _visionHalfAngle: 30
+  _hearingRadius: 4
   _threatLayer:
     serializedVersion: 2
     m_Bits: 64
   _fleeRadius: 5
+  _moveSpeedThreshold: 0.5
+  _threatRiseRate: 40
+  _threatCalmRate: 10
+  _threatDecayRate: 15
+  _memoryDuration: 5
   _foodRadius: 10
   _foodLayer:
     serializedVersion: 2
@@ -311,6 +319,7 @@ MonoBehaviour:
   _fellowLayer:
     serializedVersion: 2
     m_Bits: 0
+  _enableDebugLog: 0
 --- !u!114 &3274312556539779992
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -325,4 +334,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _restDurationMin: 3
   _restDurationMax: 6
+  _searchThreatThreshold: 30
   _enableDebugLog: 0

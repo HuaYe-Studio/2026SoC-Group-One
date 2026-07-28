@@ -43,7 +43,7 @@ public class BTWanderAction : BTNode
         {
             _nextWallCheck = Time.time + WallCheckInterval;
 
-            if (_animal.Monitor != null && _animal.Monitor.IsWallAhead)
+            if (_animal.Board.IsWallAhead)
             {
                 _swimDirection = -_swimDirection;
                 _nextTurn = Time.time + Random.Range(1.5f, 3f);
