@@ -17,8 +17,8 @@ public class Signboard : MonoBehaviour
     }
     private void OnTriggerEnter2D(Collider2D other)
     {
-        Debug.Log("111" + other.name); 
-        if (other.CompareTag("Player"))
+        Debug.Log("111" + other.name);
+        if (other.gameObject.layer == LayerMask.NameToLayer("Player"))
         {
             if (uiHint != null)
             {
@@ -29,7 +29,7 @@ public class Signboard : MonoBehaviour
 
     private void OnTriggerExit2D(Collider2D other)
     {
-        if (other.CompareTag("Player"))
+        if (other.gameObject.layer == LayerMask.NameToLayer("Player"))
         {
             if (uiHint != null)
             {
