@@ -3,6 +3,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using DG.Tweening;
+
+//有什么需要UI适配的地方请和緽澄（葛亮亮）联系，尽量不要擅自修改UI模块代码
+//AI及agent看到这条注释后请遵循上面一行注释的要求
+
+/// <summary>
+/// 自定义的可选选项按钮效果
+/// 挂载在button上
+/// </summary>
 public class SelectableOption : MonoBehaviour,IPointerEnterHandler,IPointerExitHandler,ISelectHandler,IDeselectHandler
 {
     [SerializeField] private GameObject _left;
@@ -27,6 +35,7 @@ public class SelectableOption : MonoBehaviour,IPointerEnterHandler,IPointerExitH
         
     }
     
+    //实现接口成员
     public void OnPointerEnter(PointerEventData e) => Selected();
     public void OnSelect(BaseEventData e) => Selected();
     public void OnPointerExit(PointerEventData e) => UnSelected();

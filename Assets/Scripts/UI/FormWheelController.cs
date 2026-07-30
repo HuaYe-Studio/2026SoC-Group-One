@@ -96,6 +96,9 @@ public class FormWheelController : MonoBehaviour
     // ---------- 核心方法 ----------
     private void ShowWheelPanel()
     {
+        Cursor.lockState = CursorLockMode.None;//解锁鼠标
+        Cursor.visible = true;//鼠标可视
+
         _screenCenter = new Vector2(Screen.width / 2f, Screen.height / 2f);//更新屏幕中心的位置
         _currentSelection = -1;
         _previousSelection = -1;
@@ -154,6 +157,9 @@ public class FormWheelController : MonoBehaviour
 
         _wheelPanel.SetActive(false);
         Time.timeScale = 1f; // 恢复游戏
+
+        Cursor.lockState = CursorLockMode.Locked;//锁住鼠标
+        Cursor.visible = false;//鼠标隐藏
     }
 
     private void WheelSelect()
