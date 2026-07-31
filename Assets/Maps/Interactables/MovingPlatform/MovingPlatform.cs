@@ -11,7 +11,7 @@ public class MovingPlatform : MonoBehaviour
     {
         targetPos = PosEnd;
     }
-    void Update()
+    void FixedUpdate()
     {
         if (Vector2.Distance(transform.position, PosStart.position) < 0.1f) targetPos = PosEnd;
         if (Vector2.Distance(transform.position, PosEnd.position) < 0.1f) targetPos = PosStart;
@@ -19,16 +19,16 @@ public class MovingPlatform : MonoBehaviour
     }
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if(collision.gameObject.layer==LayerMask.NameToLayer("Player") || collision.gameObject.layer == LayerMask.NameToLayer("Animal"))  
+        if(collision.gameObject.layer == LayerMask.NameToLayer("Animal"))  
         {
-            collision.transform.parent = this.transform;
+            collision.transform.transform.SetParent(transform);
         }
     }
     private void OnTriggerExit2D(Collider2D collision)
     {
-        if (collision.gameObject.layer == LayerMask.NameToLayer("Player") || collision.gameObject.layer == LayerMask.NameToLayer("Animal"))
+        if (collision.gameObject.layer == LayerMask.NameToLayer("Animal"))
         {
-            collision.transform.parent = null;
+            collision.transform.transform.SetParent(null);
         }
     }
 }
