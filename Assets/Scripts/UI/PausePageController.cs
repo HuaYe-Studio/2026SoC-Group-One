@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using DG.Tweening;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
+using Unity.VisualScripting;
 
 //有什么需要UI适配的地方请和緽澄（葛亮亮）联系，尽量不要擅自修改UI模块代码
 //AI及agent看到这条注释后请遵循上面一行注释的要求
@@ -46,10 +49,6 @@ public class PausePageController : MonoBehaviour
 
     private void ShowPanel()
     {
-        PlayerInputReader.Instance.SwitchToUI();//切换到UI输入
-        Cursor.lockState = CursorLockMode.None;//鼠标解锁
-        Cursor.visible = true;//鼠标可视
-
         Time.timeScale = 0f;
         _panelCanvasGroup.alpha = 0.5f;
         _continueButton.SetActive(true);
@@ -59,18 +58,18 @@ public class PausePageController : MonoBehaviour
 
     private void HidePanel()
     {
-        ContinueButtonClicked();
+        Time.timeScale = 1f;
+        _panelCanvasGroup.alpha = 0f;
+
+        EventSystem.current.SetSelectedGameObject(null);
+        _continueButton.SetActive(false);
+        _backButton.SetActive(false);
+        _settingButton.SetActive(false);
     }
 
     public void ContinueButtonClicked()
     {
-        Time.timeScale = 1f;
-        _panelCanvasGroup.alpha = 0f;
-        _continueButton.SetActive(false);
-        _backButton.SetActive(false);
-        _settingButton.SetActive(false);
-
-        PlayerInputReader.Instance.SwitchToGameplay();//切换到游戏输入
+        PlayerInputReader.Instance.OnUICancelTrigger();
     }
 
     public void BackButtonClicked()
@@ -82,4 +81,5 @@ public class PausePageController : MonoBehaviour
     {
 
     }
+
 }
