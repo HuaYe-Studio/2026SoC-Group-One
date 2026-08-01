@@ -233,7 +233,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8739218918603711872}
   m_Layer: 0
-  m_Name: MovingPlatform
+  m_Name: PF_Mech_MovingPlatform
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
