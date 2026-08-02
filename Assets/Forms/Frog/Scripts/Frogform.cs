@@ -65,8 +65,6 @@ public class FrogForm : BaseForm
 
     private void DoJump()
     {
-        if (!CanJump()) return;
-
         _coyoteTimer = 0f;
         _jumpBufferTimer = 0f;
 
