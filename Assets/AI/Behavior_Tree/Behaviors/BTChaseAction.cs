@@ -9,23 +9,43 @@ public class BTChaseAction : BTNode
     private readonly AnimalBase _animal;
     private readonly float _chaseSpeedMultiplier;
     private readonly float _eatRange;
+    private readonly float _timeout;
 
     private bool _hasChased;
+    private float _startTime;
+    private bool _hasStarted;
 
     /// <param name="animal">动物实例</param>
     /// <param name="chaseSpeedMultiplier">追击速度倍率</param>
     /// <param name="eatRange">吃到判定距离</param>
-    public BTChaseAction(AnimalBase animal, float chaseSpeedMultiplier = 1.8f, float eatRange = 0.6f)
+    /// <param name="timeout">超时秒数：开始追击后此时间内未吃到食物则返回 Failure（防止对不可达食物无限扑跳）</param>
+    public BTChaseAction(AnimalBase animal, float chaseSpeedMultiplier = 1.8f, float eatRange = 0.6f, float timeout = 4f)
     {
         _animal = animal;
         _chaseSpeedMultiplier = chaseSpeedMultiplier;
         _eatRange = eatRange;
+        _timeout = timeout;
     }
 
     public override State Tick()
     {
+        // 进入节点即开始计时（首次进入时）
+        if (!_hasStarted)
+        {
+            _hasStarted = true;
+            _startTime = Time.time;
+        }
+
         // 目标丢失或距离过远 → 放弃
         if (!_animal.IsFoodDetected || _animal.FoodDistance > _animal.DetectionRadius * 1.5f)
+        {
+            Reset();
+            _animal.PlayAnimation("Idle");
+            return State.Failure;
+        }
+
+        // 超时未吃到 → 放弃（食物可能在墙后/高台上不可达）
+        if (Time.time - _startTime > _timeout)
         {
             Reset();
             _animal.PlayAnimation("Idle");
@@ -59,6 +79,8 @@ public class BTChaseAction : BTNode
     public override void Reset()
     {
         _hasChased = false;
+        _hasStarted = false;
+        _startTime = 0f;
     }
 
     /// <summary>

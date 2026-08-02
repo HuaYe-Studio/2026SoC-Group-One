@@ -54,29 +54,34 @@ public class FrogBT : MonoBehaviour
             new BTCondition(() => bb.IsStunned),
             new BTStunnedAction(_frog));
 
-        // 分支1：玩家可见且威胁足够高 → 逃跑
+        // 分支1：移动指令已下达但几乎没位移（卡死）→ 脱困（仅次于眩晕）
+        BTNode unstickBranch = new BTSequence(
+            new BTCondition(() => _frog.IsStuck),
+            new BTUnstickAction(_frog));
+
+        // 分支2：玩家可见且威胁足够高 → 逃跑
         _fleeAction = new BTFleeAction(_frog);
         BTNode fleeBranch = new BTSequence(
             new BTCondition(() => bb.IsThreatUrgent),
             _fleeAction);
 
-        // 分支2：玩家不可见但有威胁记忆 → 前往最后已知位置搜索
+        // 分支3：玩家不可见但有威胁记忆 → 前往最后已知位置搜索
         BTNode searchBranch = new BTSequence(
             new BTCondition(() => bb.ShouldSearch && bb.ThreatLevel >= _searchThreatThreshold),
             new BTSearchAction(_frog, 1f, 1.2f)
         );
 
-        // 分支3：检测到食物 → 捕食
+        // 分支4：检测到食物 → 捕食
         BTNode pounceBranch = new BTSequence(
             new BTCondition(() => bb.IsFoodDetected),
             new BTChaseAction(_frog, 1.8f, 0.6f));
 
-        // 分支4：默认觅食循环 → 落地后先休息几秒 → 跳一次 → 落地再休息，循环
+        // 分支5：默认觅食循环 → 落地后先休息几秒 → 跳一次 → 落地再休息，循环
         BTNode forageBranch = new BTSequence(
             new BTRestAction(_frog, _restDurationMin, _restDurationMax),
             new BTMoveAction(_frog, GetForageDirection, 1f, () => _enableDebugLog));
 
-        return new BTSelector(stunnedBranch, fleeBranch, searchBranch, pounceBranch, forageBranch);
+        return new BTSelector(stunnedBranch, unstickBranch, fleeBranch, searchBranch, pounceBranch, forageBranch);
     }
 
     /// <summary>
@@ -113,6 +118,7 @@ public class FrogBT : MonoBehaviour
         Blackboard bb = _frog.Board;
 
         string branch = bb.IsStunned ? "Stunned眩晕"
+            : _frog.IsStuck ? "Unstick脱困"
             : bb.IsThreatUrgent ? "Flee逃跑"
             : bb.ShouldSearch ? "Search搜索"
             : bb.IsFoodDetected ? "Pounce捕食"

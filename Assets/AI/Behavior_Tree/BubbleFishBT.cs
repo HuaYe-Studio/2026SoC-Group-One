@@ -48,6 +48,11 @@ public class BubbleFishBT : MonoBehaviour
             new BTStunnedAction(_fish)
         );
 
+        BTNode unstickBranch = new BTSequence(
+            new BTCondition(() => _fish.IsStuck),
+            new BTUnstickAction(_fish)
+        );
+
         BTNode avoidBranch = new BTSequence(
             new BTCondition(() => bb.IsPlayerVisible && bb.PlayerDistance < _avoidDistance),
             new BTAvoidAction(_fish, _avoidStep)
@@ -60,7 +65,7 @@ public class BubbleFishBT : MonoBehaviour
 
         BTNode wanderBranch = new BTWanderAction(_fish, _wanderRange);
 
-        return new BTSelector(stunnedBranch, avoidBranch, circleBranch, wanderBranch);
+        return new BTSelector(stunnedBranch, unstickBranch, avoidBranch, circleBranch, wanderBranch);
     }
 
     private void Update()
@@ -82,6 +87,7 @@ public class BubbleFishBT : MonoBehaviour
         Blackboard bb = _fish.Board;
 
         string branch = bb.IsStunned ? "Stunned"
+            : _fish.IsStuck ? "Unstick"
             : bb.IsPlayerVisible && bb.PlayerDistance < _avoidDistance ? "Avoid"
             : bb.IsPlayerVisible ? "Circle"
             : "Wander";

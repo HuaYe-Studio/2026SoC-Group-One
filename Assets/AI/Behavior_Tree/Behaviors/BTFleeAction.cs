@@ -19,6 +19,8 @@ public class BTFleeAction : BTNode
     private float _nextMoveTime;        // 永不着地动物（如鱼）用的移动冷却计时
     private float _pushUntil;           // 极近距离强推逃生截止时间
     private float _pushDirection;       // 强推时的逃跑方向
+    private int _consecutiveWallHits;   // 连续撞墙次数（防墙角乒乓）
+    private float _lastWallHitTime;     // 最近一次撞墙时间戳
 
     // ---- 常量 ----
     private const float UrgencyUpDistance = 3.5f;
@@ -91,7 +93,10 @@ public class BTFleeAction : BTNode
         bool justLanded = _animal.IsGrounded && !_wasGroundedLastFrame;
 
         // 鱼等永不着地动物：每 0.5s 定时更新逃跑方向，而不是只触发一次就停住
-        bool timerElapsed = _animal.IsGrounded && _wasGroundedLastFrame && Time.time >= _nextMoveTime;
+        // 注意：定时路径仅对"永不着地动物"（_frog==null，IsGrounded 恒 true）生效，
+        // 防止青蛙落地帧同时命中 justLanded 与 timerElapsed 造成连续两次起跳（紧迫度误翻倍）
+        bool timerElapsed = _frog == null
+            && _animal.IsGrounded && _wasGroundedLastFrame && Time.time >= _nextMoveTime;
 
         if (justLanded || timerElapsed)
         {
@@ -132,18 +137,29 @@ public class BTFleeAction : BTNode
 
     /// <summary>
     /// 地形感知：利用 Blackboard 的地形感知结果调整逃跑方向。
-    /// 前方有墙 → 尝试反向跳（换个方向逃跑）。
+    /// 前方有墙 → 第1次反向跳（换方向逃）；连续撞墙 → 原地垂直跳，
+    /// 避免"逃离→撞墙→朝玩家方向跳→再撞墙"的墙角乒乓。
     /// </summary>
     private float ApplyTerrainAwareness(float direction)
     {
         if (_frog == null)
             return direction;
 
-        // 前方有墙 → 尝试反向跳（换个方向逃跑）
         if (_bb.IsWallAhead)
         {
+            _consecutiveWallHits++;
+            _lastWallHitTime = Time.time;
+
+            // 连续撞墙 ≥2 次：原地垂直跳（方向 0 只加垂直力），先挣脱墙角再做方向选择
+            if (_consecutiveWallHits >= 2)
+                return 0f;
+
             return -direction;
         }
+
+        // 一段时间未撞墙 → 重置计数
+        if (Time.time - _lastWallHitTime > 0.5f)
+            _consecutiveWallHits = 0;
 
         return direction;
     }
@@ -183,6 +199,17 @@ public class BTFleeAction : BTNode
     }
 
     /// <summary>
+    /// 被高优先级分支打断或重新进入时由行为树调用。
+    /// 必须覆写：否则恐慌等级/墙计数会跨逃跑片段残留，
+    /// 导致下次逃跑从"恐慌"起步（B2）。
+    /// 只做纯状态清理，绝不调用 StopMoving 等物理副作用。
+    /// </summary>
+    public override void Reset()
+    {
+        ResetInternalState();
+    }
+
+    /// <summary>
     /// 重置内部状态（逃脱成功或被更高优先级打断时调用）。
     /// 只做纯状态清理，绝不调用 StopMoving 等物理副作用。
     /// </summary>
@@ -191,5 +218,7 @@ public class BTFleeAction : BTNode
         _urgencyLevel = 0;
         _wasGroundedLastFrame = false;
         _nextMoveTime = 0f;
+        _consecutiveWallHits = 0;
+        _lastWallHitTime = 0f;
     }
 }

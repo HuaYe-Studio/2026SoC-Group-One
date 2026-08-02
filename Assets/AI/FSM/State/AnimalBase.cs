@@ -23,11 +23,26 @@ public class AnimalBase : MonoBehaviour
     [Header("Flee")]
     [SerializeField] private float _fleeSpeedMultiplier = 1.5f;
 
+    [Header("Anti-Stuck (防卡死)")]
+    [Tooltip("卡死判定检查间隔（秒）：每过此间隔采样一次位移")]
+    [SerializeField] private float _stuckCheckInterval = 1f;
+    [Tooltip("卡死判定位移阈值（米）：采样间隔内位移小于此值，且期间下达过移动指令，视为卡死")]
+    [SerializeField] private float _stuckMoveThreshold = 0.3f;
+    [Tooltip("脱困冷却（秒）：一次脱困尝试后，间隔多久才允许再次判定卡死")]
+    [SerializeField] private float _stuckRetryCooldown = 3f;
+
     private Rigidbody2D _rb;
     private SpriteRenderer _spriteRenderer;
     private Transform _playerTransform;
 
     private Vector2 _spawnPosition;
+
+    // ---- 防卡死状态 ----
+    private float _lastMoveCommandTime = float.NegativeInfinity; // 最近一次移动指令时间戳
+    private Vector2 _lastStuckCheckPos;                          // 上一次卡死采样位置
+    private float _nextStuckCheckTime;                           // 下次采样时间
+    private float _stuckRetryUntil = float.NegativeInfinity;     // 脱困冷却截止时间
+    private bool _isStuck;
 
     protected FSM Fsm { get; private set; }
 
@@ -42,6 +57,12 @@ public class AnimalBase : MonoBehaviour
     public Rigidbody2D Rb => _rb;
     public SpriteRenderer SpriteRenderer => _spriteRenderer;
     public Vector2 SpawnPosition => _spawnPosition;
+
+    /// <summary>
+    /// 是否处于卡死状态：最近下达过移动指令，但采样间隔内几乎没位移。
+    /// 由 Update 中的卡死检测自动更新，供行为树/状态机触发脱困行为。
+    /// </summary>
+    public bool IsStuck => _isStuck;
 
     /// <summary>
     /// AI 认知黑板：所有语义化感知与内部状态统一存放处。
@@ -125,10 +146,30 @@ public class AnimalBase : MonoBehaviour
         Monitor = GetComponent<EnvironmentMonitor>();
 
         _spawnPosition = transform.position;
+        _lastStuckCheckPos = transform.position;
 
         FindPlayer();
         RegisterStates();
         Fsm.ChangeState<IdleState>();
+    }
+
+    /// <summary>
+    /// 记录一次移动指令（由 MoveHorizontal / 子类跳跃原语调用）。
+    /// 用于卡死判定：只有"想动却没动"才算卡死，静置/休息不算。
+    /// </summary>
+    public void NotifyMoveCommand()
+    {
+        _lastMoveCommandTime = Time.time;
+    }
+
+    /// <summary>
+    /// 通知一次脱困尝试已执行（由 BTUnstickAction 调用）。
+    /// 清除卡死标记并进入脱困冷却，避免行为树对同一卡死状态无限重试。
+    /// </summary>
+    public void NotifyUnstickAttempt()
+    {
+        _isStuck = false;
+        _stuckRetryUntil = Time.time + _stuckRetryCooldown;
     }
 
     private void FindPlayer()
@@ -155,6 +196,39 @@ public class AnimalBase : MonoBehaviour
         {
             FindPlayer();
         }
+
+        UpdateStuckDetection();
+    }
+
+    /// <summary>
+    /// 卡死检测：按采样间隔比较位移。
+    /// 仅当"最近下达过移动指令"时参与判定，否则视为正常静置。
+    /// 脱困冷却期间跳过检测，给脱困行为留出生效时间。
+    /// </summary>
+    private void UpdateStuckDetection()
+    {
+        // 脱困冷却中：不重新判定卡死
+        if (Time.time < _stuckRetryUntil)
+        {
+            _isStuck = false;
+            return;
+        }
+
+        if (Time.time < _nextStuckCheckTime)
+            return;
+        _nextStuckCheckTime = Time.time + _stuckCheckInterval;
+
+        // 没有移动指令（静置/休息中）不判定卡死
+        if (Time.time - _lastMoveCommandTime > _stuckCheckInterval)
+        {
+            _isStuck = false;
+            return;
+        }
+
+        float moved = Vector2.Distance(transform.position, _lastStuckCheckPos);
+        _lastStuckCheckPos = transform.position;
+
+        _isStuck = moved < _stuckMoveThreshold;
     }
 
     /// <summary>
@@ -164,6 +238,8 @@ public class AnimalBase : MonoBehaviour
     /// <param name="speedMultiplier">速度倍率，默认1</param>
     public void MoveHorizontal(float direction, float speedMultiplier = 1f)
     {
+        NotifyMoveCommand();
+
         _rb.velocity = new Vector2(direction * _moveSpeed * speedMultiplier, _rb.velocity.y);
 
         if (_spriteRenderer != null && Mathf.Abs(direction) > 0.05f)
