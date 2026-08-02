@@ -168,7 +168,9 @@ public class PlayerInputReader : MonoBehaviour
     private void OnEatSpitStartedHandler(InputAction.CallbackContext ctx) => OnEatSpitStarted?.Invoke();
     private void OnEatSpitCanceledHandler(InputAction.CallbackContext ctx) => OnEatSpitCanceled?.Invoke();
     private void OnMenuHandler(InputAction.CallbackContext ctx) => OnMenu?.Invoke();
+    public void OnMenuTrigger()=>OnMenu?.Invoke();
     private void OnUICancelHandler(InputAction.CallbackContext ctx) => OnUICancel?.Invoke();
+    public void OnUICancelTrigger()=>OnUICancel?.Invoke();
 
     private void OnAbility1StartedHandler(InputAction.CallbackContext ctx) => OnAbility1Started?.Invoke();
     private void OnAbility1PerformedHandler(InputAction.CallbackContext ctx)
