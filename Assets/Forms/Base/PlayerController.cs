@@ -111,6 +111,7 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
+        if (!PlayerInputReader.HasInstance) return;
         float horizontal = PlayerInputReader.Instance.MoveValue.x;
 
         if (ActiveForm != null)

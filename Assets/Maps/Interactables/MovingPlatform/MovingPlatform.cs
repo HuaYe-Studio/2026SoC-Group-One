@@ -26,9 +26,9 @@ public class MovingPlatform : MonoBehaviour
     }
     private void OnTriggerExit2D(Collider2D collision)
     {
-        if (collision.gameObject.layer == LayerMask.NameToLayer("Animal"))
+        if (collision.gameObject.layer == LayerMask.NameToLayer("Animal") && collision.transform.parent == transform)
         {
-            collision.transform.transform.SetParent(null);
+            collision.transform.SetParent(null);
         }
     }
 }
