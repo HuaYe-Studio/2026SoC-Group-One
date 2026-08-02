@@ -264,24 +264,7 @@ MonoBehaviour:
   _groundLayer:
     serializedVersion: 2
     m_Bits: 8
-  _idleHopForce: 5
-  _idleHopSpeed: 1.5
-  _idleHopIntervalMin: 1.5
-  _idleHopIntervalMax: 4
   _animator: {fileID: 4469829590964368041}
---- !u!114 &-8152437610293847561
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1371001067666427009}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d7755a31e93841d42ac76f496e14e700, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _enableDebugLog: 0
 --- !u!114 &-9223372036854775808
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -2,10 +2,9 @@ using UnityEngine;
 
 /// <summary>
 /// 动物AI基类，挂载到动物NPC的GameObject上。
-/// 负责组装FSM、注册状态、提供感知与移动等共用能力给各子状态使用。
-/// 使用方式：子类继承后在Awake中配置各状态的构造参数。
+/// 负责提供感知与移动等共用能力给子类与行为树节点使用。
+/// 使用方式：子类继承后在Awake中配置各移动参数。
 /// </summary>
-[RequireComponent(typeof(FSM))]
 [RequireComponent(typeof(Rigidbody2D))]
 public class AnimalBase : MonoBehaviour
 {
@@ -44,8 +43,6 @@ public class AnimalBase : MonoBehaviour
     private float _stuckRetryUntil = float.NegativeInfinity;     // 脱困冷却截止时间
     private bool _isStuck;
 
-    protected FSM Fsm { get; private set; }
-
     public float MoveSpeed => _moveSpeed;
     public float PatrolPauseMin => _patrolPauseMin;
     public float PatrolPauseMax => _patrolPauseMax;
@@ -60,7 +57,7 @@ public class AnimalBase : MonoBehaviour
 
     /// <summary>
     /// 是否处于卡死状态：最近下达过移动指令，但采样间隔内几乎没位移。
-    /// 由 Update 中的卡死检测自动更新，供行为树/状态机触发脱困行为。
+    /// 由 Update 中的卡死检测自动更新，供行为树触发脱困行为。
     /// </summary>
     public bool IsStuck => _isStuck;
 
@@ -132,15 +129,10 @@ public class AnimalBase : MonoBehaviour
         Board.ClearThreat();
         Board.StunUntilTime = Time.time + stunDuration;
         StopMoving();
-
-        // FSM 驱动时同步切到眩晕状态（BT 驱动时 FSM 已禁用，由黑板眩晕标记生效）
-        if (Fsm != null && Fsm.enabled)
-            Fsm.ChangeState<StunnedState>();
     }
 
     protected virtual void Awake()
     {
-        Fsm = GetComponent<FSM>();
         _rb = GetComponent<Rigidbody2D>();
         _spriteRenderer = GetComponent<SpriteRenderer>();
         Monitor = GetComponent<EnvironmentMonitor>();
@@ -149,8 +141,6 @@ public class AnimalBase : MonoBehaviour
         _lastStuckCheckPos = transform.position;
 
         FindPlayer();
-        RegisterStates();
-        Fsm.ChangeState<IdleState>();
     }
 
     /// <summary>
@@ -177,17 +167,6 @@ public class AnimalBase : MonoBehaviour
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player != null)
             _playerTransform = player.transform;
-    }
-
-    /// <summary>
-    /// 子类覆写此方法以注册自定义状态集合。
-    /// 默认注册 Idle / Patrol / Flee 三种基础状态。
-    /// </summary>
-    protected virtual void RegisterStates()
-    {
-        Fsm.RegisterState(new IdleState(Fsm, this, () => Fsm.ChangeState<PatrolState>()));
-        Fsm.RegisterState(new PatrolState(Fsm, this));
-        Fsm.RegisterState(new FleeState(Fsm, this));
     }
 
     protected virtual void Update()
