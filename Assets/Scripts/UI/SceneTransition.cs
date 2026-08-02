@@ -62,6 +62,9 @@ public class SceneTransition : UISingleton<SceneTransition>
         //触发UI取消事件，防止在切换场景时UI还处于选中状态
         PlayerInputReader.Instance.OnUICancelTrigger();
 
+        //触发场景切换事件，在切换场景前触发，传递参数为：fromScene,toScene
+        UIEventCenter.TriggerSceneChanged(SceneManager.GetActiveScene().name, sceneName);
+
         StartCoroutine(Co_Transition(sceneName));
 
         //如果切换到主菜单场景，触发菜单事件
@@ -69,6 +72,7 @@ public class SceneTransition : UISingleton<SceneTransition>
         {
             PlayerInputReader.Instance.OnMenuTrigger();
         }
+
     }
 
     private IEnumerator Co_Transition(string sceneName)
@@ -91,7 +95,7 @@ public class SceneTransition : UISingleton<SceneTransition>
 
         //设置加载中UI的完整图片的大小为半边门宽度的两倍和屏幕高度
         RectTransform loadingImageRect = _loadingImage.GetComponent<RectTransform>();
-        loadingImageRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, _desiredSize.x*2);
+        loadingImageRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, _desiredSize.x * 2);
         loadingImageRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _desiredSize.y);
 
         //设置加载中UI的完整图片的旋转动画
@@ -124,7 +128,7 @@ public class SceneTransition : UISingleton<SceneTransition>
                 Sequence openDoor = DOTween.Sequence().SetUpdate(true);
                 openDoor.Join(_doorLeft.DOAnchorPosX(-_doorWidth, _duration).SetEase(_ease));
                 openDoor.Join(_doorRight.DOAnchorPosX(_doorWidth, _duration).SetEase(_ease));
-                
+
             }
         });
 

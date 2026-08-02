@@ -43,7 +43,10 @@ public class FormWheelController : MonoBehaviour
         }
 
         // 初始化已解锁形态列表和排序后的选项数组
+        // 此处需要和存档模块联动，以读取目前已解锁动物列表，暂时简略处理
+        Debug.Log("UI:存档系统暂时未接入，暂时使用默认解锁形态列表");
         _rankedOptions.Add(_wheelOptions[0]); // 取消区域，序号0
+
         if (unlockedFormTypes.Count == 0)
         {
             if (_formTypeToWheelOption.TryGetValue(FormType.Slime, out var slimeOption))
@@ -52,7 +55,7 @@ public class FormWheelController : MonoBehaviour
                 _rankedOptions.Add(slimeOption);
             }
         }
-        // 此处需要和存档模块联动，以读取目前已解锁动物列表
+
     }
 
     void Start()
@@ -64,6 +67,7 @@ public class FormWheelController : MonoBehaviour
     void OnEnable()
     {
         MockEventCenter.OnFormUnlocked += AddUnlockedForm;
+        UIEventCenter.OnSceneChanged += ReSetWheelOptions;
 
         if (PlayerInputReader.HasInstance)
         {
@@ -75,6 +79,7 @@ public class FormWheelController : MonoBehaviour
     void OnDisable()
     {
         MockEventCenter.OnFormUnlocked -= AddUnlockedForm;
+        UIEventCenter.OnSceneChanged -= ReSetWheelOptions;
 
         if (PlayerInputReader.HasInstance)
         {
@@ -224,6 +229,13 @@ public class FormWheelController : MonoBehaviour
             unlockedFormTypes.Add(form);
             _rankedOptions.Add(option);
         }
+    }
+
+    //清空相关数组，一遍下次存档读取覆盖
+    private void ReSetWheelOptions(string fromSceneName,string toScene)
+    {
+        _rankedOptions.Clear();
+        unlockedFormTypes.Clear();
     }
 }
 

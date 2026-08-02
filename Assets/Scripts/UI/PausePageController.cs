@@ -74,7 +74,7 @@ public class PausePageController : MonoBehaviour
 
     public void BackButtonClicked()
     {
-
+        SceneTransition.Instance.GoToScene("Scene_MainMenu");
     }
 
     public void SettingButtonClicked()
