@@ -91,6 +91,14 @@ public class EnvironmentMonitor : MonoBehaviour
     {
         if (_bb == null) return;
 
+        // 眩晕期间不感知：清空可见标记，防止眩晕中威胁值继续上涨、
+        // 导致吐出后 AI 立即因贴脸玩家而受惊逃跑（B5）
+        if (_bb.IsStunned)
+        {
+            _bb.IsPlayerVisible = false;
+            return;
+        }
+
         DetectThreats();
         DetectFood();
         DetectTerrain();

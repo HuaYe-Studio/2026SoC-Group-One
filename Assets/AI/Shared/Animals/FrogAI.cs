@@ -114,6 +114,8 @@ public class FrogAI : AnimalBase
     /// <param name="animName">跳跃期间播放的动画状态名，默认 Jump</param>
     public void PerformHop(float direction, float speedMultiplier = 1f, string animName = "Jump")
     {
+        NotifyMoveCommand();
+
         Rb.velocity = new Vector2(
             direction * _hopForwardSpeed * speedMultiplier,
             _hopForce

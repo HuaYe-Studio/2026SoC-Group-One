@@ -48,6 +48,8 @@ public class BubbleFishAI : AnimalBase
     /// </summary>
     public override void PerformMove(float direction, float speedMultiplier = 1f)
     {
+        NotifyMoveCommand();
+
         // 水平游动
         float horizontalVelocity = direction * _swimSpeed * speedMultiplier;
 
