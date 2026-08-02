@@ -24,7 +24,7 @@ public class DisappearingPlatform : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if (!isTriggered && collision.gameObject.CompareTag("Player"))
+        if (!isTriggered && collision.gameObject.layer == LayerMask.NameToLayer("Player"))
         {
             StartCoroutine(DisappearAndReappearRoutine());
         }

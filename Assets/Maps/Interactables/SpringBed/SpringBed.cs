@@ -7,7 +7,7 @@ public class SpringBed : MonoBehaviour
     public float Jumpforce = 9.5f;
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if(collision.gameObject.tag=="Player")
+        if(collision.gameObject.layer == LayerMask.NameToLayer("Player"))
         {
             collision.gameObject.GetComponent<Rigidbody2D>().AddForce(new Vector2(0, Jumpforce), ForceMode2D.Impulse);
         }
