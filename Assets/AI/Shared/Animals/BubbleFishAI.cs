@@ -3,9 +3,8 @@ using UnityEngine;
 /// <summary>
 /// 泡泡鱼 AI：继承 AnimalBase，适配水生环境的游动移动。
 /// 与陆地动物不同，泡泡鱼无视重力，可以在水中自由游动。
-/// 覆写 PerformMove 实现平滑游动，覆写 RegisterStates 注册水生专属状态。
+/// 覆写 PerformMove 实现平滑游动。
 /// </summary>
-[RequireComponent(typeof(FSM))]
 [RequireComponent(typeof(Rigidbody2D))]
 public class BubbleFishAI : AnimalBase
 {
@@ -89,20 +88,6 @@ public class BubbleFishAI : AnimalBase
         }
 
         _animator.SetInteger(AnimStateParam, state);
-    }
-
-    /// <summary>
-    /// 注册泡泡鱼专用状态集合：
-    /// Idle → Patrol（游动）→ 循环
-    /// 玩家靠近 → Flee（膨胀加速游走）
-    /// 被吞噬/受击 → Stunned（0.5s 僵直）
-    /// </summary>
-    protected override void RegisterStates()
-    {
-        Fsm.RegisterState(new IdleState(Fsm, this, () => Fsm.ChangeState<PatrolState>()));
-        Fsm.RegisterState(new PatrolState(Fsm, this));
-        Fsm.RegisterState(new FleeState(Fsm, this));
-        Fsm.RegisterState(new StunnedState(Fsm, this, 0.5f));
     }
 
     /// <summary>

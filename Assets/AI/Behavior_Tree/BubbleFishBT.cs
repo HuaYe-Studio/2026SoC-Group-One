@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// [BT] 泡泡鱼行为树。挂载后自动接管（禁用）FSM。
+/// [BT] 泡泡鱼行为树：挂载并启用后驱动泡泡鱼AI。
 /// 优先级：被吞噬眩晕 > 太近回避 > 绕玩家巡游 > 自由巡游。
 /// 设计思路：鱼不"看到玩家就跑远"，而是绕玩家自然游动，太近时轻轻避开一小段，
 /// 给玩家留出接近窗口，也不会被玩家压在一侧。
@@ -31,10 +31,6 @@ public class BubbleFishBT : MonoBehaviour
     private void Awake()
     {
         _fish = GetComponent<BubbleFishAI>();
-
-        FSM fsm = GetComponent<FSM>();
-        if (fsm != null)
-            fsm.enabled = false;
 
         _root = BuildTree();
     }

@@ -1,10 +1,10 @@
 using UnityEngine;
 
 /// <summary>
-/// AI 认知黑板：记录动物的内部认知状态，供行为树/状态机查询决策。
+/// AI 认知黑板：记录动物的内部认知状态，供行为树查询决策。
 /// 感知层（EnvironmentMonitor）负责写入原始感知数据，
 /// 认知层（NeedsSystem 等）负责写入内部状态，
-/// 决策层（BT / FSM）只读取语义化状态，不直接依赖物理检测。
+/// 决策层（BT）只读取语义化状态，不直接依赖物理检测。
 /// </summary>
 [System.Serializable]
 public class Blackboard
