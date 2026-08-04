@@ -31,14 +31,20 @@ public class Blackboard
     /// <summary>玩家相对于自身的方向（归一化，仅 IsPlayerVisible 时有效）。</summary>
     public Vector2 PlayerDirection;
 
+    /// <summary>动物自身当前位置（由 EnvironmentMonitor 每帧写入，用于近似距离计算）。</summary>
+    public Vector2 AnimalPosition;
+
     /// <summary>威胁记忆是否仍有效（未超过记忆保留时长）。</summary>
     public bool HasThreatMemory => Time.time - LastSeenPlayerTime <= MemoryDuration;
 
     /// <summary>记忆保留时长（秒），超时彻底遗忘。</summary>
     public float MemoryDuration = 5f;
 
-    /// <summary>逃跑触发半径：玩家进入此距离无论威胁值高低都视为紧迫威胁。</summary>
+    /// <summary>逃跑触发半径：玩家进入此距离视为紧迫威胁（进入阈值）。</summary>
     public float FleeRadius = 5f;
+
+    /// <summary>威胁解除半径：玩家离开此距离才视为安全（解除阈值，> FleeRadius，避免边界抖动）。</summary>
+    public float SafeRadius = 8f;
 
     // ---- 食物感知（由 EnvironmentMonitor 写入）----
     /// <summary>当前是否检测到食物。</summary>
@@ -77,10 +83,89 @@ public class Blackboard
     /// <summary>当前是否处于眩晕中（僵直，不感知、不行动）。</summary>
     public bool IsStunned => Time.time < StunUntilTime;
 
+    // ---- 回撤状态（由逃生节点写入，回撤节点读取）----
+    /// <summary>逃生起点：脱离危险后需要返回的位置（由逃生节点进入时记录）。</summary>
+    public Vector2 RetreatTarget;
+
+    /// <summary>当前是否存在未完成的回撤目标。</summary>
+    public bool HasRetreatTarget;
+
     // ---- 便捷语义属性（决策层常用组合判断）----
-    /// <summary>玩家是否构成紧迫威胁（威胁值足够高，或已贴脸；同形态友好除外）。</summary>
-    public bool IsThreatUrgent => IsPlayerVisible && !IsPlayerSameForm
-        && (ThreatLevel >= 50f || PlayerDistance <= FleeRadius);
+    // 迟滞状态：当前是否处于威胁中（避免 IsThreatUrgent 在 FleeRadius 边界反复跳变）
+    private bool _isThreatUrgent;
+
+    /// <summary>威胁解除的最小持续时长（秒）：进入威胁后至少维持这么久才允许解除，防止单帧抖动。</summary>
+    public float ThreatMinHoldDuration = 0.5f;
+
+    /// <summary>进入威胁的时间点（Time.time），用于最小持续时长判定。</summary>
+    private float _threatEnterTime = float.NegativeInfinity;
+
+    /// <summary>
+    /// 玩家是否构成紧迫威胁（带迟滞 + 最小持续时长：进入用 FleeRadius，解除用 SafeRadius，
+    /// 且进入后至少持续 ThreatMinHoldDuration 才允许解除，避免边界抖动导致的逃生/回撤死循环）。
+    /// 每帧由感知层或决策层调用 RefreshThreatUrgent() 刷新。
+    /// </summary>
+    public bool IsThreatUrgent => _isThreatUrgent;
+
+    /// <summary>
+    /// 刷新威胁紧迫状态（迟滞 + 最小持续时长判断）。同形态友好时恒为安全。
+    /// </summary>
+    public void RefreshThreatUrgent()
+    {
+        // 同形态友好：恒为安全
+        if (IsPlayerSameForm)
+        {
+            SetThreatUrgent(false);
+            return;
+        }
+
+        // 高威胁值立即视为紧迫——仅当距离仍在解除阈值内时生效。
+        // 距离一旦超过 SafeRadius，即使威胁值仍高也走下方距离迟滞解除，
+        // 避免"玩家一直可见且移动"时威胁值锁死、鱼一路直线逃到地图外（一去不回）。
+        if (IsPlayerVisible && ThreatLevel >= 50f && PlayerDistance <= SafeRadius)
+        {
+            SetThreatUrgent(true);
+            return;
+        }
+
+        // 玩家不可见时：用鱼到最后已知位置的距离做近似。
+        // 玩家离开后实际距离必然增大，近似距离随鱼远离而增大，迟滞窗口能正常解除威胁。
+        if (!IsPlayerVisible)
+        {
+            if (LastKnownPlayerPos == Vector2.zero)
+            {
+                // 无记忆：安全
+                SetThreatUrgent(false);
+                return;
+            }
+            float approxDistance = Vector2.Distance(AnimalPosition, LastKnownPlayerPos);
+            if (approxDistance >= SafeRadius && Time.time - _threatEnterTime >= ThreatMinHoldDuration)
+                SetThreatUrgent(false);
+            return;
+        }
+
+        // 距离迟滞：进入阈值触发，离开解除阈值才解除
+        if (PlayerDistance <= FleeRadius)
+        {
+            SetThreatUrgent(true);
+        }
+        else if (PlayerDistance >= SafeRadius)
+        {
+            // 解除前检查最小持续时长：进入时间过短则仍保持威胁，防止临界区单帧抖动
+            if (Time.time - _threatEnterTime >= ThreatMinHoldDuration)
+                SetThreatUrgent(false);
+        }
+        // FleeRadius < PlayerDistance < SafeRadius：保持 _isThreatUrgent 当前值不变
+    }
+
+    private void SetThreatUrgent(bool value)
+    {
+        if (_isThreatUrgent == value)
+            return;
+
+        _isThreatUrgent = value;
+        _threatEnterTime = value ? Time.time : float.NegativeInfinity;
+    }
 
     /// <summary>是否需要前往最后已知位置搜索（有记忆但当前不可见；同形态友好除外）。</summary>
     public bool ShouldSearch => !IsPlayerVisible && !IsPlayerSameForm && HasThreatMemory && ThreatLevel > 20f;
@@ -114,5 +199,9 @@ public class Blackboard
         IsGapAhead = false;
         HungerLevel = 0f;
         CurrentBehavior = "";
+        RetreatTarget = Vector2.zero;
+        HasRetreatTarget = false;
+        _isThreatUrgent = false;
+        _threatEnterTime = float.NegativeInfinity;
     }
 }
