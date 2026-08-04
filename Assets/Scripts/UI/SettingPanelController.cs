@@ -35,7 +35,7 @@ public class SettingPanelController : MonoBehaviour
 
         _availableResolutions = Screen.resolutions;// 获取可用分辨率列表
         _resolutionOptions = new List<string>();// 初始化分辨率选项列表
-        foreach(var res in _availableResolutions)
+        foreach (var res in _availableResolutions)
         {
             string option = res.width + " x " + res.height;// 构建分辨率选项文本
             if (!_resolutionOptions.Contains(option)) // 避免重复分辨率
@@ -60,11 +60,13 @@ public class SettingPanelController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+
     }
 
     public void ShowSettingPanel()
     {
+        UIEventCenter.TriggerMainMenuSettingPanelOpened();//触发主菜单设置面板打开事件
+
         Time.timeScale = 0f;
         _panelCanvasGroup.DOFade(1f, 0.2f).SetUpdate(true);
         _panelCanvasGroup.blocksRaycasts = true;
@@ -77,6 +79,7 @@ public class SettingPanelController : MonoBehaviour
         _panelCanvasGroup.blocksRaycasts = false;
         _panelCanvasGroup.interactable = false;
         Time.timeScale = 1f;
+        UIEventCenter.TriggerMainMenuSettingPanelClosed();//触发主菜单设置面板关闭事件
     }
 
     private void SetResolution(int index)
