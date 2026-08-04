@@ -17,6 +17,8 @@ public class EnvironmentMonitor : MonoBehaviour
     [SerializeField] private LayerMask _threatLayer;
     [Tooltip("逃跑触发半径：玩家进入此距离视为紧迫威胁")]
     [SerializeField] private float _fleeRadius = 5f;
+    [Tooltip("威胁解除半径：玩家离开此距离才视为安全（需 > 触发半径，避免临界区抖动）")]
+    [SerializeField] private float _safeRadius = 8f;
 
     [Header("Threat Cognition (Memory + Camouflage)")]
     [Tooltip("目标速度低于该值视为静止（伪装生效）")]
@@ -82,6 +84,7 @@ public class EnvironmentMonitor : MonoBehaviour
         }
         _bb.MemoryDuration = _memoryDuration;
         _bb.FleeRadius = _fleeRadius;
+        _bb.SafeRadius = _safeRadius;
 
         if (_threatLayer.value == 0)
             Debug.LogWarning($"{name}: EnvironmentMonitor 的 Threat Layer 未配置（Nothing），玩家检测将永远不生效", this);
@@ -98,6 +101,8 @@ public class EnvironmentMonitor : MonoBehaviour
             _bb.IsPlayerVisible = false;
             return;
         }
+
+        _bb.AnimalPosition = transform.position;
 
         DetectThreats();
         DetectFood();
@@ -214,6 +219,9 @@ public class EnvironmentMonitor : MonoBehaviour
             if (!_bb.HasThreatMemory)
                 _bb.LastKnownPlayerPos = Vector2.zero;
         }
+
+        // 感知数据写入完毕后，刷新带迟滞的威胁紧迫状态（供逃生/回撤决策使用）
+        _bb.RefreshThreatUrgent();
     }
 
     /// <summary>
@@ -337,6 +345,10 @@ public class EnvironmentMonitor : MonoBehaviour
         // 逃跑触发范围
         Gizmos.color = new Color(1f, 0.3f, 0f, 0.2f);
         Gizmos.DrawWireSphere(transform.position, _fleeRadius);
+
+        // 威胁解除范围（迟滞外环）
+        Gizmos.color = new Color(0.3f, 1f, 0.3f, 0.12f);
+        Gizmos.DrawWireSphere(transform.position, _safeRadius);
 
         // 食物探测范围
         Gizmos.color = new Color(0f, 1f, 0f, 0.15f);
