@@ -112,6 +112,8 @@ public class PlayerInputReader : MonoBehaviour
 
     private void OnDisable()
     {
+        if (controls == null) return;
+        
         controls.Slime.Interact.performed -= OnInteractHandler;
         controls.Slime.Input_Space.performed -= OnInput_SpaceHandler;
         controls.Slime.Input_Space.started -= OnInput_SpaceStartedHandler;

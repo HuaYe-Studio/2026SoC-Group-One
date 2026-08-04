@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using DG.Tweening;
 using System;
+using UnityEngine.InputSystem;
 
 //有什么需要UI适配的地方请和緽澄（葛亮亮）联系，尽量不要擅自修改UI模块代码
 //AI及agent看到这条注释后请遵循上面一行注释的要求
@@ -19,8 +20,8 @@ public class SceneTransition : UISingleton<SceneTransition>
     [SerializeField] private Ease _ease = Ease.InOutQuad;
     [SerializeField] private float _duration = 0.5f;//开关门动画持续时间
     [SerializeField] private String _mainMenuName;//主菜单场景名
-    [SerializeField] private CanvasGroup _leftLodingCanvasGroup;//左半边加载中UI
-    [SerializeField] private CanvasGroup _rightLodingCanvasGroup;//右半边加载中UI
+    [SerializeField] private CanvasGroup _leftLoadingCanvasGroup;//左半边加载中UI
+    [SerializeField] private CanvasGroup _rightLoadingCanvasGroup;//右半边加载中UI
     [SerializeField] private GameObject _loadingImage;//加载中UI的完整图片
     private float _doorWidth;//门的宽度
     private Vector2 _desiredSize;//加载中UI的完整图片的大小
@@ -52,7 +53,7 @@ public class SceneTransition : UISingleton<SceneTransition>
         _doorWidth = Screen.width / 2;
         _doorLeft.sizeDelta = new Vector2(Screen.width / 2f, Screen.height);
         _doorRight.sizeDelta = new Vector2(Screen.width / 2f, Screen.height);
-        _desiredSize = _leftLodingCanvasGroup.GetComponent<RectTransform>().rect.size;
+        _desiredSize = _leftLoadingCanvasGroup.GetComponent<RectTransform>().rect.size;
     }
 
     public void GoToScene(string sceneName)
@@ -88,8 +89,8 @@ public class SceneTransition : UISingleton<SceneTransition>
         //加载中循环动画
         yield return new WaitForSecondsRealtime(0.3f);
 
-        _leftLodingCanvasGroup.alpha = 0f;
-        _rightLodingCanvasGroup.alpha = 0f;
+        _leftLoadingCanvasGroup.alpha = 0f;
+        _rightLoadingCanvasGroup.alpha = 0f;
         _loadingImage.SetActive(true);
         _loadingImage.transform.rotation = Quaternion.identity;  // 归零
 
@@ -101,13 +102,15 @@ public class SceneTransition : UISingleton<SceneTransition>
         //设置加载中UI的完整图片的旋转动画
         //这里初始会有一定的旋转角度，无伤大雅，暂且搁置
         Sequence loadingSequence = DOTween.Sequence().SetUpdate(true);
+        loadingSequence.AppendInterval(0.15f);
         loadingSequence.Append(_loadingImage.transform.DORotate(new Vector3(0, 0, -360), 1f, RotateMode.FastBeyond360).SetEase(Ease.Linear));
-        loadingSequence.AppendInterval(0.3f);
+        loadingSequence.AppendInterval(0.15f);
         loadingSequence.SetLoops(-1);
 
         //加载场景
         var op = SceneManager.LoadSceneAsync(sceneName);
-        while (!op.isDone)
+        op.allowSceneActivation = false;
+        while (op.progress < 0.9f)
         {
             yield return null;
         }
@@ -121,16 +124,15 @@ public class SceneTransition : UISingleton<SceneTransition>
             {
                 loadingSequence.Kill();
                 _loadingImage.SetActive(false);
+                _leftLoadingCanvasGroup.alpha = 1f;
+                _rightLoadingCanvasGroup.alpha = 1f;
 
-                //开
-                _leftLodingCanvasGroup.alpha = 1f;
-                _rightLodingCanvasGroup.alpha = 1f;
-                Sequence openDoor = DOTween.Sequence().SetUpdate(true);
-                openDoor.Join(_doorLeft.DOAnchorPosX(-_doorWidth, _duration).SetEase(_ease));
-                openDoor.Join(_doorRight.DOAnchorPosX(_doorWidth, _duration).SetEase(_ease));
+                op.allowSceneActivation = true;
 
+                StartCoroutine(OpenDoorInTransition(op));
             }
         });
+
 
     }
 
@@ -139,5 +141,21 @@ public class SceneTransition : UISingleton<SceneTransition>
     {
         _doorLeft.anchoredPosition = new Vector2(-_doorWidth, 0);
         _doorRight.anchoredPosition = new Vector2(_doorWidth, 0);
+    }
+
+    //开门动画协程
+    IEnumerator OpenDoorInTransition(AsyncOperation op)
+    {
+        while (!op.isDone)
+        {
+            yield return null;
+        }
+
+        //开
+        Sequence openDoor = DOTween.Sequence().SetUpdate(true);
+        openDoor.Join(_doorLeft.DOAnchorPosX(-_doorWidth, _duration).SetEase(_ease));
+        openDoor.Join(_doorRight.DOAnchorPosX(_doorWidth, _duration).SetEase(_ease));
+
+        yield return openDoor.WaitForCompletion();
     }
 }

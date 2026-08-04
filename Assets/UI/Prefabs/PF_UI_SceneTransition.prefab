@@ -214,8 +214,8 @@ MonoBehaviour:
   _ease: 7
   _duration: 0.5
   _mainMenuName: Scene_MainMenu
-  _leftLodingCanvasGroup: {fileID: 4276437884769467646}
-  _rightLodingCanvasGroup: {fileID: 1656502628676828697}
+  _leftLoadingCanvasGroup: {fileID: 4276437884769467646}
+  _rightLoadingCanvasGroup: {fileID: 1656502628676828697}
   _loadingImage: {fileID: 6609282933022349054}
 --- !u!1 &4679778520549123255
 GameObject:
