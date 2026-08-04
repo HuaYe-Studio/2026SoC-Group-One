@@ -52,17 +52,17 @@ public class SlimeDevourHandler : MonoBehaviour
 
     private void OnEnable()
     {
-        // 订阅吞噬按键事件（空格）
+        // 订阅吞噬按键事件（Space）
         // 使用属性访问器确保实例存在
         if (PlayerInputReader.HasInstance)
-            PlayerInputReader.Instance.OnEatSpit += TryHandleDevourInput;
+            PlayerInputReader.Instance.OnInput_Space += TryHandleDevourInput;
     }
 
     private void OnDisable()
     {
         // ⚠️ 直接检查私有静态字段，避免触发懒加载
         if (PlayerInputReader.HasInstance)
-            PlayerInputReader.Instance.OnEatSpit -= TryHandleDevourInput;
+            PlayerInputReader.Instance.OnInput_Space -= TryHandleDevourInput;
 
         // 清理范围检测
         foreach (DevourableAnimal animal in animalsInRange)

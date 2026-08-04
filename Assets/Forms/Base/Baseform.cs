@@ -219,13 +219,13 @@ public abstract class BaseForm : MonoBehaviour
                     case InputPhase.Triggered: reader.OnAbility2 += handler; break;
                 }
                 break;
-            case InputActionSlot.EatSpit:
+            case InputActionSlot.Input_Space:
                 switch (phase)
                 {
-                    case InputPhase.Started: reader.OnEatSpitStarted += handler; break;
-                    case InputPhase.Canceled: reader.OnEatSpitCanceled += handler; break;
-                    case InputPhase.Triggered: reader.OnEatSpit += handler; break;
-                    default: Debug.LogWarning($"AbilitySystem: Invalid phase [{phase}] for EatSpit."); break;
+                    case InputPhase.Started: reader.OnInput_SpaceStarted += handler; break;
+                    case InputPhase.Canceled: reader.OnInput_SpaceCanceled += handler; break;
+                    case InputPhase.Triggered: reader.OnInput_Space += handler; break;
+                    default: Debug.LogWarning($"AbilitySystem: Invalid phase [{phase}] for Input_Space."); break;
                 }
                 break;
             case InputActionSlot.Interact:
@@ -267,12 +267,12 @@ public abstract class BaseForm : MonoBehaviour
                     case InputPhase.Triggered: reader.OnAbility2 -= handler; break;
                 }
                 break;
-            case InputActionSlot.EatSpit:
+            case InputActionSlot.Input_Space:
                 switch (phase)
                 {
-                    case InputPhase.Started: reader.OnEatSpitStarted -= handler; break;
-                    case InputPhase.Canceled: reader.OnEatSpitCanceled -= handler; break;
-                    case InputPhase.Triggered: reader.OnEatSpit -= handler; break;
+                    case InputPhase.Started: reader.OnInput_SpaceStarted -= handler; break;
+                    case InputPhase.Canceled: reader.OnInput_SpaceCanceled -= handler; break;
+                    case InputPhase.Triggered: reader.OnInput_Space -= handler; break;
                 }
                 break;
             case InputActionSlot.Interact:

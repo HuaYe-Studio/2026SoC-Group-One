@@ -120,7 +120,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""initialStateCheck"": false
                 },
                 {
-                    ""name"": ""EatSpit"",
+                    ""name"": ""Input_Space"",
                     ""type"": ""Button"",
                     ""id"": ""57583b81-4bd9-4c64-8f4b-744be2f98178"",
                     ""expectedControlType"": """",
@@ -479,7 +479,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": ""Gamepad"",
-                    ""action"": ""EatSpit"",
+                    ""action"": ""Input_Space"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
@@ -490,7 +490,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": ""Keyboard&Mouse"",
-                    ""action"": ""EatSpit"",
+                    ""action"": ""Input_Space"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
@@ -1092,7 +1092,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         m_Slime_Move = m_Slime.FindAction("Move", throwIfNotFound: true);
         m_Slime_ClimbFly = m_Slime.FindAction("ClimbFly", throwIfNotFound: true);
         m_Slime_Interact = m_Slime.FindAction("Interact", throwIfNotFound: true);
-        m_Slime_EatSpit = m_Slime.FindAction("EatSpit", throwIfNotFound: true);
+        m_Slime_Input_Space = m_Slime.FindAction("Input_Space", throwIfNotFound: true);
         m_Slime_Ability1 = m_Slime.FindAction("Ability1", throwIfNotFound: true);
         m_Slime_Ability2 = m_Slime.FindAction("Ability2", throwIfNotFound: true);
         m_Slime_AnimalWheel = m_Slime.FindAction("AnimalWheel", throwIfNotFound: true);
@@ -1194,7 +1194,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Slime_Move;
     private readonly InputAction m_Slime_ClimbFly;
     private readonly InputAction m_Slime_Interact;
-    private readonly InputAction m_Slime_EatSpit;
+    private readonly InputAction m_Slime_Input_Space;
     private readonly InputAction m_Slime_Ability1;
     private readonly InputAction m_Slime_Ability2;
     private readonly InputAction m_Slime_AnimalWheel;
@@ -1224,9 +1224,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// </summary>
         public InputAction @Interact => m_Wrapper.m_Slime_Interact;
         /// <summary>
-        /// Provides access to the underlying input action "Slime/EatSpit".
+        /// Provides access to the underlying input action "Slime/Input_Space".
         /// </summary>
-        public InputAction @EatSpit => m_Wrapper.m_Slime_EatSpit;
+        public InputAction @Input_Space => m_Wrapper.m_Slime_Input_Space;
         /// <summary>
         /// Provides access to the underlying input action "Slime/Ability1".
         /// </summary>
@@ -1282,9 +1282,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @Interact.started += instance.OnInteract;
             @Interact.performed += instance.OnInteract;
             @Interact.canceled += instance.OnInteract;
-            @EatSpit.started += instance.OnEatSpit;
-            @EatSpit.performed += instance.OnEatSpit;
-            @EatSpit.canceled += instance.OnEatSpit;
+            @Input_Space.started += instance.OnInput_Space;
+            @Input_Space.performed += instance.OnInput_Space;
+            @Input_Space.canceled += instance.OnInput_Space;
             @Ability1.started += instance.OnAbility1;
             @Ability1.performed += instance.OnAbility1;
             @Ability1.canceled += instance.OnAbility1;
@@ -1320,9 +1320,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @Interact.started -= instance.OnInteract;
             @Interact.performed -= instance.OnInteract;
             @Interact.canceled -= instance.OnInteract;
-            @EatSpit.started -= instance.OnEatSpit;
-            @EatSpit.performed -= instance.OnEatSpit;
-            @EatSpit.canceled -= instance.OnEatSpit;
+            @Input_Space.started -= instance.OnInput_Space;
+            @Input_Space.performed -= instance.OnInput_Space;
+            @Input_Space.canceled -= instance.OnInput_Space;
             @Ability1.started -= instance.OnAbility1;
             @Ability1.performed -= instance.OnAbility1;
             @Ability1.canceled -= instance.OnAbility1;
@@ -1660,12 +1660,12 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnInteract(InputAction.CallbackContext context);
         /// <summary>
-        /// Method invoked when associated input action "EatSpit" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// Method invoked when associated input action "Input_Space" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>
         /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-        void OnEatSpit(InputAction.CallbackContext context);
+        void OnInput_Space(InputAction.CallbackContext context);
         /// <summary>
         /// Method invoked when associated input action "Ability1" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>

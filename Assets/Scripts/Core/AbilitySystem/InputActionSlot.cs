@@ -3,7 +3,7 @@ namespace AbilitySystem
     public enum InputActionSlot
     {
         Interact,
-        EatSpit,
+        Input_Space,
         Ability1,
         Ability2,
         AnimalWheel
