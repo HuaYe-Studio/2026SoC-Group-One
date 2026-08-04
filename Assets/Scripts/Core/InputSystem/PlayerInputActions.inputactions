@@ -34,7 +34,7 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "EatSpit",
+                    "name": "Input_Space",
                     "type": "Button",
                     "id": "57583b81-4bd9-4c64-8f4b-744be2f98178",
                     "expectedControlType": "",
@@ -393,7 +393,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "Gamepad",
-                    "action": "EatSpit",
+                    "action": "Input_Space",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -404,7 +404,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "Keyboard&Mouse",
-                    "action": "EatSpit",
+                    "action": "Input_Space",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

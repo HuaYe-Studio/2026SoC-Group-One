@@ -6,7 +6,7 @@ public class InputEventTester : MonoBehaviour
     {
         var reader = PlayerInputReader.Instance;
         reader.OnInteract += () => Debug.Log("【事件】按下 E (Interact)");
-        reader.OnEatSpit += () => Debug.Log("【事件】按下 空格 (EatSpit)");
+        reader.OnInput_Space += () => Debug.Log("【事件】按下 Space (Input_Space)");
         reader.OnAbility1 += () => Debug.Log("【事件】按下 鼠标左键 (Ability1)");
         reader.OnAbility2 += () => Debug.Log("【事件】按下 鼠标右键 (Ability2)");
         reader.OnAnimalWheel += () => Debug.Log("【事件】按下 Tab (AnimalWheel)");

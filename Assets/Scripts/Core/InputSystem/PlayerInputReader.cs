@@ -35,7 +35,7 @@ public class PlayerInputReader : MonoBehaviour
 
     // ---------- 事件：简单按钮触发（performed）----------
     public event System.Action OnInteract;
-    public event System.Action OnEatSpit;
+    public event System.Action OnInput_Space;
     public event System.Action OnAbility1;
     public event System.Action OnAbility2;
     public event System.Action OnAnimalWheel;
@@ -53,9 +53,9 @@ public class PlayerInputReader : MonoBehaviour
     public event System.Action OnAbility2Performed;
     public event System.Action OnAbility2Canceled;
 
-    // EatSpit（空格 / Gamepad East）
-    public event System.Action OnEatSpitStarted;
-    public event System.Action OnEatSpitCanceled;
+    // Input_Space（空格 / Gamepad East）
+    public event System.Action OnInput_SpaceStarted;
+    public event System.Action OnInput_SpaceCanceled;
 
     // AnimalWheel（Tab / Gamepad D-pad Right）
     public event System.Action OnAnimalWheelStarted;
@@ -86,9 +86,9 @@ public class PlayerInputReader : MonoBehaviour
     {
         // Slime Map — 简单按钮事件
         controls.Slime.Interact.performed += OnInteractHandler;
-        controls.Slime.EatSpit.performed += OnEatSpitHandler;
-        controls.Slime.EatSpit.started += OnEatSpitStartedHandler;
-        controls.Slime.EatSpit.canceled += OnEatSpitCanceledHandler;
+        controls.Slime.Input_Space.performed += OnInput_SpaceHandler;
+        controls.Slime.Input_Space.started += OnInput_SpaceStartedHandler;
+        controls.Slime.Input_Space.canceled += OnInput_SpaceCanceledHandler;
         controls.Slime.Menu.performed += OnMenuHandler;
 
         // Slime Map — Ability1 细粒度
@@ -113,9 +113,9 @@ public class PlayerInputReader : MonoBehaviour
     private void OnDisable()
     {
         controls.Slime.Interact.performed -= OnInteractHandler;
-        controls.Slime.EatSpit.performed -= OnEatSpitHandler;
-        controls.Slime.EatSpit.started -= OnEatSpitStartedHandler;
-        controls.Slime.EatSpit.canceled -= OnEatSpitCanceledHandler;
+        controls.Slime.Input_Space.performed -= OnInput_SpaceHandler;
+        controls.Slime.Input_Space.started -= OnInput_SpaceStartedHandler;
+        controls.Slime.Input_Space.canceled -= OnInput_SpaceCanceledHandler;
         controls.Slime.Menu.performed -= OnMenuHandler;
 
         controls.Slime.Ability1.started -= OnAbility1StartedHandler;
@@ -164,9 +164,9 @@ public class PlayerInputReader : MonoBehaviour
 
     // ---------- 事件处理方法 ----------
     private void OnInteractHandler(InputAction.CallbackContext ctx) => OnInteract?.Invoke();
-    private void OnEatSpitHandler(InputAction.CallbackContext ctx) => OnEatSpit?.Invoke();
-    private void OnEatSpitStartedHandler(InputAction.CallbackContext ctx) => OnEatSpitStarted?.Invoke();
-    private void OnEatSpitCanceledHandler(InputAction.CallbackContext ctx) => OnEatSpitCanceled?.Invoke();
+    private void OnInput_SpaceHandler(InputAction.CallbackContext ctx) => OnInput_Space?.Invoke();
+    private void OnInput_SpaceStartedHandler(InputAction.CallbackContext ctx) => OnInput_SpaceStarted?.Invoke();
+    private void OnInput_SpaceCanceledHandler(InputAction.CallbackContext ctx) => OnInput_SpaceCanceled?.Invoke();
     private void OnMenuHandler(InputAction.CallbackContext ctx) => OnMenu?.Invoke();
     public void OnMenuTrigger()=>OnMenu?.Invoke();
     private void OnUICancelHandler(InputAction.CallbackContext ctx) => OnUICancel?.Invoke();

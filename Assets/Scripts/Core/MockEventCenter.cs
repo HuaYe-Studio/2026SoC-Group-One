@@ -31,7 +31,30 @@ public static class MockEventCenter
     {
         OnFormChanged?.Invoke(formType);
     }
-        
+
+    public static event System.Action<int, int> OnPlayerHurt;
+
+    public static void TriggerPlayerHurt(int currentHP, int maxHP)
+    {
+        OnPlayerHurt?.Invoke(currentHP, maxHP);
+        Debug.Log($"Player hurt: {currentHP}/{maxHP}");
+    }
+
+    public static event System.Action<int, int> OnPlayerHeal;
+
+    public static void TriggerPlayerHeal(int currentHP, int maxHP)
+    {
+        OnPlayerHeal?.Invoke(currentHP, maxHP);
+        Debug.Log($"Player healed: {currentHP}/{maxHP}");
+    }
+
+    public static event System.Action OnPlayerDeath;
+
+    public static void TriggerPlayerDeath()
+    {
+        OnPlayerDeath?.Invoke();
+    }
+
 }
 
 public enum FormType { Slime, Frog, BubbleFish, Form4 }
