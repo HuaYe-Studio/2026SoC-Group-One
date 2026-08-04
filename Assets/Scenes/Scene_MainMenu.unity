@@ -271,6 +271,22 @@ PrefabInstance:
       propertyPath: m_Name
       value: PF_UI_SettingPanel
       objectReference: {fileID: 0}
+    - target: {fileID: 1073900633077182950, guid: 9b220f4d43f26304c96d74dc51f60e3c, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1073900633077182950, guid: 9b220f4d43f26304c96d74dc51f60e3c, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1073900633077182950, guid: 9b220f4d43f26304c96d74dc51f60e3c, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2427536861641236370, guid: 9b220f4d43f26304c96d74dc51f60e3c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2549807647769920343, guid: 9b220f4d43f26304c96d74dc51f60e3c, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -309,6 +325,30 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2549807647769920343, guid: 9b220f4d43f26304c96d74dc51f60e3c, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2629320082100202431, guid: 9b220f4d43f26304c96d74dc51f60e3c, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2629320082100202431, guid: 9b220f4d43f26304c96d74dc51f60e3c, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2688943020143972878, guid: 9b220f4d43f26304c96d74dc51f60e3c, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0.000030517578
+      objectReference: {fileID: 0}
+    - target: {fileID: 5418763425802477455, guid: 9b220f4d43f26304c96d74dc51f60e3c, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5418763425802477455, guid: 9b220f4d43f26304c96d74dc51f60e3c, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5418763425802477455, guid: 9b220f4d43f26304c96d74dc51f60e3c, type: 3}
+      propertyPath: m_AnchorMin.x
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
