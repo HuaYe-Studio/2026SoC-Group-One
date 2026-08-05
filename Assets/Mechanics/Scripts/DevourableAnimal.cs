@@ -66,6 +66,10 @@ public class DevourableAnimal : MonoBehaviour, IDevourable
         if (_animalBase != null)
             _animalBase.OnDevoured(stunDurationAfterSpit);
 
+<<<<<<< HEAD
+=======
+        // 广播"同类被吞噬"事件，供复仇机制感知（如冲冲羊）
+>>>>>>> 9a51393 (feat: 完成蜘蛛和羊行为树的构建)
         MockEventCenter.TriggerAnimalDevoured(gameObject);
 
         SafeSetTrigger("Devoured");

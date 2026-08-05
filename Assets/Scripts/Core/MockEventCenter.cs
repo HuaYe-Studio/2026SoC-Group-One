@@ -75,4 +75,12 @@ public static class MockEventCenter
         OnStaminaChanged?.Invoke(current, max);
     }
 
+    /// <summary>某只动物被玩家吞噬（用于同类复仇感知：如冲冲羊感知同类被吃后冲撞攻击）。</summary>
+    public static event System.Action<GameObject> OnAnimalDevoured;
+
+    public static void TriggerAnimalDevoured(GameObject victim)
+    {
+        OnAnimalDevoured?.Invoke(victim);
+    }
+
 }
