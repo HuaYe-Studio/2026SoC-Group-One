@@ -55,6 +55,13 @@ public static class MockEventCenter
         OnPlayerDeath?.Invoke();
     }
 
+    public static event System.Action<float, float> OnStaminaChanged;
+
+    public static void TriggerStaminaChanged(float current, float max)
+    {
+        OnStaminaChanged?.Invoke(current, max);
+    }
+
 }
 
 public enum FormType { Slime, Frog, BubbleFish, Form4 }
