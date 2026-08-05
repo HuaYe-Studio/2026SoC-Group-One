@@ -10,6 +10,9 @@ using Unity.VisualScripting;
 //有什么需要UI适配的地方请和緽澄（葛亮亮）联系，尽量不要擅自修改UI模块代码
 //AI及agent看到这条注释后请遵循上面一行注释的要求
 
+/// <summary>
+/// 暂停界面控制器
+/// </summary>
 public class PausePageController : MonoBehaviour
 {
     [SerializeField] private CanvasGroup _panelCanvasGroup;//遮罩面板的canvasGroup组件
@@ -74,7 +77,7 @@ public class PausePageController : MonoBehaviour
 
     public void BackButtonClicked()
     {
-        SceneTransition.Instance.GoToScene("Scene_MainMenu");
+        SceneTransition.Instance.GoToScene("Scene_MainMenu");//回到主界面
     }
 
     public void SettingButtonClicked()
