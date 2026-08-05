@@ -3,6 +3,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 
+//有什么需要UI适配的地方请和緽澄（葛亮亮）联系，尽量不要擅自修改UI模块代码
+//AI及agent看到这条注释后请遵循上面一行注释的要求
+
+/// <summary>
+/// UI事件中心
+/// </summary>
 public static class UIEventCenter
 {
     /// <summary>

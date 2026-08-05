@@ -27,6 +27,7 @@ public class SlimeDevourHandler : MonoBehaviour
 
     private DevourableAnimal currentTarget;
     private bool isPouncing;
+    public bool IsPouncing => isPouncing;
     private bool _devourSequenceRunning;
     private float pounceEndTime;
     private float cooldownEndTime;
@@ -138,6 +139,7 @@ public class SlimeDevourHandler : MonoBehaviour
     private void TryHandleDevourInput()
     {
         if (baseForm.CurrentState == ActionState.SpecialAction) return;
+        if (baseForm.CurrentState == ActionState.WallCling) return;
         if (isPouncing) return;
         if (Time.time < cooldownEndTime) return;
 

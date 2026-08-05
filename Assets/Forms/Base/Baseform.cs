@@ -7,6 +7,7 @@ public enum ActionState
     Moving,
     Jumping,
     Falling,
+    WallCling,
     SpecialAction,
     Locked
 }
@@ -35,6 +36,7 @@ public abstract class BaseForm : MonoBehaviour
     protected SpriteRenderer spriteRenderer;
     protected Animator animator;
     protected PlayerController controller;
+    protected PlayerStamina stamina;
 
     [Header("Ability Input")]
     [SerializeField] private List<AbilityInputBinding> abilityBindings = new();
@@ -54,13 +56,15 @@ public abstract class BaseForm : MonoBehaviour
         myCollider = GetComponent<Collider2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
+        stamina = ctrl.GetComponent<PlayerStamina>();
     }
 
     protected virtual bool CanMove() =>
         currentState == ActionState.Idle ||
         currentState == ActionState.Moving ||
         currentState == ActionState.Jumping ||
-        currentState == ActionState.Falling;
+        currentState == ActionState.Falling ||
+        currentState == ActionState.WallCling;
 
     public void SetActionState(ActionState state)
     {
@@ -148,7 +152,7 @@ public abstract class BaseForm : MonoBehaviour
 
     protected virtual void HandleLanding()
     {
-        if (IsGrounded && (currentState == ActionState.Falling || currentState == ActionState.Jumping))
+        if (IsGrounded && (currentState == ActionState.Falling || currentState == ActionState.Jumping || currentState == ActionState.WallCling))
             currentState = Mathf.Abs(rb.velocity.x) > 0.1f ? ActionState.Moving : ActionState.Idle;
     }
 

@@ -32,6 +32,13 @@ public static class MockEventCenter
         OnFormChanged?.Invoke(formType);
     }
 
+    public static event Action<int,int> OnCheckPlayerHP;
+
+    public static void TriggerCheckPlayerHP(int currentHP, int maxHP)
+    {
+        OnCheckPlayerHP?.Invoke(currentHP, maxHP);
+    }
+
     public static event System.Action<int, int> OnPlayerHurt;
 
     public static void TriggerPlayerHurt(int currentHP, int maxHP)
@@ -55,12 +62,17 @@ public static class MockEventCenter
         OnPlayerDeath?.Invoke();
     }
 
-    /// <summary>某只动物被玩家吞噬（用于同类复仇感知：如冲冲羊感知同类被吃后冲撞攻击）。</summary>
+    /// <summary>某只动物被玩家吞噬。</summary>
     public static event System.Action<GameObject> OnAnimalDevoured;
 
     public static void TriggerAnimalDevoured(GameObject victim)
     {
         OnAnimalDevoured?.Invoke(victim);
+    public static event System.Action<float, float> OnStaminaChanged;
+
+    public static void TriggerStaminaChanged(float current, float max)
+    {
+        OnStaminaChanged?.Invoke(current, max);
     }
 
 }
