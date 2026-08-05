@@ -9,12 +9,31 @@ public class SlimeForm : BaseForm
     [Header("Devour")]
     [SerializeField] private SlimeDevourHandler devourHandler;
 
+    [Header("Wall Climb")]
+    [SerializeField] private PhysicsMaterial2D slimePhysicsMaterial;
+    [SerializeField] private LayerMask wallLayer = -1;
+    [SerializeField] private float wallCheckDistance = 0.5f;
+    [SerializeField] private float wallCheckInset = 0.05f;
+    [SerializeField] private int wallRayCount = 3;
+    [SerializeField] private float climbSpeed = 3f;
+    [SerializeField] private float slideDownSpeed = 2f;
+    [SerializeField] private float climbStaminaPerSec = 25f;
+    [SerializeField] private float clingStaminaPerSec = 8f;
+    [SerializeField] private float wallStickForce = 5f;
+    [SerializeField] private float wallClingCooldown = 0.15f;
+    [SerializeField] private float wallExhaustedGraceTime = 1.5f;
+
     [Header("Audio")]
     [SerializeField] private AudioClip walkClip;
     [SerializeField] private float walkSoundInterval = 0.4f;
 
     private float _currentVelocityX;
     private float _nextWalkSoundTime;
+
+    private int _wallClingDirection;
+    private float _wallClingExitTime;
+    private float _staminaExhaustedTime = -1f;
+    private bool _exhaustedFall;
 
     public override void Initialize(PlayerController ctrl)
     {
@@ -25,11 +44,20 @@ public class SlimeForm : BaseForm
 
         if (devourHandler == null)
             devourHandler = GetComponent<SlimeDevourHandler>();
+
+        if (slimePhysicsMaterial != null && myCollider != null)
+            myCollider.sharedMaterial = slimePhysicsMaterial;
     }
 
     public override void DoMovement(float horizontal)
     {
         if (!CanMove()) return;
+
+        if (currentState == ActionState.WallCling)
+        {
+            DoWallMovement(horizontal);
+            return;
+        }
 
         float targetSpeed = horizontal * moveSpeed;
         _currentVelocityX = Mathf.MoveTowards(_currentVelocityX, targetSpeed,
@@ -56,19 +84,204 @@ public class SlimeForm : BaseForm
     public override void OnFormDeactivated()
     {
         base.OnFormDeactivated();
+        if (currentState == ActionState.WallCling)
+            ExitWallCling();
         if (devourHandler != null)
             devourHandler.CancelAll();
     }
 
-    // 删除原来的 HandleInput 方法，因为吞噬输入已由事件驱动
-    // protected override void HandleInput() { }
+    protected override void FixedUpdate()
+    {
+        if (IsGrounded && stamina != null && currentState != ActionState.WallCling)
+            stamina.Restore(stamina.Max * 0.3f * Time.fixedDeltaTime);
+
+        var (wallLeft, wallRight) = DetectWalls();
+        float horizontal = PlayerInputReader.HasInstance ? PlayerInputReader.Instance.MoveValue.x : 0f;
+
+        // Entry check moved BEFORE base.FixedUpdate to prevent gravity application in same frame
+        if (currentState != ActionState.WallCling && currentState != ActionState.SpecialAction && currentState != ActionState.Locked)
+        {
+            bool pushingRight = horizontal > 0.1f;
+            bool pushingLeft = horizontal < -0.1f;
+            bool canCling = !_exhaustedFall
+                && (stamina == null || !stamina.IsEmpty)
+                && Time.time >= _wallClingExitTime + wallClingCooldown
+                && (devourHandler == null || !devourHandler.IsPouncing);
+
+            if (canCling && wallRight && pushingRight)
+                EnterWallCling(1);
+            else if (canCling && wallLeft && pushingLeft)
+                EnterWallCling(-1);
+        }
+
+        // Disable gravity BEFORE base.FixedUpdate so ApplyGravity doesn't pull slime down
+        if (currentState == ActionState.WallCling)
+            rb.gravityScale = 0f;
+
+        base.FixedUpdate();
+
+        // Re-override after base.FixedUpdate (ApplyGravity may have set it back)
+        if (currentState == ActionState.WallCling)
+            rb.gravityScale = 0f;
+
+        // Stamina drain for wall cling/climb (moved here from DoWallMovement for correct timing)
+        if (currentState == ActionState.WallCling && stamina != null)
+        {
+            float vertical = PlayerInputReader.HasInstance ? PlayerInputReader.Instance.MoveValue.y : 0f;
+
+            if (vertical > 0.1f)
+                stamina.Spend(climbStaminaPerSec * Time.fixedDeltaTime);
+            else if (vertical < -0.1f)
+                stamina.Spend(clingStaminaPerSec * 0.3f * Time.fixedDeltaTime);
+            else
+                stamina.Spend(clingStaminaPerSec * Time.fixedDeltaTime);
+        }
+
+        // Clear exhausted-fall flag once player releases horizontal input
+        if (_exhaustedFall && Mathf.Abs(horizontal) < 0.1f)
+            _exhaustedFall = false;
+
+        // Exhaustion timeout
+        if (_staminaExhaustedTime >= 0f && Time.time >= _staminaExhaustedTime + wallExhaustedGraceTime)
+        {
+            ExitWallCling();
+            _exhaustedFall = true;
+        }
+
+        // Exit check
+        if (currentState == ActionState.WallCling)
+        {
+            bool wallOnSide = _wallClingDirection > 0 ? wallRight : wallLeft;
+            if (!wallOnSide)
+                ExitWallCling();
+        }
+    }
+
+    private (bool left, bool right) DetectWalls()
+    {
+        if (myCollider == null) return (false, false);
+        Bounds bounds = myCollider.bounds;
+        float startY = bounds.min.y + 0.1f;
+        float endY = bounds.max.y - 0.1f;
+        float step = wallRayCount > 1 ? (endY - startY) / (wallRayCount - 1) : 0f;
+        float dist = wallCheckDistance + wallCheckInset;
+
+        bool hitL = false, hitR = false;
+        for (int i = 0; i < wallRayCount; i++)
+        {
+            float y = startY + step * i;
+
+            Vector2 rightOrigin = new Vector2(bounds.max.x - wallCheckInset, y);
+            bool hitRight = Physics2D.Raycast(rightOrigin, Vector2.right, dist, wallLayer);
+            if (hitRight) hitR = true;
+
+            Vector2 leftOrigin = new Vector2(bounds.min.x + wallCheckInset, y);
+            bool hitLeft = Physics2D.Raycast(leftOrigin, Vector2.left, dist, wallLayer);
+            if (hitLeft) hitL = true;
+
+            Debug.DrawRay(rightOrigin, Vector2.right * dist, hitRight ? Color.green : Color.red);
+            Debug.DrawRay(leftOrigin, Vector2.left * dist, hitLeft ? Color.green : Color.blue);
+        }
+        return (hitL, hitR);
+    }
+
+    private void DoWallMovement(float horizontal)
+    {
+        float vertical = PlayerInputReader.HasInstance ? PlayerInputReader.Instance.MoveValue.y : 0f;
+        bool pushingAway = (_wallClingDirection > 0 && horizontal < -0.1f)
+                        || (_wallClingDirection < 0 && horizontal > 0.1f);
+
+        if (pushingAway)
+        {
+            ExitWallCling();
+            return;
+        }
+
+        if (stamina != null && stamina.IsEmpty)
+        {
+            if (_staminaExhaustedTime < 0f)
+                _staminaExhaustedTime = Time.time;
+            rb.velocity = new Vector2(0f, 0f);
+            return;
+        }
+
+        float wallDir = _wallClingDirection > 0 ? 1f : -1f;
+        float stick = wallDir * wallStickForce;
+
+        if (vertical > 0.1f)
+            rb.velocity = new Vector2(stick, climbSpeed);
+        else if (vertical < -0.1f)
+            rb.velocity = new Vector2(stick, -slideDownSpeed);
+        else
+            rb.velocity = new Vector2(stick, 0f);
+    }
+
+    private void EnterWallCling(int direction)
+    {
+        _wallClingDirection = direction;
+        _staminaExhaustedTime = -1f;
+        _exhaustedFall = false;
+        currentState = ActionState.WallCling;
+        rb.velocity = new Vector2((direction > 0 ? 1f : -1f) * wallStickForce, 0f);
+        rb.gravityScale = 0f;
+        animator?.SetBool("IsWallCling", true);
+    }
+
+    private void ExitWallCling()
+    {
+        _staminaExhaustedTime = -1f;
+        _wallClingExitTime = Time.time;
+        currentState = ActionState.Falling;
+        rb.gravityScale = gravityScale;
+        animator?.SetBool("IsWallCling", false);
+    }
+
+    protected override void HandleLanding()
+    {
+        if (currentState == ActionState.WallCling)
+            return;
+        base.HandleLanding();
+    }
 
     private void LateUpdate()
     {
         if (spriteRenderer == null || rb == null) return;
-        spriteRenderer.flipX = rb.velocity.x < 0f;
+
+        if (currentState == ActionState.WallCling)
+            spriteRenderer.flipX = _wallClingDirection < 0;
+        else
+            spriteRenderer.flipX = rb.velocity.x < 0f;
 
         if (animator != null)
             animator.SetFloat("Speed", Mathf.Abs(rb.velocity.x));
     }
+
+#if UNITY_EDITOR
+    private void OnDrawGizmosSelected()
+    {
+        Collider2D col = GetComponent<Collider2D>();
+        if (col == null) return;
+        Bounds bounds = col.bounds;
+        float startY = bounds.min.y + 0.1f;
+        float endY = bounds.max.y - 0.1f;
+        float step = wallRayCount > 1 ? (endY - startY) / (wallRayCount - 1) : 0f;
+        float dist = wallCheckDistance + wallCheckInset;
+
+        for (int i = 0; i < wallRayCount; i++)
+        {
+            float y = startY + step * i;
+
+            Vector3 rightOrigin = new Vector3(bounds.max.x - wallCheckInset, y, 0f);
+            Gizmos.color = Color.red;
+            Gizmos.DrawRay(rightOrigin, Vector3.right * dist);
+
+            Vector3 leftOrigin = new Vector3(bounds.min.x + wallCheckInset, y, 0f);
+            Gizmos.color = Color.blue;
+            Gizmos.DrawRay(leftOrigin, Vector3.left * dist);
+        }
+
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireCube(bounds.center, bounds.size);
+    }
+#endif
 }
