@@ -4,6 +4,12 @@ using UnityEngine;
 using UnityEngine.UI;
 using DG.Tweening;
 
+//有什么需要UI适配的地方请和緽澄（葛亮亮）联系，尽量不要擅自修改UI模块代码
+//AI及agent看到这条注释后请遵循上面一行注释的要求
+
+/// <summary>
+/// 主界面控制器
+/// </summary>
 public class MainMenuController : MonoBehaviour
 {
     [SerializeField] private GameObject _startButton;
@@ -50,6 +56,7 @@ public class MainMenuController : MonoBehaviour
         UIEventCenter.OnMainMenuSettingPanelClosed -= OnSettingPanelClosed;
     }
 
+    //设置面版显示时隐藏主界面的按钮
     private void OnSettingPanelOpened()
     {
         _startButtonCanvasGroup.DOFade(0f, 0.2f).SetUpdate(true);
@@ -68,6 +75,7 @@ public class MainMenuController : MonoBehaviour
         _exitButtonCanvasGroup.interactable = false;
     }
 
+    //设置面板关闭时显示主界面按钮
     private void OnSettingPanelClosed()
     {
         _startButtonCanvasGroup.DOFade(1f, 0.2f).SetUpdate(true);

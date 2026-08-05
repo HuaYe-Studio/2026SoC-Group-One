@@ -22,6 +22,11 @@ public class PlayerHP : MonoBehaviour
         currentHP = maxHP;
     }
 
+    void Start()
+    {
+        MockEventCenter.TriggerCheckPlayerHP(currentHP, maxHP);
+    }
+
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.K))

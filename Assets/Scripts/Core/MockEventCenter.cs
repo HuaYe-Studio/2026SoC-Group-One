@@ -32,6 +32,13 @@ public static class MockEventCenter
         OnFormChanged?.Invoke(formType);
     }
 
+    public static event Action<int,int> OnCheckPlayerHP;
+
+    public static void TriggerCheckPlayerHP(int currentHP, int maxHP)
+    {
+        OnCheckPlayerHP?.Invoke(currentHP, maxHP);
+    }
+
     public static event System.Action<int, int> OnPlayerHurt;
 
     public static void TriggerPlayerHurt(int currentHP, int maxHP)
