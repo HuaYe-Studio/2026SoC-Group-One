@@ -34,6 +34,9 @@ public class DevourableAnimal : MonoBehaviour
         if (_animalBase != null)
             _animalBase.OnDevoured(stunDurationAfterSpit);
 
+        // 广播"同类被吞噬"事件，供复仇机制感知（如冲冲羊）
+        MockEventCenter.TriggerAnimalDevoured(gameObject);
+
         SafeSetTrigger("Devoured");
     }
 

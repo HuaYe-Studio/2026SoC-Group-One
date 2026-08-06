@@ -62,6 +62,12 @@ public static class MockEventCenter
         OnPlayerDeath?.Invoke();
     }
 
+    /// <summary>某只动物被玩家吞噬。</summary>
+    public static event System.Action<GameObject> OnAnimalDevoured;
+
+    public static void TriggerAnimalDevoured(GameObject victim)
+    {
+        OnAnimalDevoured?.Invoke(victim);
     public static event System.Action<float, float> OnStaminaChanged;
 
     public static void TriggerStaminaChanged(float current, float max)
