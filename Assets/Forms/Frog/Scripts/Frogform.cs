@@ -31,10 +31,16 @@ public class FrogForm : BaseForm
     [SerializeField] private AudioClip jumpClip;
     [SerializeField] private AudioClip landClip;
 
+    private static readonly int IsWallJumpHash = Animator.StringToHash("IsWallJump");
+    private static readonly int IsChargingHash = Animator.StringToHash("IsCharging");
+    private static readonly int IsMovingHash = Animator.StringToHash("IsMoving");
+    private static readonly int IsAirHash = Animator.StringToHash("IsAir");
+    private static readonly int VelocityYHash = Animator.StringToHash("Velocity_Y");
+    private static readonly int ChargeProgressHash = Animator.StringToHash("ChargeProgress");
+
     private bool _chargeModeEnabled;
     private float _chargeStartTime = -1f;
     private float _chargeProgress;
-    private bool _hasChargedJump;
     private float _coyoteTimer;
     private float _jumpBufferTimer;
 
@@ -140,7 +146,6 @@ public class FrogForm : BaseForm
 
         _coyoteTimer = 0f;
         _jumpBufferTimer = 0f;
-        _hasChargedJump = progress > 0.5f;
 
         rb.velocity = new Vector2(rb.velocity.x, force);
         currentState = ActionState.Jumping;
@@ -176,7 +181,6 @@ public class FrogForm : BaseForm
     {
         _coyoteTimer = 0f;
         _jumpBufferTimer = 0f;
-        _hasChargedJump = false;
 
         rb.velocity = new Vector2(rb.velocity.x, normalJumpForce);
         currentState = ActionState.Jumping;
@@ -196,8 +200,6 @@ public class FrogForm : BaseForm
     {
         if (IsGrounded && (currentState == ActionState.Falling || currentState == ActionState.Jumping || currentState == ActionState.WallCling))
         {
-            _hasChargedJump = false;
-
             if (_jumpBufferTimer > 0f)
             {
                 _jumpBufferTimer = 0f;
@@ -302,7 +304,6 @@ public class FrogForm : BaseForm
         _wallMemoryTimer = 0f;
         _coyoteTimer = 0f;
         _jumpBufferTimer = 0f;
-        _hasChargedJump = false;
         _pendingWallJumpAnim = true;
 
         float awayDir = wallSide > 0 ? -1f : 1f;
@@ -320,7 +321,7 @@ public class FrogForm : BaseForm
 
         if (_pendingWallJumpAnim)
         {
-            animator.SetTrigger("IsWallJump");
+            animator.SetTrigger(IsWallJumpHash);
             _pendingWallJumpAnim = false;
         }
 
@@ -328,16 +329,17 @@ public class FrogForm : BaseForm
         bool isMoving = currentState == ActionState.Moving;
         bool isAir = currentState == ActionState.Jumping || currentState == ActionState.Falling;
 
-        animator.SetBool("IsCharging", isCharging);
-        animator.SetBool("IsMoving", isCharging ? false : isMoving);
-        animator.SetBool("IsAir", isCharging ? false : isAir);
-        animator.SetFloat("Velocity_Y", (isAir && !isCharging) ? Mathf.Clamp(rb.velocity.y, -1f, 1f) : 0f);
-        animator.SetFloat("ChargeProgress", _chargeProgress);
+        animator.SetBool(IsChargingHash, isCharging);
+        animator.SetBool(IsMovingHash, !isCharging && isMoving);
+        animator.SetBool(IsAirHash, !isCharging && isAir);
+        animator.SetFloat(VelocityYHash, (isAir && !isCharging) ? Mathf.Clamp(rb.velocity.y, -1f, 1f) : 0f);
+        animator.SetFloat(ChargeProgressHash, _chargeProgress);
     }
 
 #if UNITY_EDITOR
-    private void OnDrawGizmosSelected()
+    protected override void OnDrawGizmosSelected()
     {
+        base.OnDrawGizmosSelected();
         Collider2D col = GetComponent<Collider2D>();
         if (col == null) return;
         Bounds bounds = col.bounds;

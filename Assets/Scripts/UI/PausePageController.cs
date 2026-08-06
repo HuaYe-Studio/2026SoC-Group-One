@@ -64,7 +64,8 @@ public class PausePageController : MonoBehaviour
         Time.timeScale = 1f;
         _panelCanvasGroup.alpha = 0f;
 
-        EventSystem.current.SetSelectedGameObject(null);
+        if (EventSystem.current != null)
+            EventSystem.current.SetSelectedGameObject(null);
         _continueButton.SetActive(false);
         _backButton.SetActive(false);
         _settingButton.SetActive(false);

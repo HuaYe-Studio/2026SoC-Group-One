@@ -575,8 +575,8 @@ MonoBehaviour:
             m_StringArgument: 
             m_BoolArgument: 0
           m_CallState: 2
-  normalJumpForce: 7
-  maxChargedJumpForce: 14
+  normalJumpForce: 5
+  maxChargedJumpForce: 6.6
   jumpStaminaCost: 20
   chargeTimeToMax: 0.5
   jumpCutMultiplier: 0.5

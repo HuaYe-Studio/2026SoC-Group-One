@@ -9,6 +9,7 @@ public class PlayerStamina : MonoBehaviour
 
     public float Current => _current;
     public float Max => maxStamina;
+    public float RecoverPerSecond => recoverPerSecond;
     public float Ratio => maxStamina > 0f ? _current / maxStamina : 0f;
     public bool IsEmpty => _current <= 0f;
 

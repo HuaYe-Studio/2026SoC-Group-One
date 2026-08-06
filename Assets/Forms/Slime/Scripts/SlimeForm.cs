@@ -35,6 +35,9 @@ public class SlimeForm : BaseForm
     private float _staminaExhaustedTime = -1f;
     private bool _exhaustedFall;
 
+    private static readonly int SpeedHash = Animator.StringToHash("Speed");
+    private static readonly int IsWallClingHash = Animator.StringToHash("IsWallCling");
+
     public override void Initialize(PlayerController ctrl)
     {
         base.Initialize(ctrl);
@@ -93,7 +96,7 @@ public class SlimeForm : BaseForm
     protected override void FixedUpdate()
     {
         if (IsGrounded && stamina != null && currentState != ActionState.WallCling)
-            stamina.Restore(stamina.Max * 0.3f * Time.fixedDeltaTime);
+            stamina.Restore(stamina.RecoverPerSecond * Time.fixedDeltaTime);
 
         var (wallLeft, wallRight) = DetectWalls();
         float horizontal = PlayerInputReader.HasInstance ? PlayerInputReader.Instance.MoveValue.x : 0f;
@@ -155,6 +158,8 @@ public class SlimeForm : BaseForm
             if (!wallOnSide)
                 ExitWallCling();
         }
+
+        SyncAnimator();
     }
 
     private (bool left, bool right) DetectWalls()
@@ -224,7 +229,6 @@ public class SlimeForm : BaseForm
         currentState = ActionState.WallCling;
         rb.velocity = new Vector2((direction > 0 ? 1f : -1f) * wallStickForce, 0f);
         rb.gravityScale = 0f;
-        animator?.SetBool("IsWallCling", true);
     }
 
     private void ExitWallCling()
@@ -233,7 +237,6 @@ public class SlimeForm : BaseForm
         _wallClingExitTime = Time.time;
         currentState = ActionState.Falling;
         rb.gravityScale = gravityScale;
-        animator?.SetBool("IsWallCling", false);
     }
 
     protected override void HandleLanding()
@@ -251,14 +254,20 @@ public class SlimeForm : BaseForm
             spriteRenderer.flipX = _wallClingDirection < 0;
         else
             spriteRenderer.flipX = rb.velocity.x < 0f;
+    }
 
-        if (animator != null)
-            animator.SetFloat("Speed", Mathf.Abs(rb.velocity.x));
+    private void SyncAnimator()
+    {
+        if (animator == null || animator.runtimeAnimatorController == null) return;
+
+        animator.SetBool(IsWallClingHash, currentState == ActionState.WallCling);
+        animator.SetFloat(SpeedHash, Mathf.Abs(rb.velocity.x));
     }
 
 #if UNITY_EDITOR
-    private void OnDrawGizmosSelected()
+    protected override void OnDrawGizmosSelected()
     {
+        base.OnDrawGizmosSelected();
         Collider2D col = GetComponent<Collider2D>();
         if (col == null) return;
         Bounds bounds = col.bounds;
