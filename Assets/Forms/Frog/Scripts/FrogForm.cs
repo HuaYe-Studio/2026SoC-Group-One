@@ -31,10 +31,16 @@ public class FrogForm : BaseForm
     [SerializeField] private AudioClip jumpClip;
     [SerializeField] private AudioClip landClip;
 
+    private static readonly int IsWallJumpHash = Animator.StringToHash("IsWallJump");
+    private static readonly int IsChargingHash = Animator.StringToHash("IsCharging");
+    private static readonly int IsMovingHash = Animator.StringToHash("IsMoving");
+    private static readonly int IsAirHash = Animator.StringToHash("IsAir");
+    private static readonly int VelocityYHash = Animator.StringToHash("Velocity_Y");
+    private static readonly int ChargeProgressHash = Animator.StringToHash("ChargeProgress");
+
     private bool _chargeModeEnabled;
     private float _chargeStartTime = -1f;
     private float _chargeProgress;
-    private bool _hasChargedJump;
     private float _coyoteTimer;
     private float _jumpBufferTimer;
 
@@ -140,7 +146,6 @@ public class FrogForm : BaseForm
 
         _coyoteTimer = 0f;
         _jumpBufferTimer = 0f;
-        _hasChargedJump = progress > 0.5f;
 
         rb.velocity = new Vector2(rb.velocity.x, force);
         currentState = ActionState.Jumping;
@@ -163,7 +168,7 @@ public class FrogForm : BaseForm
         rb.velocity = new Vector2(horizontal * moveSpeed, rb.velocity.y);
 
         if (currentState == ActionState.Idle || currentState == ActionState.Moving)
-            currentState = Mathf.Abs(horizontal) > 0.1f ? ActionState.Moving : ActionState.Idle;
+            UpdateIdleOrMovingState(horizontal);
     }
 
     private bool CanJump() =>
@@ -176,7 +181,6 @@ public class FrogForm : BaseForm
     {
         _coyoteTimer = 0f;
         _jumpBufferTimer = 0f;
-        _hasChargedJump = false;
 
         rb.velocity = new Vector2(rb.velocity.x, normalJumpForce);
         currentState = ActionState.Jumping;
@@ -196,8 +200,6 @@ public class FrogForm : BaseForm
     {
         if (IsGrounded && (currentState == ActionState.Falling || currentState == ActionState.Jumping || currentState == ActionState.WallCling))
         {
-            _hasChargedJump = false;
-
             if (_jumpBufferTimer > 0f)
             {
                 _jumpBufferTimer = 0f;
@@ -225,7 +227,7 @@ public class FrogForm : BaseForm
     {
         base.FixedUpdate();
 
-        var (wallLeft, wallRight) = DetectWalls();
+        var (wallLeft, wallRight) = DetectWalls(wallCheckDistance, wallCheckInset, wallRayCount, wallLayer);
 
         if (wallRight) _wallContactSide = 1;
         else if (wallLeft) _wallContactSide = -1;
@@ -254,39 +256,11 @@ public class FrogForm : BaseForm
         SyncAnimator();
     }
 
-    private (bool left, bool right) DetectWalls()
-    {
-        if (myCollider == null) return (false, false);
-        Bounds bounds = myCollider.bounds;
-        float startY = bounds.min.y + 0.1f;
-        float endY = bounds.max.y - 0.1f;
-        float step = wallRayCount > 1 ? (endY - startY) / (wallRayCount - 1) : 0f;
-        float dist = wallCheckDistance + wallCheckInset;
-
-        bool hitL = false, hitR = false;
-        for (int i = 0; i < wallRayCount; i++)
-        {
-            float y = startY + step * i;
-
-            Vector2 rightOrigin = new Vector2(bounds.max.x - wallCheckInset, y);
-            bool hitRight = Physics2D.Raycast(rightOrigin, Vector2.right, dist, wallLayer);
-            if (hitRight) hitR = true;
-
-            Vector2 leftOrigin = new Vector2(bounds.min.x + wallCheckInset, y);
-            bool hitLeft = Physics2D.Raycast(leftOrigin, Vector2.left, dist, wallLayer);
-            if (hitLeft) hitL = true;
-
-            Debug.DrawRay(rightOrigin, Vector2.right * dist, hitRight ? Color.green : Color.red);
-            Debug.DrawRay(leftOrigin, Vector2.left * dist, hitLeft ? Color.green : Color.blue);
-        }
-        return (hitL, hitR);
-    }
-
     private bool TryWallJump()
     {
         if (IsGrounded) return false;
         if (_wallContactSide == 0 && _wallMemoryTimer <= 0f) return false;
-        if (currentState == ActionState.SpecialAction || currentState == ActionState.Locked) return false;
+        if (currentState == ActionState.SpecialAction) return false;
 
         int side = _wallContactSide != 0 ? _wallContactSide : -_lastWallJumpSide;
         if (side == 0 || side == _lastWallJumpSide) return false;
@@ -302,7 +276,6 @@ public class FrogForm : BaseForm
         _wallMemoryTimer = 0f;
         _coyoteTimer = 0f;
         _jumpBufferTimer = 0f;
-        _hasChargedJump = false;
         _pendingWallJumpAnim = true;
 
         float awayDir = wallSide > 0 ? -1f : 1f;
@@ -320,7 +293,7 @@ public class FrogForm : BaseForm
 
         if (_pendingWallJumpAnim)
         {
-            animator.SetTrigger("IsWallJump");
+            animator.SetTrigger(IsWallJumpHash);
             _pendingWallJumpAnim = false;
         }
 
@@ -328,39 +301,19 @@ public class FrogForm : BaseForm
         bool isMoving = currentState == ActionState.Moving;
         bool isAir = currentState == ActionState.Jumping || currentState == ActionState.Falling;
 
-        animator.SetBool("IsCharging", isCharging);
-        animator.SetBool("IsMoving", isCharging ? false : isMoving);
-        animator.SetBool("IsAir", isCharging ? false : isAir);
-        animator.SetFloat("Velocity_Y", (isAir && !isCharging) ? Mathf.Clamp(rb.velocity.y, -1f, 1f) : 0f);
-        animator.SetFloat("ChargeProgress", _chargeProgress);
+        animator.SetBool(IsChargingHash, isCharging);
+        animator.SetBool(IsMovingHash, !isCharging && isMoving);
+        animator.SetBool(IsAirHash, !isCharging && isAir);
+        animator.SetFloat(VelocityYHash, (isAir && !isCharging) ? Mathf.Clamp(rb.velocity.y, -1f, 1f) : 0f);
+        animator.SetFloat(ChargeProgressHash, _chargeProgress);
     }
 
 #if UNITY_EDITOR
-    private void OnDrawGizmosSelected()
+    protected override void OnDrawGizmosSelected()
     {
-        Collider2D col = GetComponent<Collider2D>();
-        if (col == null) return;
-        Bounds bounds = col.bounds;
-        float startY = bounds.min.y + 0.1f;
-        float endY = bounds.max.y - 0.1f;
-        float step = wallRayCount > 1 ? (endY - startY) / (wallRayCount - 1) : 0f;
-        float dist = wallCheckDistance + wallCheckInset;
-
-        for (int i = 0; i < wallRayCount; i++)
-        {
-            float y = startY + step * i;
-
-            Vector3 rightOrigin = new Vector3(bounds.max.x - wallCheckInset, y, 0f);
-            Gizmos.color = Color.red;
-            Gizmos.DrawRay(rightOrigin, Vector3.right * dist);
-
-            Vector3 leftOrigin = new Vector3(bounds.min.x + wallCheckInset, y, 0f);
-            Gizmos.color = Color.blue;
-            Gizmos.DrawRay(leftOrigin, Vector3.left * dist);
-        }
-
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireCube(bounds.center, bounds.size);
+        base.OnDrawGizmosSelected();
+        if (GetComponent<Collider2D>() is { } col)
+            DrawWallCheckGizmos(col, wallCheckDistance, wallCheckInset, wallRayCount);
     }
 #endif
 }

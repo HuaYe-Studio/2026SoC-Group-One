@@ -7,65 +7,69 @@ public class PlayerHP : MonoBehaviour
     [SerializeField] private float invincibilityDuration = 1.5f;
     [SerializeField] private float flashInterval = 0.1f;
 
-    private int currentHP;
-    private float invincibilityEndTime;
-    private Coroutine flashCoroutine;
-    private bool isDead;
+    private int _currentHP;
+    private float _invincibilityEndTime;
+    private Coroutine _flashCoroutine;
+    private bool _isDead;
 
-    public int CurrentHP => currentHP;
+    public int CurrentHP => _currentHP;
     public int MaxHP => maxHP;
-    public bool IsInvincible => Time.time < invincibilityEndTime;
-    public bool IsDead => isDead;
+    public bool IsInvincible => Time.time < _invincibilityEndTime;
+    public bool IsDead => _isDead;
 
     private void Awake()
     {
-        currentHP = maxHP;
+        _currentHP = maxHP;
     }
 
-    void Start()
+    private void Start()
     {
-        MockEventCenter.TriggerCheckPlayerHP(currentHP, maxHP);
+        MockEventCenter.TriggerCheckPlayerHP(_currentHP, maxHP);
     }
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.K))
-            TakeDamage(1);
-
-        if (Input.GetKeyDown(KeyCode.L))
-            Heal(1);
+#if UNITY_EDITOR
+        if (UnityEngine.InputSystem.Keyboard.current != null)
+        {
+            if (UnityEngine.InputSystem.Keyboard.current.kKey.wasPressedThisFrame)
+                TakeDamage(1);
+            if (UnityEngine.InputSystem.Keyboard.current.lKey.wasPressedThisFrame)
+                Heal(1);
+        }
+#endif
     }
 
     public void TakeDamage(int amount)
     {
-        if (isDead || IsInvincible || amount <= 0) return;
+        if (_isDead || IsInvincible || amount <= 0) return;
 
-        currentHP -= amount;
-        MockEventCenter.TriggerPlayerHurt(currentHP, maxHP);
+        _currentHP -= amount;
+        MockEventCenter.TriggerPlayerHurt(_currentHP, maxHP);
 
-        if (currentHP <= 0)
+        if (_currentHP <= 0)
         {
-            currentHP = 0;
+            _currentHP = 0;
             Die();
             return;
         }
 
-        invincibilityEndTime = Time.time + invincibilityDuration;
-        if (flashCoroutine != null)
-            StopCoroutine(flashCoroutine);
-        flashCoroutine = StartCoroutine(FlashRoutine());
+        _invincibilityEndTime = Time.time + invincibilityDuration;
+        if (_flashCoroutine != null)
+            StopCoroutine(_flashCoroutine);
+        _flashCoroutine = StartCoroutine(FlashRoutine());
     }
 
     public void Heal(int amount)
     {
-        if (isDead || amount <= 0) return;
-        currentHP = Mathf.Min(currentHP + amount, maxHP);
-        MockEventCenter.TriggerPlayerHeal(currentHP, maxHP);
+        if (_isDead || amount <= 0) return;
+        _currentHP = Mathf.Min(_currentHP + amount, maxHP);
+        MockEventCenter.TriggerPlayerHeal(_currentHP, maxHP);
     }
 
     private void Die()
     {
-        isDead = true;
+        _isDead = true;
         Debug.Log("Player died!");
         MockEventCenter.TriggerPlayerDeath();
 
@@ -84,7 +88,7 @@ public class PlayerHP : MonoBehaviour
             ? playerController.ActiveForm.GetComponentsInChildren<SpriteRenderer>()
             : GetComponentsInChildren<SpriteRenderer>();
 
-        while (Time.time < invincibilityEndTime)
+        while (Time.time < _invincibilityEndTime)
         {
             foreach (var sr in renderers)
                 sr.enabled = !sr.enabled;

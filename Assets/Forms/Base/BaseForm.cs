@@ -8,8 +8,7 @@ public enum ActionState
     Jumping,
     Falling,
     WallCling,
-    SpecialAction,
-    Locked
+    SpecialAction
 }
 
 public abstract class BaseForm : MonoBehaviour
@@ -66,6 +65,12 @@ public abstract class BaseForm : MonoBehaviour
         currentState == ActionState.Falling ||
         currentState == ActionState.WallCling;
 
+    protected void UpdateIdleOrMovingState(float horizontal)
+    {
+        if (currentState == ActionState.Idle || currentState == ActionState.Moving)
+            currentState = Mathf.Abs(horizontal) > 0.1f ? ActionState.Moving : ActionState.Idle;
+    }
+
     public void SetActionState(ActionState state)
     {
         currentState = state;
@@ -77,9 +82,15 @@ public abstract class BaseForm : MonoBehaviour
             animator.SetBool(name, value);
     }
 
+    public void SetAnimatorBool(int hash, bool value)
+    {
+        if (animator != null)
+            animator.SetBool(hash, value);
+    }
+
     public void ProcessInput(float horizontal)
     {
-        if (currentState == ActionState.Locked || currentState == ActionState.SpecialAction) return;
+        if (currentState == ActionState.SpecialAction) return;
 
         DoMovement(horizontal);
         UpdateFacing(horizontal);
@@ -93,8 +104,7 @@ public abstract class BaseForm : MonoBehaviour
 
         rb.velocity = new Vector2(horizontal * moveSpeed, rb.velocity.y);
 
-        if (currentState == ActionState.Idle || currentState == ActionState.Moving)
-            currentState = Mathf.Abs(horizontal) > 0.1f ? ActionState.Moving : ActionState.Idle;
+        UpdateIdleOrMovingState(horizontal);
     }
 
     protected virtual void UpdateFacing(float horizontal)
@@ -139,6 +149,31 @@ public abstract class BaseForm : MonoBehaviour
         Vector2 size = GetGroundCheckSize();
         RaycastHit2D hit = Physics2D.BoxCast(origin, size, 0f, Vector2.down, 0.05f, groundLayer);
         IsGrounded = hit.collider != null;
+    }
+
+    protected (bool left, bool right) DetectWalls(float checkDistance, float checkInset, int rayCount, LayerMask layer)
+    {
+        if (myCollider == null) return (false, false);
+        Bounds bounds = myCollider.bounds;
+        float startY = bounds.min.y + 0.1f;
+        float endY = bounds.max.y - 0.1f;
+        float step = rayCount > 1 ? (endY - startY) / (rayCount - 1) : 0f;
+        float dist = checkDistance + checkInset;
+
+        bool hitL = false, hitR = false;
+        for (int i = 0; i < rayCount; i++)
+        {
+            float y = startY + step * i;
+            Vector2 rightOrigin = new Vector2(bounds.max.x - checkInset, y);
+            Vector2 leftOrigin  = new Vector2(bounds.min.x + checkInset, y);
+
+            if (Physics2D.Raycast(rightOrigin, Vector2.right, dist, layer)) hitR = true;
+            if (Physics2D.Raycast(leftOrigin,  Vector2.left,  dist, layer)) hitL = true;
+
+            Debug.DrawRay(rightOrigin, Vector2.right * dist, hitR ? Color.green : Color.red);
+            Debug.DrawRay(leftOrigin,  Vector2.left  * dist, hitL ? Color.green : Color.blue);
+        }
+        return (hitL, hitR);
     }
 
     protected virtual void UpdateAirState()
@@ -298,15 +333,27 @@ public abstract class BaseForm : MonoBehaviour
         AudioManager.Instance?.PlaySFX(clip, volume);
     }
 
-    protected GameObject SpawnPersistent(GameObject prefab, Vector3 position, Quaternion rotation)
+#if UNITY_EDITOR
+    protected void DrawWallCheckGizmos(Collider2D col, float checkDistance, float checkInset, int rayCount)
     {
-        if (controller == null || controller.SpawnedObjectContainer == null)
-            return Instantiate(prefab, position, rotation);
+        Bounds bounds = col.bounds;
+        float startY = bounds.min.y + 0.1f;
+        float endY   = bounds.max.y - 0.1f;
+        float step   = rayCount > 1 ? (endY - startY) / (rayCount - 1) : 0f;
+        float dist   = checkDistance + checkInset;
 
-        return Instantiate(prefab, position, rotation, controller.SpawnedObjectContainer);
+        for (int i = 0; i < rayCount; i++)
+        {
+            float y = startY + step * i;
+            Gizmos.color = Color.red;
+            Gizmos.DrawRay(new Vector3(bounds.max.x - checkInset, y, 0f), Vector3.right * dist);
+            Gizmos.color = Color.blue;
+            Gizmos.DrawRay(new Vector3(bounds.min.x + checkInset, y, 0f), Vector3.left  * dist);
+        }
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireCube(bounds.center, bounds.size);
     }
 
-#if UNITY_EDITOR
     protected virtual void OnDrawGizmosSelected()
     {
         if (!Application.isPlaying) return;

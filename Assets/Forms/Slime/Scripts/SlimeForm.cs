@@ -35,6 +35,9 @@ public class SlimeForm : BaseForm
     private float _staminaExhaustedTime = -1f;
     private bool _exhaustedFall;
 
+    private static readonly int SpeedHash = Animator.StringToHash("Speed");
+    private static readonly int IsWallClingHash = Animator.StringToHash("IsWallCling");
+
     public override void Initialize(PlayerController ctrl)
     {
         base.Initialize(ctrl);
@@ -66,7 +69,7 @@ public class SlimeForm : BaseForm
         rb.velocity = new Vector2(_currentVelocityX, rb.velocity.y);
 
         if (currentState == ActionState.Idle || currentState == ActionState.Moving)
-            currentState = Mathf.Abs(horizontal) > 0.1f ? ActionState.Moving : ActionState.Idle;
+            UpdateIdleOrMovingState(horizontal);
 
         if (currentState == ActionState.Moving && IsGrounded && Time.time >= _nextWalkSoundTime)
         {
@@ -93,13 +96,13 @@ public class SlimeForm : BaseForm
     protected override void FixedUpdate()
     {
         if (IsGrounded && stamina != null && currentState != ActionState.WallCling)
-            stamina.Restore(stamina.Max * 0.3f * Time.fixedDeltaTime);
+            stamina.Restore(stamina.RecoverPerSecond * Time.fixedDeltaTime);
 
-        var (wallLeft, wallRight) = DetectWalls();
+        var (wallLeft, wallRight) = DetectWalls(wallCheckDistance, wallCheckInset, wallRayCount, wallLayer);
         float horizontal = PlayerInputReader.HasInstance ? PlayerInputReader.Instance.MoveValue.x : 0f;
 
         // Entry check moved BEFORE base.FixedUpdate to prevent gravity application in same frame
-        if (currentState != ActionState.WallCling && currentState != ActionState.SpecialAction && currentState != ActionState.Locked)
+        if (currentState != ActionState.WallCling && currentState != ActionState.SpecialAction)
         {
             bool pushingRight = horizontal > 0.1f;
             bool pushingLeft = horizontal < -0.1f;
@@ -155,34 +158,8 @@ public class SlimeForm : BaseForm
             if (!wallOnSide)
                 ExitWallCling();
         }
-    }
 
-    private (bool left, bool right) DetectWalls()
-    {
-        if (myCollider == null) return (false, false);
-        Bounds bounds = myCollider.bounds;
-        float startY = bounds.min.y + 0.1f;
-        float endY = bounds.max.y - 0.1f;
-        float step = wallRayCount > 1 ? (endY - startY) / (wallRayCount - 1) : 0f;
-        float dist = wallCheckDistance + wallCheckInset;
-
-        bool hitL = false, hitR = false;
-        for (int i = 0; i < wallRayCount; i++)
-        {
-            float y = startY + step * i;
-
-            Vector2 rightOrigin = new Vector2(bounds.max.x - wallCheckInset, y);
-            bool hitRight = Physics2D.Raycast(rightOrigin, Vector2.right, dist, wallLayer);
-            if (hitRight) hitR = true;
-
-            Vector2 leftOrigin = new Vector2(bounds.min.x + wallCheckInset, y);
-            bool hitLeft = Physics2D.Raycast(leftOrigin, Vector2.left, dist, wallLayer);
-            if (hitLeft) hitL = true;
-
-            Debug.DrawRay(rightOrigin, Vector2.right * dist, hitRight ? Color.green : Color.red);
-            Debug.DrawRay(leftOrigin, Vector2.left * dist, hitLeft ? Color.green : Color.blue);
-        }
-        return (hitL, hitR);
+        SyncAnimator();
     }
 
     private void DoWallMovement(float horizontal)
@@ -224,7 +201,6 @@ public class SlimeForm : BaseForm
         currentState = ActionState.WallCling;
         rb.velocity = new Vector2((direction > 0 ? 1f : -1f) * wallStickForce, 0f);
         rb.gravityScale = 0f;
-        animator?.SetBool("IsWallCling", true);
     }
 
     private void ExitWallCling()
@@ -233,7 +209,6 @@ public class SlimeForm : BaseForm
         _wallClingExitTime = Time.time;
         currentState = ActionState.Falling;
         rb.gravityScale = gravityScale;
-        animator?.SetBool("IsWallCling", false);
     }
 
     protected override void HandleLanding()
@@ -251,37 +226,22 @@ public class SlimeForm : BaseForm
             spriteRenderer.flipX = _wallClingDirection < 0;
         else
             spriteRenderer.flipX = rb.velocity.x < 0f;
+    }
 
-        if (animator != null)
-            animator.SetFloat("Speed", Mathf.Abs(rb.velocity.x));
+    private void SyncAnimator()
+    {
+        if (animator == null || animator.runtimeAnimatorController == null) return;
+
+        animator.SetBool(IsWallClingHash, currentState == ActionState.WallCling);
+        animator.SetFloat(SpeedHash, Mathf.Abs(rb.velocity.x));
     }
 
 #if UNITY_EDITOR
-    private void OnDrawGizmosSelected()
+    protected override void OnDrawGizmosSelected()
     {
-        Collider2D col = GetComponent<Collider2D>();
-        if (col == null) return;
-        Bounds bounds = col.bounds;
-        float startY = bounds.min.y + 0.1f;
-        float endY = bounds.max.y - 0.1f;
-        float step = wallRayCount > 1 ? (endY - startY) / (wallRayCount - 1) : 0f;
-        float dist = wallCheckDistance + wallCheckInset;
-
-        for (int i = 0; i < wallRayCount; i++)
-        {
-            float y = startY + step * i;
-
-            Vector3 rightOrigin = new Vector3(bounds.max.x - wallCheckInset, y, 0f);
-            Gizmos.color = Color.red;
-            Gizmos.DrawRay(rightOrigin, Vector3.right * dist);
-
-            Vector3 leftOrigin = new Vector3(bounds.min.x + wallCheckInset, y, 0f);
-            Gizmos.color = Color.blue;
-            Gizmos.DrawRay(leftOrigin, Vector3.left * dist);
-        }
-
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireCube(bounds.center, bounds.size);
+        base.OnDrawGizmosSelected();
+        if (GetComponent<Collider2D>() is { } col)
+            DrawWallCheckGizmos(col, wallCheckDistance, wallCheckInset, wallRayCount);
     }
 #endif
 }
