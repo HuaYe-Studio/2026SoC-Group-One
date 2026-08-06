@@ -57,10 +57,9 @@ public class PlayerController : MonoBehaviour
     private FormType ResolveFormType(BaseForm form, int index)
     {
         FormType declared = form.FormType;
-        // 如果 FormType 已在 Inspector 中显式配置过（非默认值或类型匹配），直接使用
         if (!formTypeToIndex.ContainsKey(declared))
             return declared;
-        // 回退：Inspector 未配置时通过类型推断
+
         if (form is SlimeForm) return FormType.Slime;
         if (form is FrogForm) return FormType.Frog;
         return (FormType)index;
@@ -140,25 +139,4 @@ public class PlayerController : MonoBehaviour
 
         Debug.Log($"3C: Switched to form [{index}]");
     }
-
-    private void CycleForm(int direction)
-    {
-        if (allForms == null || allForms.Length <= 1) return;
-
-        var ordered = new List<int>();
-        for (int i = 0; i < allForms.Length; i++)
-        {
-            if (allForms[i] != null && unlockedForms.Contains(allForms[i].FormType))
-                ordered.Add(i);
-        }
-
-        if (ordered.Count <= 1) return;
-
-        int curPos = ordered.IndexOf(activeFormIndex);
-        if (curPos < 0) return;
-
-        int nextPos = (curPos + direction + ordered.Count) % ordered.Count;
-        SwitchToForm(ordered[nextPos]);
-    }
-
 }

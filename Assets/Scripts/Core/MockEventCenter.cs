@@ -8,7 +8,7 @@ public static class MockEventCenter
     public static void TriggerFormUnlock(FormType newForm)
     {
         OnFormUnlocked?.Invoke(newForm);
-        Debug.Log($"解锁形态：{newForm}");
+        Debug.Log($"Form unlocked: {newForm}");
     }
 
     public static event Action<DevourableAnimal> OnAnimalEnterRange;
@@ -32,7 +32,7 @@ public static class MockEventCenter
         OnFormChanged?.Invoke(formType);
     }
 
-    public static event Action<int,int> OnCheckPlayerHP;
+    public static event System.Action<int, int> OnCheckPlayerHP;
 
     public static void TriggerCheckPlayerHP(int currentHP, int maxHP)
     {
@@ -70,5 +70,3 @@ public static class MockEventCenter
     }
 
 }
-
-public enum FormType { Slime, Frog, BubbleFish, Form4 }
