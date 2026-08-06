@@ -30,8 +30,8 @@ public class DevourTipController : MonoBehaviour
     //订阅吞噬检测范围事件
     void OnEnable()
     {
-        MockEventCenter.OnAnimalEnterRange += HandleAnimalEnterRange;
-        MockEventCenter.OnAnimalExitRange += HandleAnimalExitRange;
+        MockEventCenter.OnDevourableEnterRange += HandleDevourableEnterRange;
+        MockEventCenter.OnDevourableExitRange += HandleDevourableExitRange;
     }
 
     // Start is called before the first frame update
@@ -46,32 +46,32 @@ public class DevourTipController : MonoBehaviour
     //退订吞噬检测范围事件
     void OnDisable()
     {
-        MockEventCenter.OnAnimalEnterRange -= HandleAnimalEnterRange;
-        MockEventCenter.OnAnimalExitRange -= HandleAnimalExitRange;
+        MockEventCenter.OnDevourableEnterRange -= HandleDevourableEnterRange;
+        MockEventCenter.OnDevourableExitRange -= HandleDevourableExitRange;
     }
 
-    //处理生物进入检测范围，UI显现的逻辑
-    private void HandleAnimalEnterRange(DevourableAnimal animal)
+    //处理可吞噬目标进入检测范围，UI显现的逻辑
+    private void HandleDevourableEnterRange(IDevourable target)
     {
         if (_devourTipUI != null && !_devourTipUI.activeSelf)
         {
             _devourTipUI.SetActive(true);
             if (_canvasGroup != null)
             {
-                _canvasGroup.DOFade(0f, 0.5f).SetLoops(-1, LoopType.Yoyo);//反复淡入淡出效果
+                _canvasGroup.DOFade(0f, 0.5f).SetLoops(-1, LoopType.Yoyo);
             }
         }
     }
 
-    //处理生物离开检测范围，UI隐藏的逻辑
-    private void HandleAnimalExitRange(DevourableAnimal animal)
+    //处理可吞噬目标离开检测范围，UI隐藏的逻辑
+    private void HandleDevourableExitRange(IDevourable target)
     {
         if (_devourTipUI != null && _devourTipUI.activeSelf)
         {
             if (_canvasGroup != null)
             {
-                _canvasGroup.DOKill(); // 停止淡入淡出动画
-                _canvasGroup.alpha = 1f; // 重置透明度为完全不透明
+                _canvasGroup.DOKill();
+                _canvasGroup.alpha = 1f;
             }
             _devourTipUI.SetActive(false);
         }

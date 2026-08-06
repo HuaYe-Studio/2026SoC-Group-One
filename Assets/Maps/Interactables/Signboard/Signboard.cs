@@ -17,7 +17,6 @@ public class Signboard : MonoBehaviour
     }
     private void OnTriggerEnter2D(Collider2D other)
     {
-        Debug.Log("111" + other.name);
         if (other.gameObject.layer == LayerMask.NameToLayer("Player"))
         {
             if (uiHint != null)

@@ -16,7 +16,6 @@ GameObject:
   - component: {fileID: 5321786757238909391}
   - component: {fileID: -4986256269079389672}
   - component: {fileID: 4664454892179609109}
-  - component: {fileID: -8152437610293847561}
   - component: {fileID: -9223372036854775808}
   - component: {fileID: 3274312556539779992}
   m_Layer: 7
@@ -174,7 +173,7 @@ CapsuleCollider2D:
   m_UsedByEffector: 0
   m_UsedByComposite: 0
   m_Offset: {x: -0.0282028, y: 0.02978822}
-  m_Size: {x: 0.82069653, y: 0.76799417}
+  m_Size: {x: 0.6, y: 0.6}
   m_Direction: 0
 --- !u!61 &5321786757238909391
 BoxCollider2D:
@@ -235,6 +234,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   grantedForm: 1
   stunDurationAfterSpit: 2.5
+  priority: 0
+  destroyAfterDevour: 0
 --- !u!114 &4664454892179609109
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -257,6 +258,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   _fleeSpeedMultiplier: 1.5
+  _stuckCheckInterval: 1
+  _stuckMoveThreshold: 0.3
+  _stuckRetryCooldown: 3
   _hopForce: 5
   _hopForwardSpeed: 2.35
   _groundCheckWidth: 0.5
@@ -284,6 +288,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   _fleeRadius: 5
+  _safeRadius: 8
   _moveSpeedThreshold: 0.5
   _threatRiseRate: 40
   _threatCalmRate: 10

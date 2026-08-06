@@ -354,7 +354,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   detectionRadius: 4
-  animalLayer:
+  devourableLayer:
     serializedVersion: 2
     m_Bits: 128
   pounceSpeed: 14
@@ -576,7 +576,7 @@ MonoBehaviour:
             m_BoolArgument: 0
           m_CallState: 2
   normalJumpForce: 5
-  maxChargedJumpForce: 6.6
+  maxChargedJumpForce: 7
   jumpStaminaCost: 20
   chargeTimeToMax: 0.5
   jumpCutMultiplier: 0.5

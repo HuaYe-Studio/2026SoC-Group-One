@@ -11,18 +11,18 @@ public static class MockEventCenter
         Debug.Log($"Form unlocked: {newForm}");
     }
 
-    public static event Action<DevourableAnimal> OnAnimalEnterRange;
+    public static event Action<IDevourable> OnDevourableEnterRange;
 
-    public static void TriggerAnimalEnterRange(DevourableAnimal animal)
+    public static void TriggerDevourableEnterRange(IDevourable target)
     {
-        OnAnimalEnterRange?.Invoke(animal);
+        OnDevourableEnterRange?.Invoke(target);
     }
 
-    public static event Action<DevourableAnimal> OnAnimalExitRange;
+    public static event Action<IDevourable> OnDevourableExitRange;
 
-    public static void TriggerAnimalExitRange(DevourableAnimal animal)
+    public static void TriggerDevourableExitRange(IDevourable target)
     {
-        OnAnimalExitRange?.Invoke(animal);
+        OnDevourableExitRange?.Invoke(target);
     }
 
     public static event Action<FormType> OnFormChanged;
@@ -62,7 +62,6 @@ public static class MockEventCenter
         OnPlayerDeath?.Invoke();
     }
 
-    /// <summary>某只动物被玩家吞噬。</summary>
     public static event System.Action<GameObject> OnAnimalDevoured;
 
     public static void TriggerAnimalDevoured(GameObject victim)

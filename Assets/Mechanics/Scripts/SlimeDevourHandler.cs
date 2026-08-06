@@ -1,13 +1,16 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [RequireComponent(typeof(SlimeForm))]
 public class SlimeDevourHandler : MonoBehaviour
 {
     [Header("Detection")]
     [SerializeField] private float detectionRadius = 4f;
-    [SerializeField] private LayerMask animalLayer;
+    [SerializeField]
+    [FormerlySerializedAs("animalLayer")]
+    private LayerMask devourableLayer;
 
     [Header("Pounce")]
     [SerializeField] private float pounceSpeed = 14f;
@@ -25,15 +28,15 @@ public class SlimeDevourHandler : MonoBehaviour
     private PlayerController playerController;
     private DevourEffectPlayer effectPlayer;
 
-    private DevourableAnimal _currentTarget;
+    private IDevourable _currentTarget;
     private bool _isPouncing;
     public bool IsPouncing => _isPouncing;
     private bool _devourSequenceRunning;
     private float _pounceEndTime;
     private float _cooldownEndTime;
 
-    private HashSet<DevourableAnimal> _animalsInRange = new HashSet<DevourableAnimal>();
-    private List<DevourableAnimal> _rangeCheckResults = new List<DevourableAnimal>();
+    private HashSet<MonoBehaviour> _devourablesInRange = new HashSet<MonoBehaviour>();
+    private List<MonoBehaviour> _rangeCheckResults = new List<MonoBehaviour>();
     private Collider2D[] _overlapBuffer = new Collider2D[32];
 
     private static readonly int IsSwoopingHash = Animator.StringToHash("IsSwooping");
@@ -64,40 +67,52 @@ public class SlimeDevourHandler : MonoBehaviour
         if (PlayerInputReader.HasInstance)
             PlayerInputReader.Instance.OnInput_Space -= TryHandleDevourInput;
 
-        foreach (DevourableAnimal animal in _animalsInRange)
-            MockEventCenter.TriggerAnimalExitRange(animal);
-        _animalsInRange.Clear();
+        foreach (MonoBehaviour mb in _devourablesInRange)
+        {
+            IDevourable d = mb as IDevourable;
+            if (d != null)
+                MockEventCenter.TriggerDevourableExitRange(d);
+        }
+        _devourablesInRange.Clear();
     }
 
     private void Update()
     {
-        UpdateAnimalsInRange();
+        UpdateDevourablesInRange();
     }
 
-    private void UpdateAnimalsInRange()
+    private void UpdateDevourablesInRange()
     {
         Vector2 origin = transform.root.position;
-        int count = Physics2D.OverlapCircleNonAlloc(origin, detectionRadius, _overlapBuffer, animalLayer);
+        int count = Physics2D.OverlapCircleNonAlloc(origin, detectionRadius, _overlapBuffer, devourableLayer);
 
         _rangeCheckResults.Clear();
         for (int i = 0; i < count; i++)
         {
-            DevourableAnimal animal = _overlapBuffer[i].GetComponent<DevourableAnimal>();
-            if (animal != null)
-                _rangeCheckResults.Add(animal);
+            IDevourable devourable = GetDevourable(_overlapBuffer[i]);
+            if (devourable != null)
+                _rangeCheckResults.Add((MonoBehaviour)devourable);
         }
 
-        foreach (DevourableAnimal animal in _animalsInRange)
+        foreach (MonoBehaviour mb in _devourablesInRange)
         {
-            if (!_rangeCheckResults.Contains(animal))
-                MockEventCenter.TriggerAnimalExitRange(animal);
+            if (!_rangeCheckResults.Contains(mb))
+            {
+                IDevourable d = mb as IDevourable;
+                if (d != null)
+                    MockEventCenter.TriggerDevourableExitRange(d);
+            }
         }
-        _animalsInRange.RemoveWhere(a => !_rangeCheckResults.Contains(a));
+        _devourablesInRange.RemoveWhere(mb => !_rangeCheckResults.Contains(mb));
 
-        foreach (DevourableAnimal animal in _rangeCheckResults)
+        foreach (MonoBehaviour mb in _rangeCheckResults)
         {
-            if (_animalsInRange.Add(animal))
-                MockEventCenter.TriggerAnimalEnterRange(animal);
+            if (_devourablesInRange.Add(mb))
+            {
+                IDevourable d = mb as IDevourable;
+                if (d != null)
+                    MockEventCenter.TriggerDevourableEnterRange(d);
+            }
         }
     }
 
@@ -111,14 +126,14 @@ public class SlimeDevourHandler : MonoBehaviour
             return;
         }
 
-        float dist = Vector2.Distance(transform.root.position, _currentTarget.transform.position);
+        float dist = Vector2.Distance(transform.root.position, _currentTarget.Transform.position);
         if (dist < 0.5f)
         {
             StartCoroutine(RunDevourSequence(_currentTarget));
             return;
         }
 
-        Vector2 toTarget = (_currentTarget.transform.position - transform.root.position).normalized;
+        Vector2 toTarget = (_currentTarget.Transform.position - transform.root.position).normalized;
         rb.velocity = toTarget * pounceSpeed;
     }
 
@@ -126,12 +141,12 @@ public class SlimeDevourHandler : MonoBehaviour
     {
         if (!_isPouncing || _currentTarget == null) return;
 
-        DevourableAnimal animal = other.GetComponent<DevourableAnimal>();
-        if (animal != _currentTarget) return;
+        IDevourable devourable = GetDevourable(other);
+        if (devourable != _currentTarget) return;
 
         if (_devourSequenceRunning) return;
 
-        StartCoroutine(RunDevourSequence(animal));
+        StartCoroutine(RunDevourSequence(devourable));
     }
 
     private void TryHandleDevourInput()
@@ -141,7 +156,7 @@ public class SlimeDevourHandler : MonoBehaviour
         if (_isPouncing) return;
         if (Time.time < _cooldownEndTime) return;
 
-        DevourableAnimal target = FindNearestDevourable();
+        IDevourable target = FindNearestDevourable();
         if (target == null) return;
 
         _currentTarget = target;
@@ -166,26 +181,29 @@ public class SlimeDevourHandler : MonoBehaviour
         baseForm.SetActionState(ActionState.Idle);
     }
 
-    private DevourableAnimal FindNearestDevourable()
+    private IDevourable FindNearestDevourable()
     {
         Vector2 origin = transform.root.position;
-        int count = Physics2D.OverlapCircleNonAlloc(origin, detectionRadius, _overlapBuffer, animalLayer);
+        int count = Physics2D.OverlapCircleNonAlloc(origin, detectionRadius, _overlapBuffer, devourableLayer);
         if (count == 0) return null;
 
-        DevourableAnimal best = null;
+        IDevourable best = null;
+        float bestPriority = float.MinValue;
         float bestDistSq = float.MaxValue;
 
         for (int i = 0; i < count; i++)
         {
-            DevourableAnimal animal = _overlapBuffer[i].GetComponent<DevourableAnimal>();
-            if (animal == null) continue;
-            if (playerController.IsFormUnlocked(animal.GrantedForm)) continue;
+            IDevourable devourable = GetDevourable(_overlapBuffer[i]);
+            if (devourable == null) continue;
+            if (!devourable.CanBeDevoured(playerController)) continue;
 
-            float dSq = ((Vector2)animal.transform.position - origin).sqrMagnitude;
-            if (dSq < bestDistSq)
+            float dSq = ((Vector2)devourable.Transform.position - origin).sqrMagnitude;
+            if (devourable.Priority > bestPriority ||
+                (devourable.Priority == bestPriority && dSq < bestDistSq))
             {
+                bestPriority = devourable.Priority;
                 bestDistSq = dSq;
-                best = animal;
+                best = devourable;
             }
         }
 
@@ -199,7 +217,7 @@ public class SlimeDevourHandler : MonoBehaviour
         baseForm.SetActionState(ActionState.SpecialAction);
         baseForm.SetAnimatorBool(IsSwoopingHash, true);
 
-        Vector2 toTarget = (_currentTarget.transform.position - transform.root.position).normalized;
+        Vector2 toTarget = (_currentTarget.Transform.position - transform.root.position).normalized;
         rb.velocity = toTarget * pounceSpeed;
 
         AudioManager.Instance?.PlaySFX(pounceClip);
@@ -219,17 +237,17 @@ public class SlimeDevourHandler : MonoBehaviour
         _cooldownEndTime = Time.time + cooldownSeconds;
     }
 
-    private IEnumerator RunDevourSequence(DevourableAnimal animal)
+    private IEnumerator RunDevourSequence(IDevourable target)
     {
         _devourSequenceRunning = true;
         _isPouncing = false;
         rb.velocity = Vector2.zero;
 
-        Vector2 spitDirection = (transform.root.position - animal.transform.position).normalized;
+        Vector2 spitDirection = (transform.root.position - target.Transform.position).normalized;
 
         yield return null;
 
-        animal.PlayBeingDevoured();
+        target.OnBeingDevoured();
 
         if (baseForm.Animator != null)
             baseForm.Animator.updateMode = AnimatorUpdateMode.UnscaledTime;
@@ -237,26 +255,25 @@ public class SlimeDevourHandler : MonoBehaviour
         Time.timeScale = 0f;
 
         if (effectPlayer != null)
-            yield return effectPlayer.PlayZoomIn(animal.transform.position);
+            yield return effectPlayer.PlayZoomIn(target.Transform.position);
         else
             yield return new WaitForSecondsRealtime(0.4f);
 
         AudioManager.Instance?.PlaySFX(devourClip);
 
         if (effectPlayer != null)
-            yield return effectPlayer.PlayDevour(animal);
+            yield return effectPlayer.PlayDevour(target);
         else
             yield return new WaitForSecondsRealtime(1.0f);
 
-        bool isNewForm = !playerController.IsFormUnlocked(animal.GrantedForm);
-        if (isNewForm)
-        {
-            MockEventCenter.TriggerFormUnlock(animal.GrantedForm);
-            playerController.SwitchToFormByType(animal.GrantedForm);
-        }
+        target.ExecuteDevourOutcome(playerController);
 
         AudioManager.Instance?.PlaySFX(spitClip);
-        animal.PlayBeingSpitOut(spitDirection);
+
+        // null-check: DevourableObject may have self-destructed via UnityEvent
+        MonoBehaviour targetMb = target as MonoBehaviour;
+        if (targetMb != null)
+            target.OnBeingSpitOut(spitDirection);
 
         if (effectPlayer != null)
             yield return effectPlayer.PlayZoomOut();
@@ -268,10 +285,20 @@ public class SlimeDevourHandler : MonoBehaviour
         if (baseForm.Animator != null)
             baseForm.Animator.updateMode = AnimatorUpdateMode.Normal;
 
+        if (target.DestroyAfterDevour && targetMb != null)
+            Destroy(targetMb.gameObject);
+
         baseForm.SetAnimatorBool(IsSwoopingHash, false);
         baseForm.SetActionState(ActionState.Idle);
         _currentTarget = null;
         _cooldownEndTime = Time.time + cooldownSeconds;
         _devourSequenceRunning = false;
+    }
+
+    private static IDevourable GetDevourable(Component c)
+    {
+        var animal = c.GetComponent<DevourableAnimal>();
+        if (animal != null) return animal;
+        return c.GetComponent<DevourableObject>();
     }
 }
