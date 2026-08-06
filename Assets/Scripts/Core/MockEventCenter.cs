@@ -62,25 +62,21 @@ public static class MockEventCenter
         OnPlayerDeath?.Invoke();
     }
 
-    public static event System.Action<GameObject> OnAnimalDevoured;
+    /// <summary>
+    /// 某只动物被攻击（任何来源：玩家吞噬、敌方碰撞、陷阱等）。
+    /// 供通用复仇机制感知：攻击者是谁，受害者是谁。
+    /// </summary>
+    public static event System.Action<GameObject, GameObject, float> OnAnimalAttacked;
 
-    public static void TriggerAnimalDevoured(GameObject victim)
+    public static void TriggerAnimalAttacked(GameObject victim, GameObject attacker, float damage)
     {
-        OnAnimalDevoured?.Invoke(victim);
+        OnAnimalAttacked?.Invoke(victim, attacker, damage);
     }
     public static event System.Action<float, float> OnStaminaChanged;
 
     public static void TriggerStaminaChanged(float current, float max)
     {
         OnStaminaChanged?.Invoke(current, max);
-    }
-
-    /// <summary>某只动物被玩家吞噬（用于同类复仇感知：如冲冲羊感知同类被吃后冲撞攻击）。</summary>
-    public static event System.Action<GameObject> OnAnimalDevoured;
-
-    public static void TriggerAnimalDevoured(GameObject victim)
-    {
-        OnAnimalDevoured?.Invoke(victim);
     }
 
 }

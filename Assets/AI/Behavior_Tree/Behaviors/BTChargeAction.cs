@@ -1,8 +1,10 @@
 using UnityEngine;
 
 /// <summary>
-/// [BT] 冲撞攻击节点：玩家进入触发半径后朝玩家方向冲刺。
-/// 命中玩家、撞墙、或冲撞超时后结束并进入冷却；冷却期间返回 Failure 让位给其他行为。
+/// [BT] 冲撞攻击节点：目标进入冲撞半径后朝目标冲刺。
+/// 目标抽象化：通过目标提供者委托注入（默认 = 玩家），
+/// 因此既可用于追玩家，也可用于追复仇目标（如羊复仇敌方 NPC）。
+/// 命中目标、撞墙、或冲撞超时后结束并进入冷却；冷却期间返回 Failure 让位给其他行为。
 /// 依赖 SheepAI 提供的 StartCharge/StopCharge/IsCharging 原语。
 /// </summary>
 public class BTChargeAction : BTNode
@@ -10,13 +12,22 @@ public class BTChargeAction : BTNode
     private readonly SheepAI _sheep;
     private readonly Blackboard _bb;
 
+    // 目标抽象：目标有效性判定 + 目标世界位置。不注入时默认取玩家。
+    private readonly System.Func<bool> _hasTarget;
+    private readonly System.Func<Vector2> _targetPos;
+
     private bool _hasCharged;
     private float _nextChargeTime;
 
-    public BTChargeAction(SheepAI sheep)
+    /// <param name="sheep">冲冲羊 AI</param>
+    /// <param name="hasTarget">目标是否存在（为 null 时使用"玩家可见"作为默认判定）</param>
+    /// <param name="targetPos">目标世界位置（为 null 时使用玩家位置作为默认目标）</param>
+    public BTChargeAction(SheepAI sheep, System.Func<bool> hasTarget = null, System.Func<Vector2> targetPos = null)
     {
         _sheep = sheep;
         _bb = sheep.Board;
+        _hasTarget = hasTarget ?? (() => _bb.IsPlayerVisible);
+        _targetPos = targetPos ?? (() => (Vector2)_bb.LastKnownPlayerPos);
     }
 
     public override State Tick()
@@ -25,33 +36,38 @@ public class BTChargeAction : BTNode
         if (Time.time < _nextChargeTime && !_sheep.IsCharging)
             return State.Failure;
 
-        // 玩家丢失 → 结束冲撞
-        if (!_bb.IsPlayerVisible)
+        // 目标不存在（复仇目标已销毁 / 玩家不可见）→ 结束冲撞
+        if (!_hasTarget())
         {
             _sheep.StopCharge();
             Reset();
             return State.Failure;
         }
 
-        // 尚未进入冲撞：玩家在冲撞半径内 → 开始冲撞；否则朝玩家方向接近
+        Vector2 animalPos = (Vector2)_sheep.transform.position;
+        Vector2 target = _targetPos();
+        float distance = Vector2.Distance(animalPos, target);
+
+        // 尚未进入冲撞：目标在冲撞半径内 → 开始冲撞；否则朝目标方向接近
         if (!_hasCharged)
         {
-            if (_bb.PlayerDistance <= _sheep.ChargeTriggerRadius)
+            if (distance <= _sheep.ChargeTriggerRadius)
             {
                 _hasCharged = true;
-                _sheep.StartCharge(_bb.PlayerDirection.x);
+                float direction = target.x >= animalPos.x ? 1f : -1f;
+                _sheep.StartCharge(direction);
             }
             else
             {
-                // 复仇追猎阶段：朝玩家方向行走接近（远距离也能追击，进入半径后转冲撞）
-                float direction = Mathf.Sign(_bb.PlayerDirection.x);
+                // 追猎阶段：朝目标方向行走接近（远距离也能追击，进入半径后转冲撞）
+                float direction = target.x >= animalPos.x ? 1f : -1f;
                 _sheep.PerformMove(direction);
             }
             return State.Running;
         }
 
-        // 命中玩家 → 结束并进入冷却
-        if (_bb.PlayerDistance <= _sheep.ChargeHitRadius)
+        // 命中目标 → 结束并进入冷却
+        if (distance <= _sheep.ChargeHitRadius)
         {
             _sheep.StopCharge();
             _nextChargeTime = Time.time + _sheep.ChargeCooldown;

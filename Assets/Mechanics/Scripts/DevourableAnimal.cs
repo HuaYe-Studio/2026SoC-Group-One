@@ -16,6 +16,15 @@ public class DevourableAnimal : MonoBehaviour, IDevourable
     public bool IsTargeted { get; set; }
     public SpriteRenderer SpriteRenderer { get; private set; }
 
+    /// <summary>
+    /// 吞噬者（玩家）的 GameObject。吞噬总是由玩家执行，通过 Tag 查找。
+    /// 找不到时返回 null（攻击者未知，复仇组件会忽略）。
+    /// </summary>
+    public static GameObject PlayerAttacker
+    {
+        get { return GameObject.FindGameObjectWithTag("Player"); }
+    }
+
     private Rigidbody2D _rb;
     private Animator _animator;
     private AnimalBase _animalBase;
@@ -66,11 +75,8 @@ public class DevourableAnimal : MonoBehaviour, IDevourable
         if (_animalBase != null)
             _animalBase.OnDevoured(stunDurationAfterSpit);
 
-<<<<<<< HEAD
-=======
-        // 广播"同类被吞噬"事件，供复仇机制感知（如冲冲羊）
->>>>>>> 9a51393 (feat: 完成蜘蛛和羊行为树的构建)
-        MockEventCenter.TriggerAnimalDevoured(gameObject);
+        // 广播"受击"事件（攻击者=玩家）：供通用复仇机制感知（如冲冲羊被/同类被吞噬后反击）
+        MockEventCenter.TriggerAnimalAttacked(gameObject, PlayerAttacker, 0f);
 
         SafeSetTrigger("Devoured");
     }
