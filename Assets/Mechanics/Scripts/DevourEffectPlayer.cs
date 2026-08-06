@@ -46,22 +46,22 @@ public class DevourEffectPlayer : MonoBehaviour
         yield return new WaitForSecondsRealtime(zoomInDuration);
     }
 
-    public IEnumerator PlayDevour(DevourableAnimal animal)
+    public IEnumerator PlayDevour(IDevourable target)
     {
         if (mainCam != null)
             mainCam.transform.DOShakePosition(shakeDuration, shakeStrength).SetUpdate(true);
 
-        Transform animalTransform = animal.transform;
-        SpriteRenderer sr = animal.SpriteRenderer;
+        Transform targetTransform = target.Transform;
+        SpriteRenderer sr = target.SpriteRenderer;
 
         Sequence seq = DOTween.Sequence();
         seq.SetUpdate(true);
 
-        if (animalTransform != null)
+        if (targetTransform != null)
         {
-            seq.Join(animalTransform.DOScale(Vector3.one * 1.3f, devourDuration * 0.2f)
+            seq.Join(targetTransform.DOScale(Vector3.one * 1.3f, devourDuration * 0.2f)
                 .SetEase(Ease.OutQuad));
-            seq.Append(animalTransform.DOScale(Vector3.zero, devourDuration * 0.8f)
+            seq.Append(targetTransform.DOScale(Vector3.zero, devourDuration * 0.8f)
                 .SetEase(devourEase));
         }
 

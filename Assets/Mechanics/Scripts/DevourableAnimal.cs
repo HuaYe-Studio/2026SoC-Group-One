@@ -1,12 +1,16 @@
 using UnityEngine;
 
-public class DevourableAnimal : MonoBehaviour
+public class DevourableAnimal : MonoBehaviour, IDevourable
 {
     [SerializeField] private FormType grantedForm = FormType.Frog;
 
     [Header("Spit")]
     [Tooltip("被吐出后的眩晕时长（秒），期间 AI 不感知不行动，防止受惊蹿出")]
     [SerializeField] private float stunDurationAfterSpit = 2.5f;
+
+    [Header("Devour Config")]
+    [SerializeField] private float priority = 0f;
+    [SerializeField] private bool destroyAfterDevour = false;
 
     public FormType GrantedForm => grantedForm;
     public bool IsTargeted { get; set; }
@@ -16,6 +20,11 @@ public class DevourableAnimal : MonoBehaviour
     private Animator _animator;
     private AnimalBase _animalBase;
 
+    // IDevourable
+    Transform IDevourable.Transform => transform;
+    float IDevourable.Priority => priority;
+    bool IDevourable.DestroyAfterDevour => destroyAfterDevour;
+
     private void Awake()
     {
         SpriteRenderer = GetComponent<SpriteRenderer>();
@@ -24,17 +33,39 @@ public class DevourableAnimal : MonoBehaviour
         _animalBase = GetComponent<AnimalBase>();
     }
 
+    bool IDevourable.CanBeDevoured(PlayerController playerController)
+    {
+        return !playerController.IsFormUnlocked(grantedForm);
+    }
+
+    void IDevourable.OnBeingDevoured()
+    {
+        PlayBeingDevoured();
+    }
+
+    void IDevourable.ExecuteDevourOutcome(PlayerController playerController)
+    {
+        bool isNewForm = !playerController.IsFormUnlocked(grantedForm);
+        if (isNewForm)
+        {
+            MockEventCenter.TriggerFormUnlock(grantedForm);
+            playerController.SwitchToFormByType(grantedForm);
+        }
+    }
+
+    void IDevourable.OnBeingSpitOut(Vector2 direction)
+    {
+        PlayBeingSpitOut(direction);
+    }
+
     public void PlayBeingDevoured()
     {
         if (_rb != null)
             _rb.velocity = Vector2.zero;
 
-        // 通知 AI：清空威胁认知并进入眩晕
-        // 眩晕计时从时间恢复流动后起算（吞噬演出期间 Time.timeScale=0，Time.time 冻结）
         if (_animalBase != null)
             _animalBase.OnDevoured(stunDurationAfterSpit);
 
-        // 广播"同类被吞噬"事件，供复仇机制感知（如冲冲羊）
         MockEventCenter.TriggerAnimalDevoured(gameObject);
 
         SafeSetTrigger("Devoured");
@@ -42,15 +73,12 @@ public class DevourableAnimal : MonoBehaviour
 
     public void PlayBeingSpitOut(Vector2 direction)
     {
-        // 恢复被吞噬效果改变的视觉状态
         if (SpriteRenderer != null)
         {
             SpriteRenderer.color = new Color(1f, 1f, 1f, 1f);
         }
         transform.localScale = Vector3.one;
 
-        // 吐出时不再施加冲量：动物处于眩晕状态，原地落下即可，
-        // 避免"交换位置后突然蹿出去"的观感问题
         if (_rb != null)
             _rb.velocity = Vector2.zero;
 
