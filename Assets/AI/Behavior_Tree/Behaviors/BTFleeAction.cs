@@ -5,6 +5,7 @@ using UnityEngine;
 /// 紧急度随连续跳次数递增（1.5x → 2.0x → 2.5x），拉远距离后逐步衰减。
 /// 前方遇墙时尝试反向跳跃，遇沟时尝试更远跨越跳跃。
 /// 感知数据统一从 Blackboard 读取。
+/// 适配动物：青蛙走跳跃+地形感知；泡泡鱼(BubbleFishAI)走全方向 Swim+逃生动画；其余走水平 PerformMove。
 /// 注意：Reset() 只重置内部状态，绝不调用 StopMoving 等物理副作用。
 /// </summary>
 public class BTFleeAction : BTNode
@@ -81,6 +82,8 @@ public class BTFleeAction : BTNode
             float speedMult = _animal.FleeSpeedMultiplier;
             if (_frog != null)
                 _frog.PerformHop(_pushDirection, speedMult, "Flee");
+            else if (_animal is BubbleFishAI fish)
+                fish.Swim(new Vector2(_pushDirection, 0f), speedMult); // 鱼：沿强推方向全方向游
             else
                 _animal.PerformMove(_pushDirection, speedMult);
 
@@ -128,9 +131,14 @@ public class BTFleeAction : BTNode
         // 3. 计算速度倍率（含紧迫度加成）
         float speedMultiplier = CalculateSpeedMultiplier();
 
-        // 4. 执行移动
+        // 4. 执行移动（鱼：全方向远离玩家 + Flee 动画；其他动物：水平逃跑）
         if (_frog != null)
             _frog.PerformHop(finalDirection, speedMultiplier, "Flee");
+        else if (_animal is BubbleFishAI fish)
+        {
+            fish.Swim(-_bb.PlayerDirection, speedMultiplier);
+            fish.PlayAnimation("Flee");
+        }
         else
             _animal.PerformMove(finalDirection, speedMultiplier);
     }

@@ -2,9 +2,9 @@ using UnityEngine;
 
 /// <summary>
 /// [BT] 泡泡鱼行为树：挂载并启用后驱动泡泡鱼AI。
-/// 优先级：被吞噬眩晕 > 脱困 > 路径逃生(按威胁方向选路) > 回撤(回逃生起点) > 路径巡游 > 自由巡游。
+/// 优先级：被吞噬眩晕 > 脱困 > 路径逃生(按威胁方向选路) > 直接逃跑(无路径兜底) > 回撤(回逃生起点) > 路径巡游 > 自由巡游。
 /// 设计思路：面对威胁时鱼沿预先绘制好的逃生路径撤离，撤离路径按威胁方向自动选择；
-/// 威胁解除后返回逃生起点，再继续巡游。
+/// 未配置逃生路径时回退为直接朝远离玩家方向逃跑；威胁解除后返回逃生起点，再继续巡游。
 /// 所有感知判断统一从 Blackboard 读取语义化认知状态。
 /// </summary>
 [RequireComponent(typeof(BubbleFishAI))]
@@ -33,6 +33,9 @@ public class BubbleFishBT : MonoBehaviour
     [Header("巡游设置")]
     [Tooltip("自由巡游范围半径（米），超出后偏向出生点")]
     [SerializeField] private float _wanderRange = 6f;
+
+    [Tooltip("巡游模式：true=平滑巡游（路点/平滑转向/避让/节律），false=旧版随机换向（回退对比用）")]
+    [SerializeField] private bool _useSmoothWander = true;
 
     [Header("路径巡游")]
     [Tooltip("绘制好的巡游路径（FishPath.Type = Normal）。为空时回退为自由巡游")]
@@ -122,9 +125,18 @@ public class BubbleFishBT : MonoBehaviour
                 return (Vector2)_fish.transform.position;
             });
 
-        BTNode escapeBranch = WithDebug("EscapePath", new BTSequence(
-            WithDebug("Escape/Cond", new BTCondition(() => bb.IsThreatUrgent && HasEscapePaths)),
-            WithDebug("Escape/Action", _escapeAction)
+        // 逃生：紧迫威胁 → 有逃生路径时按威胁方向选路并沿路径撤离；
+        // 无逃生路径时回退为 BTFleeAction 直接朝远离玩家方向逃跑（避免"没配路径就不逃"的缺口）
+        BTNode directFlee = WithDebug("Escape/Direct", new BTSequence(
+            WithDebug("Escape/Direct/Cond", new BTCondition(() => bb.IsThreatUrgent)),
+            WithDebug("Escape/Direct/Action", new BTFleeAction(_fish))
+        ));
+
+        BTNode escapeBranch = WithDebug("EscapePath", new BTSelector(
+            WithDebug("Escape/Path", new BTSequence(
+                WithDebug("Escape/Cond", new BTCondition(() => bb.IsThreatUrgent && HasEscapePaths)),
+                WithDebug("Escape/Action", _escapeAction))),
+            directFlee
         ));
 
         // 回撤：威胁已解除且存在未完成的回撤目标 → 回逃生起点（直线/折线）
@@ -138,7 +150,7 @@ public class BubbleFishBT : MonoBehaviour
                 obstacleLayers: _obstacleMask))
         ));
 
-        BTNode wanderBranch = WithDebug("Wander", new BTWanderAction(_fish, _wanderRange));
+        BTNode wanderBranch = WithDebug("Wander", new BTWanderAction(_fish, _wanderRange, _obstacleMask, _useSmoothWander));
 
         // 路径巡游：绘制好的路径优先，路径为空时回退为自由巡游
         // 通过委托注入移动方式(Swim)与动画解析(段走向→动画名)，BTPathFollowAction 保持通用
@@ -207,6 +219,7 @@ public class BubbleFishBT : MonoBehaviour
         if (bb.IsStunned) return "Stunned";
         if (_fish.IsStuck) return "Unstick";
         if (bb.IsThreatUrgent && HasEscapePaths) return "EscapePath";
+        if (bb.IsThreatUrgent) return "EscapeDirect";
         if (!bb.IsThreatUrgent && bb.HasRetreatTarget) return "Retreat";
         if (_path != null) return "Path";
         return "Wander";
