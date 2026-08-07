@@ -49,3 +49,5 @@ ProjectSettings/ProjectSettings.asset
 ProjectSettings/TimelineSettings.assettemp_docx/
 .hermes/
 CLAUDE.md
+.mcp.json
+.vsconfig
