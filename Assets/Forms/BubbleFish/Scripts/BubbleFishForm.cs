@@ -68,7 +68,7 @@ public partial class BubbleFishForm : BaseForm
         }
     }
 
-    public override void DoMovement(float horizontal)
+    protected override void DoMovement(float horizontal)
     {
         rb.velocity = new Vector2(horizontal * moveSpeed, rb.velocity.y);
     }

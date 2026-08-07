@@ -52,7 +52,7 @@ public class SlimeForm : BaseForm
             myCollider.sharedMaterial = slimePhysicsMaterial;
     }
 
-    public override void DoMovement(float horizontal)
+    protected override void DoMovement(float horizontal)
     {
         if (!CanMove()) return;
 
@@ -73,7 +73,7 @@ public class SlimeForm : BaseForm
 
         if (currentState == ActionState.Moving && IsGrounded && Time.time >= _nextWalkSoundTime)
         {
-            PlaySFX(walkClip);
+            PlaySfx(walkClip);
             _nextWalkSoundTime = Time.time + walkSoundInterval;
         }
     }
@@ -95,11 +95,8 @@ public class SlimeForm : BaseForm
 
     protected override void FixedUpdate()
     {
-        if (IsGrounded && stamina != null && currentState != ActionState.WallCling)
-            stamina.Restore(stamina.RecoverPerSecond * Time.fixedDeltaTime);
-
         var (wallLeft, wallRight) = DetectWalls(wallCheckDistance, wallCheckInset, wallRayCount, wallLayer);
-        float horizontal = PlayerInputReader.HasInstance ? PlayerInputReader.Instance.MoveValue.x : 0f;
+        float horizontal = HorizontalInput;
 
         // Entry check moved BEFORE base.FixedUpdate to prevent gravity application in same frame
         if (currentState != ActionState.WallCling && currentState != ActionState.SpecialAction)
@@ -117,20 +114,12 @@ public class SlimeForm : BaseForm
                 EnterWallCling(-1);
         }
 
-        // Disable gravity BEFORE base.FixedUpdate so ApplyGravity doesn't pull slime down
-        if (currentState == ActionState.WallCling)
-            rb.gravityScale = 0f;
-
         base.FixedUpdate();
-
-        // Re-override after base.FixedUpdate (ApplyGravity may have set it back)
-        if (currentState == ActionState.WallCling)
-            rb.gravityScale = 0f;
 
         // Stamina drain for wall cling/climb (moved here from DoWallMovement for correct timing)
         if (currentState == ActionState.WallCling && stamina != null)
         {
-            float vertical = PlayerInputReader.HasInstance ? PlayerInputReader.Instance.MoveValue.y : 0f;
+            float vertical = VerticalInput;
 
             if (vertical > 0.1f)
                 stamina.Spend(climbStaminaPerSec * Time.fixedDeltaTime);
@@ -164,7 +153,7 @@ public class SlimeForm : BaseForm
 
     private void DoWallMovement(float horizontal)
     {
-        float vertical = PlayerInputReader.HasInstance ? PlayerInputReader.Instance.MoveValue.y : 0f;
+        float vertical = VerticalInput;
         bool pushingAway = (_wallClingDirection > 0 && horizontal < -0.1f)
                         || (_wallClingDirection < 0 && horizontal > 0.1f);
 
@@ -216,6 +205,18 @@ public class SlimeForm : BaseForm
         if (currentState == ActionState.WallCling)
             return;
         base.HandleLanding();
+    }
+
+    protected override void ApplyGravity()
+    {
+        if (currentState == ActionState.WallCling) return;
+        base.ApplyGravity();
+    }
+
+    protected override void StaminaRecovery()
+    {
+        if (currentState == ActionState.WallCling) return;
+        base.StaminaRecovery();
     }
 
     private void LateUpdate()

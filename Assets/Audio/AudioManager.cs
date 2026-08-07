@@ -49,7 +49,7 @@ public class AudioManager : MonoBehaviour
         }
     }
 
-    public void PlaySFX(AudioClip clip, float volume = 1f)
+    public void PlaySfx(AudioClip clip, float volume = 1f)
     {
         if (clip == null) return;
 

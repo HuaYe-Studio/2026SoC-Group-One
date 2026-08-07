@@ -6,10 +6,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private BaseForm[] allForms;
     [SerializeField] private int activeFormIndex;
 
-    public Transform SpawnedObjectContainer { get; private set; }
-
-    private Dictionary<FormType, int> formTypeToIndex = new Dictionary<FormType, int>();
-    private HashSet<FormType> unlockedForms = new HashSet<FormType>();
+    private readonly Dictionary<FormType, int> _formTypeToIndex = new Dictionary<FormType, int>();
+    private readonly HashSet<FormType> _unlockedForms = new HashSet<FormType>();
 
     public BaseForm ActiveForm => (allForms != null && activeFormIndex < allForms.Length)
         ? allForms[activeFormIndex]
@@ -17,23 +15,8 @@ public class PlayerController : MonoBehaviour
 
     private void Awake()
     {
-        EnsureSpawnedObjectContainer();
         InitializeForms();
         ActivateDefaultForm();
-    }
-
-    private void EnsureSpawnedObjectContainer()
-    {
-        var existing = transform.Find("FormSpawnedObjects");
-        if (existing != null)
-        {
-            SpawnedObjectContainer = existing;
-            return;
-        }
-
-        var go = new GameObject("FormSpawnedObjects");
-        go.transform.SetParent(transform);
-        SpawnedObjectContainer = go.transform;
     }
 
     private void InitializeForms()
@@ -48,16 +31,16 @@ public class PlayerController : MonoBehaviour
             allForms[i].gameObject.SetActive(false);
 
             FormType formType = ResolveFormType(allForms[i], i);
-            formTypeToIndex[formType] = i;
+            _formTypeToIndex[formType] = i;
         }
 
-        unlockedForms.Add(FormType.Slime);
+        _unlockedForms.Add(FormType.Slime);
     }
 
     private FormType ResolveFormType(BaseForm form, int index)
     {
         FormType declared = form.FormType;
-        if (!formTypeToIndex.ContainsKey(declared))
+        if (!_formTypeToIndex.ContainsKey(declared))
             return declared;
 
         if (form is SlimeForm) return FormType.Slime;
@@ -90,21 +73,20 @@ public class PlayerController : MonoBehaviour
 
     private void AddNewForm(FormType formType)
     {
-        if (formTypeToIndex.ContainsKey(formType))
+        if (_formTypeToIndex.ContainsKey(formType))
         {
-            unlockedForms.Add(formType);
-            Debug.Log($"3C: Unlocked form [{formType}]");
+            _unlockedForms.Add(formType);
         }
     }
 
     public bool IsFormUnlocked(FormType formType)
     {
-        return unlockedForms.Contains(formType);
+        return _unlockedForms.Contains(formType);
     }
 
     public void SwitchToFormByType(FormType formType)
     {
-        if (formTypeToIndex.TryGetValue(formType, out int index))
+        if (_formTypeToIndex.TryGetValue(formType, out int index))
             SwitchToForm(index);
     }
 
@@ -118,12 +100,12 @@ public class PlayerController : MonoBehaviour
 
     }
 
-    public void SwitchToForm(int index)
+    private void SwitchToForm(int index)
     {
         if (index < 0 || index >= allForms.Length) return;
         if (index == activeFormIndex) return;
         if (allForms[index] == null) return;
-        if (!unlockedForms.Contains(allForms[index].FormType)) return;
+        if (!_unlockedForms.Contains(allForms[index].FormType)) return;
 
         if (ActiveForm != null)
         {
@@ -136,7 +118,5 @@ public class PlayerController : MonoBehaviour
         allForms[index].OnFormActivated();
 
         MockEventCenter.TriggerFormChange(allForms[index].FormType);
-
-        Debug.Log($"3C: Switched to form [{index}]");
     }
 }
