@@ -21,7 +21,8 @@ public class FormWheelController : MonoBehaviour
     [SerializeField] private float _duration = 0.2f;                // 动效的持续时间
     [SerializeField] private float _scaleFactor = 1.6f;             // 选中选项的缩放因子
     [SerializeField] private TMPro.TMP_Text _selectedOptionText;    // 显示选中选项的文本
-
+    [SerializeField] private bool _isKeyBoard;//是否切换到键盘输入，这里以后还要和全局设置做适配
+    [SerializeField] private GameObject _arrow;
     private int _currentSelection, _previousSelection = -1;
     private Vector2 _screenCenter;//屏幕中心坐标
     private List<GameObject> _rankedOptions = new List<GameObject>();
@@ -29,12 +30,8 @@ public class FormWheelController : MonoBehaviour
     private Dictionary<FormType, GameObject> _formTypeToWheelOption = new Dictionary<FormType, GameObject>();
     private PlayerController _playerController;
     private bool _isWheelOpen;
-
-    //键盘输入改造的新增变量
-    float _angle = 0f;//代替原来WheelSelect()里的 angle 变量
-    [SerializeField] private GameObject _arrow;
-    //
-
+    float _angle = 0f;
+    
     // ---------- Unity 生命周期 ----------
     void Awake()
     {
@@ -105,8 +102,16 @@ public class FormWheelController : MonoBehaviour
     // ---------- 核心方法 ----------
     private void ShowWheelPanel()
     {
-        // Cursor.lockState = CursorLockMode.None;//解锁鼠标
-        // Cursor.visible = true;//鼠标可视
+        if (!_isKeyBoard)
+        {
+            Cursor.lockState = CursorLockMode.None;//解锁鼠标
+            Cursor.visible = true;//鼠标可视
+            _arrow.SetActive(false);
+        }
+        else
+        {
+            _arrow.SetActive(true);
+        }
 
         _screenCenter = new Vector2(Screen.width / 2f, Screen.height / 2f);//更新屏幕中心的位置
         _currentSelection = -1;
@@ -167,72 +172,74 @@ public class FormWheelController : MonoBehaviour
         _wheelPanel.SetActive(false);
         Time.timeScale = 1f; // 恢复游戏
 
-        // Cursor.lockState = CursorLockMode.Locked;//锁住鼠标
-        // Cursor.visible = false;//鼠标隐藏
+        if (!_isKeyBoard)
+        {
+            Cursor.lockState = CursorLockMode.Locked;//锁住鼠标
+            Cursor.visible = false;//鼠标隐藏
+        }
     }
 
     private void WheelSelect()
     {
-        /*
-        // 这里是旧鼠标输入的相关代码
-        // 使用新的 Input System 的鼠标位置
-        Vector2 mousePosition = PlayerInputReader.Instance.MouseScreenPosition;
-        Vector2 direction = mousePosition - _screenCenter;
-        float distance = direction.magnitude;
-
-        // 计算鼠标角度（0~360）
-        float angle = Mathf.Atan2(direction.x, direction.y) * Mathf.Rad2Deg;
-        if (angle < 0f) angle += 360f;
-        */
-
         _previousSelection = _currentSelection;
-
         int totalCount = _wheelOptions.Length;
         float optionAngle = 360f / totalCount;
 
-        //键盘输入改造新增代码
-        //此处还要和按键输入映射做适配，暂且先用旧版
-        if (Input.GetKeyDown(KeyCode.L))
-        {
-            _angle += optionAngle;
-        }
-        else if (Input.GetKeyDown(KeyCode.J))
-        {
-            _angle -= optionAngle;
-        }
-        _angle = _angle % 360f;
-        if(_angle < 0)
-        {
-            _angle = (_rankedOptions.Count -1)*optionAngle;
-        }
-        //
+        int tempCount;
 
-        int tempCount = Mathf.RoundToInt(_angle / optionAngle);
-        if (tempCount >= totalCount) tempCount = 0;
+        if (!_isKeyBoard)//鼠标输入
+        {
+            Vector2 mousePosition = PlayerInputReader.Instance.MouseScreenPosition;
+            Vector2 direction = mousePosition - _screenCenter;
+            //float distance = direction.magnitude;//暂时为死代码
 
-        //键盘输入改造新增代码
-        if (tempCount >= _rankedOptions.Count)
-        {
-            tempCount = 0;
-            _angle = 0;
-        }
-        _currentSelection = tempCount;
-        //
+            // 计算鼠标角度（0~360）
+            _angle = Mathf.Atan2(direction.x, direction.y) * Mathf.Rad2Deg;
+            if (_angle < 0f) _angle += 360f;
 
-        /*
-        //夹紧逻辑适用于鼠标输入
-        // 夹紧到已解锁选项范围内
-        if (tempCount >= _rankedOptions.Count)
-        {
-            _currentSelection = (totalCount - tempCount > tempCount - _rankedOptions.Count + 1)
-                ? _rankedOptions.Count - 1
-                : 0;
+            tempCount = Mathf.RoundToInt(_angle / optionAngle);
+            if (tempCount >= totalCount) tempCount = 0;
+
+            //选项夹紧逻辑
+            if (tempCount >= _rankedOptions.Count)
+            {
+                _currentSelection = (totalCount - tempCount > tempCount - _rankedOptions.Count + 1)
+                    ? _rankedOptions.Count - 1
+                    : 0;
+            }
+            else
+            {
+                _currentSelection = tempCount;
+            }
         }
-        else
+        else //键盘输入
         {
+            //此处还要和按键输入映射做适配，暂且先用旧版
+            if (Input.GetKeyDown(KeyCode.L))
+            {
+                _angle += optionAngle;
+            }
+            else if (Input.GetKeyDown(KeyCode.J))
+            {
+                _angle -= optionAngle;
+            }
+            _angle = _angle % 360f;
+            if (_angle < 0)
+            {
+                _angle = (_rankedOptions.Count - 1) * optionAngle;
+            }
+
+            tempCount = Mathf.RoundToInt(_angle / optionAngle);
+            if (tempCount >= totalCount) tempCount = 0;
+
+            if (tempCount >= _rankedOptions.Count)
+            {
+                tempCount = 0;
+                _angle = 0;
+            }
             _currentSelection = tempCount;
+
         }
-        */
 
         // 更新 UI 缩放和边框位置
         if (_currentSelection >= 0 && _previousSelection >= 0 &&
@@ -243,9 +250,10 @@ public class FormWheelController : MonoBehaviour
             _rankedOptions[_previousSelection].transform.DOScale(Vector3.one, 0.05f).SetUpdate(true);
             _borader.transform.position = _rankedOptions[_currentSelection].transform.position;
 
-            //键盘输入改造的新增代码
-            _arrow.transform.rotation = Quaternion.Euler(0,0,-_angle);
-            //
+            if (_isKeyBoard)
+            {
+                _arrow.transform.rotation = Quaternion.Euler(0, 0, -_angle);
+            }
 
             // 更新文字
             if (_currentSelection > 0)

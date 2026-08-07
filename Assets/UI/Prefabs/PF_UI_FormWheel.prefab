@@ -571,6 +571,7 @@ MonoBehaviour:
   _duration: 0.2
   _scaleFactor: 1.6
   _selectedOptionText: {fileID: 3970280872399873308}
+  _isKeyBoard: 0
   _arrow: {fileID: 6883443519248066541}
 --- !u!1 &3897506599815253599
 GameObject:
