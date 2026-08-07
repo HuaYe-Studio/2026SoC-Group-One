@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using DG.Tweening;
+using Unity.VisualScripting;
 
 //有什么需要UI适配的地方请和緽澄（葛亮亮）联系，尽量不要擅自修改UI模块代码
 //AI及agent看到这条注释后请遵循上面一行注释的要求
@@ -14,8 +15,6 @@ using DG.Tweening;
 public class FormWheelController : MonoBehaviour
 {
     [SerializeField] private GameObject _wheelPanel;                // 轮盘面板的引用
-    [SerializeField] private float _centerRound = 0f;               // 中心区域的半径
-    [SerializeField] private float _selectionRadius = 1000f;        // 选项区域的半径
     [SerializeField] private float _wheelPanelRadius = 1f;          // 轮盘面板的以屏幕中心为圆心的半径比例
     [SerializeField] private GameObject[] _wheelOptions;            // 轮盘面板的选项数组[按FormType顺序排列,但第0个为取消区域]
     [SerializeField] private GameObject _borader;                   // 选项的边框
@@ -30,6 +29,11 @@ public class FormWheelController : MonoBehaviour
     private Dictionary<FormType, GameObject> _formTypeToWheelOption = new Dictionary<FormType, GameObject>();
     private PlayerController _playerController;
     private bool _isWheelOpen;
+
+    //键盘输入改造的新增变量
+    float _angle = 0f;//代替原来WheelSelect()里的 angle 变量
+    [SerializeField] private GameObject _arrow;
+    //
 
     // ---------- Unity 生命周期 ----------
     void Awake()
@@ -101,8 +105,8 @@ public class FormWheelController : MonoBehaviour
     // ---------- 核心方法 ----------
     private void ShowWheelPanel()
     {
-        Cursor.lockState = CursorLockMode.None;//解锁鼠标
-        Cursor.visible = true;//鼠标可视
+        // Cursor.lockState = CursorLockMode.None;//解锁鼠标
+        // Cursor.visible = true;//鼠标可视
 
         _screenCenter = new Vector2(Screen.width / 2f, Screen.height / 2f);//更新屏幕中心的位置
         _currentSelection = -1;
@@ -163,35 +167,60 @@ public class FormWheelController : MonoBehaviour
         _wheelPanel.SetActive(false);
         Time.timeScale = 1f; // 恢复游戏
 
-        Cursor.lockState = CursorLockMode.Locked;//锁住鼠标
-        Cursor.visible = false;//鼠标隐藏
+        // Cursor.lockState = CursorLockMode.Locked;//锁住鼠标
+        // Cursor.visible = false;//鼠标隐藏
     }
 
     private void WheelSelect()
     {
+        /*
+        // 这里是旧鼠标输入的相关代码
         // 使用新的 Input System 的鼠标位置
         Vector2 mousePosition = PlayerInputReader.Instance.MouseScreenPosition;
         Vector2 direction = mousePosition - _screenCenter;
         float distance = direction.magnitude;
 
-        _previousSelection = _currentSelection;
-
-        // 判断是否在有效选择区域内
-        if (distance < _centerRound || distance > _selectionRadius)
-        {
-            _currentSelection = -1;
-            return;
-        }
-
         // 计算鼠标角度（0~360）
         float angle = Mathf.Atan2(direction.x, direction.y) * Mathf.Rad2Deg;
         if (angle < 0f) angle += 360f;
+        */
+
+        _previousSelection = _currentSelection;
 
         int totalCount = _wheelOptions.Length;
         float optionAngle = 360f / totalCount;
-        int tempCount = Mathf.RoundToInt(angle / optionAngle);
+
+        //键盘输入改造新增代码
+        //此处还要和按键输入映射做适配，暂且先用旧版
+        if (Input.GetKeyDown(KeyCode.L))
+        {
+            _angle += optionAngle;
+        }
+        else if (Input.GetKeyDown(KeyCode.J))
+        {
+            _angle -= optionAngle;
+        }
+        _angle = _angle % 360f;
+        if(_angle < 0)
+        {
+            _angle = (_rankedOptions.Count -1)*optionAngle;
+        }
+        //
+
+        int tempCount = Mathf.RoundToInt(_angle / optionAngle);
         if (tempCount >= totalCount) tempCount = 0;
 
+        //键盘输入改造新增代码
+        if (tempCount >= _rankedOptions.Count)
+        {
+            tempCount = 0;
+            _angle = 0;
+        }
+        _currentSelection = tempCount;
+        //
+
+        /*
+        //夹紧逻辑适用于鼠标输入
         // 夹紧到已解锁选项范围内
         if (tempCount >= _rankedOptions.Count)
         {
@@ -203,6 +232,7 @@ public class FormWheelController : MonoBehaviour
         {
             _currentSelection = tempCount;
         }
+        */
 
         // 更新 UI 缩放和边框位置
         if (_currentSelection >= 0 && _previousSelection >= 0 &&
@@ -212,6 +242,10 @@ public class FormWheelController : MonoBehaviour
             _rankedOptions[_currentSelection].transform.DOScale(Vector3.one * _scaleFactor, 0.05f).SetUpdate(true);
             _rankedOptions[_previousSelection].transform.DOScale(Vector3.one, 0.05f).SetUpdate(true);
             _borader.transform.position = _rankedOptions[_currentSelection].transform.position;
+
+            //键盘输入改造的新增代码
+            _arrow.transform.rotation = Quaternion.Euler(0,0,-_angle);
+            //
 
             // 更新文字
             if (_currentSelection > 0)
@@ -232,18 +266,9 @@ public class FormWheelController : MonoBehaviour
     }
 
     //清空相关数组，一遍下次存档读取覆盖
-    private void ReSetWheelOptions(string fromSceneName,string toScene)
+    private void ReSetWheelOptions(string fromSceneName, string toScene)
     {
         _rankedOptions.Clear();
         unlockedFormTypes.Clear();
     }
 }
-
-/*
-//重构轮盘选项，未完成
-public struct WheelOption
-{
-    public Vector2 targetPostion;
-
-}
-*/
