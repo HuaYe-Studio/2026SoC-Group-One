@@ -35,13 +35,16 @@ public class DevourEffectPlayer : MonoBehaviour
             .SetEase(zoomEase)
             .SetUpdate(true);
 
-        DOTween.To(
-            () => mainCam.orthographicSize,
-            sz => mainCam.orthographicSize = sz,
-            closeUpOrthoSize,
-            zoomInDuration)
-            .SetEase(zoomEase)
-            .SetUpdate(true);
+        if (mainCam != null)
+        {
+            DOTween.To(
+                () => mainCam.orthographicSize,
+                sz => mainCam.orthographicSize = sz,
+                closeUpOrthoSize,
+                zoomInDuration)
+                .SetEase(zoomEase)
+                .SetUpdate(true);
+        }
 
         yield return new WaitForSecondsRealtime(zoomInDuration);
     }
@@ -77,14 +80,28 @@ public class DevourEffectPlayer : MonoBehaviour
             .SetEase(Ease.InQuad)
             .SetUpdate(true);
 
-        DOTween.To(
-            () => mainCam.orthographicSize,
-            sz => mainCam.orthographicSize = sz,
-            originalOrthoSize,
-            zoomOutDuration)
-            .SetEase(Ease.InQuad)
-            .SetUpdate(true);
+        if (mainCam != null)
+        {
+            DOTween.To(
+                () => mainCam.orthographicSize,
+                sz => mainCam.orthographicSize = sz,
+                originalOrthoSize,
+                zoomOutDuration)
+                .SetEase(Ease.InQuad)
+                .SetUpdate(true);
+        }
 
         yield return new WaitForSecondsRealtime(zoomOutDuration);
+    }
+
+    public void ResetAll()
+    {
+        DOTween.Kill(transform);
+        if (mainCam != null)
+        {
+            DOTween.Kill(mainCam);
+            mainCam.orthographicSize = originalOrthoSize;
+        }
+        transform.position = originalPosition;
     }
 }

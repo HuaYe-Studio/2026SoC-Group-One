@@ -74,6 +74,14 @@ public class SlimeDevourHandler : MonoBehaviour
                 MockEventCenter.TriggerDevourableExitRange(d);
         }
         _devourablesInRange.Clear();
+
+        StopAllCoroutines();
+        _isPouncing = false;
+        _devourSequenceRunning = false;
+        _currentTarget = null;
+        Time.timeScale = 1f;
+        if (baseForm.Animator != null)
+            baseForm.Animator.updateMode = AnimatorUpdateMode.Normal;
     }
 
     private void Update()
@@ -90,7 +98,7 @@ public class SlimeDevourHandler : MonoBehaviour
         for (int i = 0; i < count; i++)
         {
             IDevourable devourable = GetDevourable(_overlapBuffer[i]);
-            if (devourable != null)
+            if (devourable != null && devourable.CanBeDevoured(playerController))
                 _rangeCheckResults.Add((MonoBehaviour)devourable);
         }
 
@@ -118,16 +126,16 @@ public class SlimeDevourHandler : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (!_isPouncing) return;
+        if (!_isPouncing || _currentTarget == null) return;
 
-        if (Time.fixedTime >= _pounceEndTime || _currentTarget == null)
+        if (Time.fixedTime >= _pounceEndTime)
         {
             CancelPounce();
             return;
         }
 
         float dist = Vector2.Distance(transform.root.position, _currentTarget.Transform.position);
-        if (dist < 0.5f)
+        if (dist < 0.5f && !_devourSequenceRunning)
         {
             StartCoroutine(RunDevourSequence(_currentTarget));
             return;
@@ -167,6 +175,7 @@ public class SlimeDevourHandler : MonoBehaviour
     public void CancelAll()
     {
         StopAllCoroutines();
+        effectPlayer?.ResetAll();
         _isPouncing = false;
         _devourSequenceRunning = false;
         if (_currentTarget != null)
@@ -212,6 +221,8 @@ public class SlimeDevourHandler : MonoBehaviour
 
     private void StartPounce()
     {
+        if (_currentTarget == null) return;
+
         _isPouncing = true;
         _pounceEndTime = Time.fixedTime + pounceMaxDuration;
         baseForm.SetActionState(ActionState.SpecialAction);
@@ -220,7 +231,7 @@ public class SlimeDevourHandler : MonoBehaviour
         Vector2 toTarget = (_currentTarget.Transform.position - transform.root.position).normalized;
         rb.velocity = toTarget * pounceSpeed;
 
-        AudioManager.Instance?.PlaySFX(pounceClip);
+        AudioManager.Instance?.PlaySfx(pounceClip);
     }
 
     private void CancelPounce()
@@ -259,7 +270,7 @@ public class SlimeDevourHandler : MonoBehaviour
         else
             yield return new WaitForSecondsRealtime(0.4f);
 
-        AudioManager.Instance?.PlaySFX(devourClip);
+        AudioManager.Instance?.PlaySfx(devourClip);
 
         if (effectPlayer != null)
             yield return effectPlayer.PlayDevour(target);
@@ -268,7 +279,7 @@ public class SlimeDevourHandler : MonoBehaviour
 
         target.ExecuteDevourOutcome(playerController);
 
-        AudioManager.Instance?.PlaySFX(spitClip);
+        AudioManager.Instance?.PlaySfx(spitClip);
 
         // null-check: DevourableObject may have self-destructed via UnityEvent
         MonoBehaviour targetMb = target as MonoBehaviour;
@@ -290,6 +301,7 @@ public class SlimeDevourHandler : MonoBehaviour
 
         baseForm.SetAnimatorBool(IsSwoopingHash, false);
         baseForm.SetActionState(ActionState.Idle);
+        target.IsTargeted = false;
         _currentTarget = null;
         _cooldownEndTime = Time.time + cooldownSeconds;
         _devourSequenceRunning = false;

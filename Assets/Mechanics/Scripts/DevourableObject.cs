@@ -5,7 +5,7 @@ public class DevourableObject : MonoBehaviour, IDevourable
 {
     [Header("Devour Config")]
     [SerializeField] private bool devourableOnce = true;
-    [SerializeField] private float priority = 0f;
+    [SerializeField] private float priority;
     [SerializeField] private bool destroyAfterDevour = true;
 
     [Header("Effect")]
@@ -30,14 +30,13 @@ public class DevourableObject : MonoBehaviour, IDevourable
 
     bool IDevourable.CanBeDevoured(PlayerController _)
     {
-        if (devourableOnce && _hasBeenDevoured) return false;
-        return true;
+        return !(devourableOnce && _hasBeenDevoured);
     }
 
     void IDevourable.OnBeingDevoured()
     {
         if (devourSound != null)
-            AudioManager.Instance?.PlaySFX(devourSound);
+            AudioManager.Instance?.PlaySfx(devourSound);
     }
 
     void IDevourable.ExecuteDevourOutcome(PlayerController _)

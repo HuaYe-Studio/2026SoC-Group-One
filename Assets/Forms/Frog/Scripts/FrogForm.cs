@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class FrogForm : BaseForm
 {
@@ -38,6 +39,8 @@ public class FrogForm : BaseForm
     private static readonly int VelocityYHash = Animator.StringToHash("Velocity_Y");
     private static readonly int ChargeProgressHash = Animator.StringToHash("ChargeProgress");
 
+    private const float GroundIgnoreAfterJump = 0.1f;
+
     private bool _chargeModeEnabled;
     private float _chargeStartTime = -1f;
     private float _chargeProgress;
@@ -61,17 +64,31 @@ public class FrogForm : BaseForm
         _chargeModeEnabled = false;
     }
 
+    private InputAction _toggleChargeAction;
+
+    private void OnEnable()
+    {
+        _toggleChargeAction = new InputAction(binding: "<Keyboard>/j");
+        _toggleChargeAction.performed += OnToggleCharge;
+        _toggleChargeAction.Enable();
+    }
+
+    private void OnDisable()
+    {
+        _toggleChargeAction?.Disable();
+        _toggleChargeAction?.Dispose();
+    }
+
+    private void OnToggleCharge(InputAction.CallbackContext ctx)
+    {
+        _chargeModeEnabled = !_chargeModeEnabled;
+        _chargeProgress = 0f;
+    }
+
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.J))
-        {
-            _chargeModeEnabled = !_chargeModeEnabled;
-            _chargeProgress = 0f;
-            Debug.Log($"Frog jump mode: {(_chargeModeEnabled ? "Charged" : "Normal")}");
-        }
-
         if (_chargeModeEnabled && _chargeStartTime >= 0f)
-            _chargeProgress = Mathf.Clamp01((Time.time - _chargeStartTime) / chargeTimeToMax);
+            _chargeProgress = ComputeChargeProgress();
         else if (_chargeStartTime < 0f)
             _chargeProgress = 0f;
     }
@@ -116,7 +133,7 @@ public class FrogForm : BaseForm
             return;
         }
 
-        float progress = Mathf.Clamp01((Time.time - _chargeStartTime) / chargeTimeToMax);
+        float progress = ComputeChargeProgress();
 
         if (!CanJump())
         {
@@ -149,13 +166,13 @@ public class FrogForm : BaseForm
 
         rb.velocity = new Vector2(rb.velocity.x, force);
         currentState = ActionState.Jumping;
-        ignoreGroundUntil = Time.fixedTime + 0.1f;
+        ignoreGroundUntil = Time.fixedTime + GroundIgnoreAfterJump;
         IsGrounded = false;
 
-        PlaySFX(jumpClip);
+        PlaySfx(jumpClip);
     }
 
-    public override void DoMovement(float horizontal)
+    protected override void DoMovement(float horizontal)
     {
         if (!CanMove()) return;
 
@@ -177,6 +194,11 @@ public class FrogForm : BaseForm
         _chargeStartTime >= 0f ||
         _coyoteTimer > 0f;
 
+    private float ComputeChargeProgress()
+    {
+        return Mathf.Clamp01((Time.time - _chargeStartTime) / chargeTimeToMax);
+    }
+
     private void DoNormalJump()
     {
         _coyoteTimer = 0f;
@@ -184,10 +206,10 @@ public class FrogForm : BaseForm
 
         rb.velocity = new Vector2(rb.velocity.x, normalJumpForce);
         currentState = ActionState.Jumping;
-        ignoreGroundUntil = Time.fixedTime + 0.1f;
+        ignoreGroundUntil = Time.fixedTime + GroundIgnoreAfterJump;
         IsGrounded = false;
 
-        PlaySFX(jumpClip);
+        PlaySfx(jumpClip);
     }
 
     private void ApplyJumpCut()
@@ -198,19 +220,20 @@ public class FrogForm : BaseForm
 
     protected override void HandleLanding()
     {
-        if (IsGrounded && (currentState == ActionState.Falling || currentState == ActionState.Jumping || currentState == ActionState.WallCling))
+        bool landingThisFrame = IsGrounded &&
+            (currentState == ActionState.Falling || currentState == ActionState.Jumping || currentState == ActionState.WallCling);
+
+        if (landingThisFrame && _jumpBufferTimer > 0f)
         {
-            if (_jumpBufferTimer > 0f)
-            {
-                _jumpBufferTimer = 0f;
-                DoNormalJump();
-                return;
-            }
-
-            currentState = Mathf.Abs(rb.velocity.x) > 0.1f ? ActionState.Moving : ActionState.Idle;
-
-            PlaySFX(landClip);
+            _jumpBufferTimer = 0f;
+            DoNormalJump();
+            return;
         }
+
+        base.HandleLanding();
+
+        if (landingThisFrame)
+            PlaySfx(landClip);
     }
 
     protected override void UpdateAirState()
@@ -281,10 +304,10 @@ public class FrogForm : BaseForm
         float awayDir = wallSide > 0 ? -1f : 1f;
         rb.velocity = new Vector2(awayDir * wallJumpHorizontalForce, wallJumpVerticalForce);
         currentState = ActionState.Jumping;
-        ignoreGroundUntil = Time.fixedTime + 0.1f;
+        ignoreGroundUntil = Time.fixedTime + GroundIgnoreAfterJump;
         IsGrounded = false;
 
-        PlaySFX(jumpClip);
+        PlaySfx(jumpClip);
     }
 
     private void SyncAnimator()

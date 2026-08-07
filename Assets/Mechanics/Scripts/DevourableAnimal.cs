@@ -9,8 +9,8 @@ public class DevourableAnimal : MonoBehaviour, IDevourable
     [SerializeField] private float stunDurationAfterSpit = 2.5f;
 
     [Header("Devour Config")]
-    [SerializeField] private float priority = 0f;
-    [SerializeField] private bool destroyAfterDevour = false;
+    [SerializeField] private float priority;
+    [SerializeField] private bool destroyAfterDevour;
 
     public FormType GrantedForm => grantedForm;
     public bool IsTargeted { get; set; }
@@ -20,7 +20,7 @@ public class DevourableAnimal : MonoBehaviour, IDevourable
     /// 吞噬者（玩家）的 GameObject。吞噬总是由玩家执行，通过 Tag 查找。
     /// 找不到时返回 null（攻击者未知，复仇组件会忽略）。
     /// </summary>
-    public static GameObject PlayerAttacker
+    private static GameObject PlayerAttacker
     {
         get { return GameObject.FindGameObjectWithTag("Player"); }
     }
@@ -67,7 +67,7 @@ public class DevourableAnimal : MonoBehaviour, IDevourable
         PlayBeingSpitOut(direction);
     }
 
-    public void PlayBeingDevoured()
+    private void PlayBeingDevoured()
     {
         if (_rb != null)
             _rb.velocity = Vector2.zero;
@@ -81,11 +81,11 @@ public class DevourableAnimal : MonoBehaviour, IDevourable
         SafeSetTrigger("Devoured");
     }
 
-    public void PlayBeingSpitOut(Vector2 direction)
+    private void PlayBeingSpitOut(Vector2 direction)
     {
         if (SpriteRenderer != null)
         {
-            SpriteRenderer.color = new Color(1f, 1f, 1f, 1f);
+            SpriteRenderer.color = Color.white;
         }
         transform.localScale = Vector3.one;
 
@@ -95,14 +95,14 @@ public class DevourableAnimal : MonoBehaviour, IDevourable
         SafeSetTrigger("SpitOut");
     }
 
-    private void SafeSetTrigger(string name)
+    private void SafeSetTrigger(string triggerName)
     {
         if (_animator == null) return;
         foreach (var param in _animator.parameters)
         {
-            if (param.name == name && param.type == AnimatorControllerParameterType.Trigger)
+            if (param.name == triggerName && param.type == AnimatorControllerParameterType.Trigger)
             {
-                _animator.SetTrigger(name);
+                _animator.SetTrigger(triggerName);
                 return;
             }
         }
