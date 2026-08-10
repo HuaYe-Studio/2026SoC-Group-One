@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,8 +7,7 @@ using UnityEngine.UI;
 public class CoinManager : MonoBehaviour
 {
     public static CoinManager Instance;
-    private int coinCount = 0;
-    public Text coinText;
+    public static int coinCount = 0;
     void Awake()
     {
         if (Instance == null)
@@ -15,6 +15,7 @@ public class CoinManager : MonoBehaviour
         else
             Destroy(gameObject);
     }
+
     public void AddCoin(int amount = 1)
     {
         coinCount += amount;
@@ -23,8 +24,7 @@ public class CoinManager : MonoBehaviour
     }
     void UpdateUI()
     {
-        if (coinText != null)
-            coinText.text = "Coins: " + coinCount;
+        UIEventCenter.TriggerGetCoin();//UI:更新UI的触发器
     }
     public void ResetCoins()
     {
