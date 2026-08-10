@@ -4,6 +4,7 @@ using UnityEngine;
 /// [BT] 搜索节点：前往 Blackboard 中记录的玩家最后已知位置进行搜索。
 /// 到达目标位置后削减威胁值并返回 Success；记忆过期或威胁消退时返回 Failure。
 /// 模拟生物"刚才这里有动静，过去看看"的警戒行为。
+/// 通过可选 move 委托解耦移动方式：陆地动物默认 PerformMove（跳跃式），水生动物可注入 Swim（全方向）。
 /// </summary>
 public class BTSearchAction : BTNode
 {
@@ -11,6 +12,7 @@ public class BTSearchAction : BTNode
     private readonly Blackboard _bb;
     private readonly float _arriveDistance;
     private readonly float _speedMultiplier;
+    private readonly System.Action<Vector2, float> _move;
 
     private bool _hasMoved;
     private bool _hasLeftGround;
@@ -18,12 +20,15 @@ public class BTSearchAction : BTNode
     /// <param name="animal">动物实例</param>
     /// <param name="arriveDistance">到达判定距离（米）</param>
     /// <param name="speedMultiplier">搜索移动速度倍率</param>
-    public BTSearchAction(AnimalBase animal, float arriveDistance = 1f, float speedMultiplier = 1.2f)
+    /// <param name="move">可选移动委托（方向向量, 速度倍率）。为 null 时使用陆地 PerformMove（跳跃式）。</param>
+    public BTSearchAction(AnimalBase animal, float arriveDistance = 1f, float speedMultiplier = 1.2f,
+        System.Action<Vector2, float> move = null)
     {
         _animal = animal;
         _bb = animal.Board;
         _arriveDistance = arriveDistance;
         _speedMultiplier = speedMultiplier;
+        _move = move;
     }
 
     public override State Tick()
@@ -44,7 +49,15 @@ public class BTSearchAction : BTNode
             return State.Success;
         }
 
-        // 追踪是否已经离地
+        // 注入移动委托（水生动物：全方向 Swim）
+        if (_move != null)
+        {
+            Vector2 toTarget = _bb.LastKnownPlayerPos - (Vector2)_animal.transform.position;
+            _move(toTarget.normalized, _speedMultiplier);
+            return State.Running;
+        }
+
+        // 陆地逻辑：追踪是否已经离地
         if (!_animal.IsGrounded)
             _hasLeftGround = true;
 

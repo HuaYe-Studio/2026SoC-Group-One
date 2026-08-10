@@ -16,6 +16,10 @@ public class BTReturnToPointAction : BTNode
     private readonly System.Action<Vector2, float> _move;
     private readonly System.Func<Vector2, string> _animResolver;
 
+    // 目的地解析：回撤执行时动态决定目标点（如"玩家守在回撤点时顺延/镜像到远离玩家的点"）。
+    // 输入 = 基准回撤目标（RetreatTarget），输出 = 本次实际回撤目的地。为 null 时直接用基准目标。
+    private readonly System.Func<Vector2, Vector2> _destinationResolver;
+
     // 回撤路径：直线或折线分解出的有序途经点（含终点）
     private Vector2[] _waypoints;
     private int _waypointIndex;
@@ -25,11 +29,13 @@ public class BTReturnToPointAction : BTNode
 
     /// <param name="speedMultiplier">回撤速度倍率</param>
     /// <param name="obstacleLayers">阻挡折线的碰撞层（地形等）；默认按移动委托自行判定</param>
+    /// <param name="destinationResolver">目的地解析：回撤执行时动态决定目标点（输入=基准回撤目标）。为 null 时用基准目标。</param>
     public BTReturnToPointAction(AnimalBase animal,
         float speedMultiplier = 1f, float arriveRadius = 0.4f,
         System.Action<Vector2, float> move = null,
         System.Func<Vector2, string> animResolver = null,
-        int obstacleLayers = 0)
+        int obstacleLayers = 0,
+        System.Func<Vector2, Vector2> destinationResolver = null)
     {
         _animal = animal;
         _bb = animal.Board;
@@ -38,6 +44,7 @@ public class BTReturnToPointAction : BTNode
         _move = move;
         _animResolver = animResolver;
         _obstacleLayer = obstacleLayers;
+        _destinationResolver = destinationResolver;
     }
 
     public override State Tick()
@@ -48,7 +55,9 @@ public class BTReturnToPointAction : BTNode
             return State.Success;
         }
 
-        Vector2 destination = _bb.RetreatTarget;
+        Vector2 destination = _destinationResolver != null
+            ? _destinationResolver(_bb.RetreatTarget)
+            : _bb.RetreatTarget;
         Vector2 position = (Vector2)_animal.transform.position;
 
         // 尚未开始或目标发生变化 → 规划回撤路径

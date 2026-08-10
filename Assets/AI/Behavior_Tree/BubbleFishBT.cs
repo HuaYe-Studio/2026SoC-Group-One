@@ -2,9 +2,11 @@ using UnityEngine;
 
 /// <summary>
 /// [BT] 泡泡鱼行为树：挂载并启用后驱动泡泡鱼AI。
-/// 优先级：被吞噬眩晕 > 脱困 > 路径逃生(按威胁方向选路) > 直接逃跑(无路径兜底) > 回撤(回逃生起点) > 路径巡游 > 自由巡游。
+/// 优先级：被吞噬眩晕 > 脱困 > 路径逃生(按威胁方向选路) > 直接逃跑(无路径兜底) >
+///         搜索(威胁记忆) > 回撤(回安全位置) > 路径巡游 > 自由巡游。
 /// 设计思路：面对威胁时鱼沿预先绘制好的逃生路径撤离，撤离路径按威胁方向自动选择；
-/// 未配置逃生路径时回退为直接朝远离玩家方向逃跑；威胁解除后返回逃生起点，再继续巡游。
+/// 威胁解除后若仍有威胁记忆则先前往最后已知位置搜索确认，
+/// 再返回安全位置（巡游起点或出生点），最后继续巡游。
 /// 所有感知判断统一从 Blackboard 读取语义化认知状态。
 /// </summary>
 [RequireComponent(typeof(BubbleFishAI))]
@@ -33,9 +35,6 @@ public class BubbleFishBT : MonoBehaviour
     [Header("巡游设置")]
     [Tooltip("自由巡游范围半径（米），超出后偏向出生点")]
     [SerializeField] private float _wanderRange = 6f;
-
-    [Tooltip("巡游模式：true=平滑巡游（路点/平滑转向/避让/节律），false=旧版随机换向（回退对比用）")]
-    [SerializeField] private bool _useSmoothWander = true;
 
     [Header("路径巡游")]
     [Tooltip("绘制好的巡游路径（FishPath.Type = Normal）。为空时回退为自由巡游")]
@@ -120,9 +119,12 @@ public class BubbleFishBT : MonoBehaviour
             obstacleMask: _obstacleMask,
             retreatTargetProvider: () =>
             {
+                // 有巡游路径 → 回到巡游路径第 0 点（从起点重新巡游）
                 if (_path != null && _path.Points != null && _path.Points.Count > 0)
                     return _path.Points[0];
-                return (Vector2)_fish.transform.position;
+                // 无巡游路径 → 回撤到出生点（而非威胁发生时的位置），
+                // 避免鱼在玩家离开后游回"玩家身边"来回折腾
+                return _fish.SpawnPosition;
             });
 
         // 逃生：紧迫威胁 → 有逃生路径时按威胁方向选路并沿路径撤离；
@@ -139,7 +141,21 @@ public class BubbleFishBT : MonoBehaviour
             directFlee
         ));
 
-        // 回撤：威胁已解除且存在未完成的回撤目标 → 回逃生起点（直线/折线）
+        // 搜索：威胁已解除但有威胁记忆 → 前往最后已知位置确认（"刚才有动静，去看看"的警惕行为）
+        BTNode searchBranch = WithDebug("Search", new BTSequence(
+            WithDebug("Search/Cond", new BTCondition(() => bb.ShouldSearch)),
+            WithDebug("Search/Action", new BTSearchAction(_fish,
+                arriveDistance: 1f,
+                speedMultiplier: 1.2f,
+                move: (direction, mult) =>
+                {
+                    _fish.PlayAnimation("SwimForward");
+                    _fish.Swim(direction, mult);
+                }))
+        ));
+
+        // 回撤：威胁已解除且存在未完成的回撤目标 → 回安全位置（巡游起点或出生点，直线/折线）
+        // 玩家避让：玩家守在基准回撤点太近时，沿路径顺延到远离玩家的点（无路径则镜像到玩家另一侧的出生点）
         BTNode retreatBranch = WithDebug("Retreat", new BTSequence(
             WithDebug("Retreat/Cond", new BTCondition(() => !bb.IsThreatUrgent && bb.HasRetreatTarget)),
             WithDebug("Retreat/Action", new BTReturnToPointAction(_fish,
@@ -147,10 +163,11 @@ public class BubbleFishBT : MonoBehaviour
                 arriveRadius: _retreatArriveRadius,
                 move: (direction, mult) => _fish.Swim(direction, mult),
                 animResolver: ResolvePathAnimation,
-                obstacleLayers: _obstacleMask))
+                obstacleLayers: _obstacleMask,
+                destinationResolver: ResolveRetreatDestination))
         ));
 
-        BTNode wanderBranch = WithDebug("Wander", new BTWanderAction(_fish, _wanderRange, _obstacleMask, _useSmoothWander));
+        BTNode wanderBranch = WithDebug("Wander", new BTWanderAction(_fish, _wanderRange, _obstacleMask));
 
         // 路径巡游：绘制好的路径优先，路径为空时回退为自由巡游
         // 通过委托注入移动方式(Swim)与动画解析(段走向→动画名)，BTPathFollowAction 保持通用
@@ -160,7 +177,7 @@ public class BubbleFishBT : MonoBehaviour
                 animResolver: ResolvePathAnimation)
             : wanderBranch);
 
-        return new BTSelector(stunnedBranch, unstickBranch, escapeBranch, retreatBranch, pathBranch);
+        return new BTSelector(stunnedBranch, unstickBranch, escapeBranch, searchBranch, retreatBranch, pathBranch);
     }
 
     /// <summary>
@@ -189,6 +206,47 @@ public class BubbleFishBT : MonoBehaviour
         if (Mathf.Abs(segmentDirection.y) > Mathf.Abs(segmentDirection.x))
             return segmentDirection.y > 0f ? "SwimUp" : "SwimDown";
         return "SwimForward";
+    }
+
+    /// <summary>
+    /// 回撤目的地解析：玩家守在基准回撤点太近时，顺延到远离玩家的点，避免回撤撞玩家。
+    /// 有巡游路径：沿路径顺延（从当前位置吸附最近点，向远离玩家方向推进 SafeRadius 弧长）；
+    /// 无路径：取出生点在玩家另一侧的镜像点。玩家不可见时直接用基准目标。
+    /// </summary>
+    /// <param name="baseTarget">基准回撤目标（巡游起点或出生点）</param>
+    private Vector2 ResolveRetreatDestination(Vector2 baseTarget)
+    {
+        Blackboard bb = _fish.Board;
+        Vector2 playerPos = bb.IsPlayerVisible
+            ? bb.AnimalPosition + bb.PlayerDirection * bb.PlayerDistance
+            : bb.LastKnownPlayerPos;
+
+        // 玩家位置无效或离基准回撤点足够远 → 直接回基准点
+        if (playerPos == Vector2.zero || Vector2.Distance(playerPos, baseTarget) >= bb.SafeRadius)
+            return baseTarget;
+
+        // 有巡游路径：从鱼当前位置吸附路径最近点，向远离玩家方向顺延 SafeRadius 弧长
+        if (_path != null && _path.Points != null && _path.Points.Count >= 2 && _path.TotalLength > 0.01f)
+        {
+            float startT = _path.NearestT(_fish.transform.position);
+            float deltaT = bb.SafeRadius / _path.TotalLength;
+            float bestT = startT;
+            float bestDist = Vector2.Distance(playerPos, _path.SamplePoint(startT));
+            foreach (float sign in new[] { 1f, -1f })
+            {
+                float t = startT + sign * deltaT;
+                if (_path.Loop) t = Mathf.Repeat(t, 1f); else t = Mathf.Clamp01(t);
+                float d = Vector2.Distance(playerPos, _path.SamplePoint(t));
+                if (d > bestDist) { bestDist = d; bestT = t; }
+            }
+            return _path.SamplePoint(bestT);
+        }
+
+        // 无路径：出生点在玩家另一侧的镜像点（玩家守在出生点旁时，回撤到玩家对面）
+        Vector2 spawn = _fish.SpawnPosition;
+        Vector2 toSpawn = spawn - playerPos;
+        float mirrorSide = toSpawn.x >= 0f ? 1f : -1f;
+        return new Vector2(playerPos.x + mirrorSide * bb.SafeRadius, spawn.y);
     }
 
     private void Update()
@@ -220,6 +278,7 @@ public class BubbleFishBT : MonoBehaviour
         if (_fish.IsStuck) return "Unstick";
         if (bb.IsThreatUrgent && HasEscapePaths) return "EscapePath";
         if (bb.IsThreatUrgent) return "EscapeDirect";
+        if (bb.ShouldSearch) return "Search";
         if (!bb.IsThreatUrgent && bb.HasRetreatTarget) return "Retreat";
         if (_path != null) return "Path";
         return "Wander";

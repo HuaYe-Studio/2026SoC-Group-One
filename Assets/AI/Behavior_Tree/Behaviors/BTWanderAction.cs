@@ -1,32 +1,21 @@
 using UnityEngine;
 
 /// <summary>
-/// [BT] 自由巡游节点：按动物类型分派两套巡游策略。
-///
-/// 【泡泡鱼(BubbleFishAI)】目标点式巡游 + 平滑转向 + 障碍软避让 + 节律：
-/// - 巡游半径内随机采样目标路点（水平坐标），到达后换新点，避免原地打转/来回抖；
+/// [BT] 自由巡游节点：目标点式巡游 + 平滑转向 + 障碍软避让 + 超出范围软吸引出生点。
+/// - 在巡游半径内随机采样目标路点（水平坐标），到达后换新点，避免原地打转/来回抖；
 /// - 路点采样带可达性校验（Physics2D.Raycast，可选障碍层），被挡时重新采样；
-/// - 障碍软避让：前方扇形多射线探测，命中后转向障碍较少一侧并平滑绕行，带冷却防振荡；
+/// - 障碍软避让：前方扇形多射线探测，命中后转向障碍较少一侧并平滑绕行，
+///   带冷却时间防振荡（避免贴墙左右抖死循环）；
 /// - 超出范围时目标路点软吸引回出生点 x，而非瞬间反向；
 /// - 方向由 heading 角度 + MoveTowardsAngle 限幅平滑转向，垂直漂移交给
-///   BubbleFishAI.PerformMove 的 Perlin 噪声；定期插入悬停/冲刺节律。持续 Running。
-///
-/// 【陆地动物(羊/蜘蛛等)】保留原版"随机换向 + 碰墙反向"巡游，避免引入鱼专属行为。
+///   BubbleFishAI.PerformMove 的 Perlin 噪声。持续 Running。
 /// </summary>
 public class BTWanderAction : BTNode
 {
     private readonly AnimalBase _animal;
+    private readonly Blackboard _bb;
     private readonly float _swimRange;
     private readonly LayerMask _obstacleMask;
-    private readonly bool _useFishLogic;
-
-    // ---- 陆地动物（旧逻辑）状态 ----
-    private float _swimDirection = 1f;
-    private float _nextTurn;
-    private float _nextWallCheck;
-    private const float WallCheckInterval = 0.3f;
-
-    // ---- 泡泡鱼（新逻辑）状态 ----
     private float _headingDeg;       // 当前游动方向角（度，0=右，180=左）
     private float _targetDeg;        // 目标方向角（度）
     private float _waypointX;        // 目标路点水平坐标（垂直由 PerformMove 噪声驱动）
@@ -53,65 +42,16 @@ public class BTWanderAction : BTNode
 
     /// <param name="swimRange">巡游范围半径（米），超出后目标路点软吸引回出生点</param>
     /// <param name="obstacleMask">路点可达性/障碍探测的障碍层（0 表示不检测）</param>
-    /// <param name="useFishLogic">true=泡泡鱼平滑巡游（路点/平滑转向/避让/节律），false=强制旧版随机换向（用于回退对比）</param>
-    public BTWanderAction(AnimalBase animal, float swimRange = 6f, LayerMask obstacleMask = default, bool useFishLogic = true)
+    public BTWanderAction(AnimalBase animal, float swimRange = 6f, LayerMask obstacleMask = default)
     {
         _animal = animal;
+        _bb = animal != null ? animal.Board : null;
         _swimRange = swimRange;
         _obstacleMask = obstacleMask;
-        _useFishLogic = useFishLogic;
         _waypointX = _animal != null ? _animal.transform.position.x : 0f;
     }
 
     public override State Tick()
-    {
-        // 陆地动物或强制旧模式：保留旧逻辑，避免鱼专属行为（平滑转向/节律）影响羊/蜘蛛等
-        if (!_useFishLogic || !(_animal is BubbleFishAI))
-            return TickLand();
-
-        return TickFish();
-    }
-
-    /// <summary>
-    /// 陆地动物巡游：随机换向 + 碰墙反向 + 超出范围偏向出生点（原版逻辑）。
-    /// </summary>
-    private State TickLand()
-    {
-        if (Time.time >= _nextTurn)
-        {
-            Vector2 toSpawn = _animal.SpawnPosition - (Vector2)_animal.transform.position;
-
-            if (toSpawn.magnitude > _swimRange)
-            {
-                _swimDirection = Mathf.Sign(toSpawn.x);
-            }
-            else
-            {
-                _swimDirection = Random.value < 0.5f ? 1f : -1f;
-            }
-
-            _nextTurn = Time.time + Random.Range(1.5f, 3f);
-        }
-
-        if (Time.time >= _nextWallCheck)
-        {
-            _nextWallCheck = Time.time + WallCheckInterval;
-
-            if (_animal.Board.IsWallAhead)
-            {
-                _swimDirection = -_swimDirection;
-                _nextTurn = Time.time + Random.Range(1.5f, 3f);
-            }
-        }
-
-        _animal.PerformMove(_swimDirection);
-        return State.Running;
-    }
-
-    /// <summary>
-    /// 泡泡鱼巡游：路点 + 平滑转向 + 软避让 + 节律。
-    /// </summary>
-    private State TickFish()
     {
         Vector2 position = (Vector2)_animal.transform.position;
         float spawnX = _animal.SpawnPosition.x;
@@ -123,6 +63,15 @@ public class BTWanderAction : BTNode
         // 到达路点或超时未达 → 重新采样新路点
         if (Time.time >= _nextWaypointPick || Mathf.Abs(_waypointX - position.x) <= WaypointArriveRadius)
             PickWaypoint();
+
+        // 玩家避让：玩家可见且离鱼太近时，目标路点软偏移到远离玩家一侧，
+        // 避免巡游目标恰在玩家上方导致"在玩家两侧往返荡"
+        if (_bb != null && _bb.IsPlayerVisible && _bb.PlayerDistance < _bb.SafeRadius)
+        {
+            Vector2 playerPos = _bb.AnimalPosition + _bb.PlayerDirection * _bb.PlayerDistance;
+            float awaySign = position.x >= playerPos.x ? 1f : -1f;
+            _waypointX = position.x + awaySign * _bb.SafeRadius;
+        }
 
         // 障碍软避让：扇形探测，命中后转向障碍较少一侧，带冷却防振荡
         CheckAvoid(_headingDeg);
@@ -154,8 +103,6 @@ public class BTWanderAction : BTNode
 
     public override void Reset()
     {
-        _nextTurn = 0f;
-        _nextWallCheck = 0f;
         _nextWaypointPick = 0f;
         _avoidCooldown = 0f;
         _headingDeg = 0f;

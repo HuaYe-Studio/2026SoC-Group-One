@@ -46,6 +46,11 @@ public class Blackboard
     /// <summary>威胁解除半径：玩家离开此距离才视为安全（解除阈值，> FleeRadius，避免边界抖动）。</summary>
     public float SafeRadius = 8f;
 
+    /// <summary>威胁消退阈值：玩家仍可见但威胁值低于该值视为已安全（静止伪装/远离），否则保持警戒。
+    /// 阈值取 60：玩家静止伪装时威胁以 ~10/s 下降到该值以下，约 6s 后鱼恢复巡游；
+    /// 玩家一旦移动威胁即 >60，鱼持续警戒，避免"玩家守在回撤点还硬要回去"的来回荡。</summary>
+    public float CalmThreatThreshold = 60f;
+
     // ---- 食物感知（由 EnvironmentMonitor 写入）----
     /// <summary>当前是否检测到食物。</summary>
     public bool IsFoodDetected;
@@ -151,6 +156,11 @@ public class Blackboard
         }
         else if (PlayerDistance >= SafeRadius)
         {
+            // 视觉条件：玩家仍可见且威胁值未消退（玩家在移动/未伪装）时保持警戒，
+            // 避免鱼"当着玩家面"解除威胁进入巡游（B3）。玩家已不可见或威胁值已消退才允许解除。
+            if (IsPlayerVisible && ThreatLevel > CalmThreatThreshold)
+                return;
+
             // 解除前检查最小持续时长：进入时间过短则仍保持威胁，防止临界区单帧抖动
             if (Time.time - _threatEnterTime >= ThreatMinHoldDuration)
                 SetThreatUrgent(false);
