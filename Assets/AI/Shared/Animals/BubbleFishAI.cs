@@ -12,8 +12,11 @@ public class BubbleFishAI : AnimalBase
     [SerializeField] private float _swimSpeed = 2f;
     [SerializeField] private float _swimVerticalDrift = 0.5f; // 游动时的轻微上下漂移
 
-    [Tooltip("加速度上限（单位/秒²）：限制每帧速度变化量，消除速度突变")]
-    [SerializeField] private float _acceleration = 8f;
+    [Tooltip("垂直速度比例：上下游动速度 = 水平速度 × 此系数。鱼体体积感——上下游动明显慢于水平")]
+    [SerializeField, Range(0.05f, 1f)] private float _verticalSpeedRatio = 0.4f;
+
+    [Tooltip("上升减速比例：上升速度在垂直基础上再 × 此系数（上升比下降更慢，模拟浮力/体积感）")]
+    [SerializeField, Range(0.05f, 1f)] private float _ascendSpeedRatio = 0.5f;
 
     [Header("Animation")]
     [SerializeField] private Animator _animator;
@@ -25,8 +28,8 @@ public class BubbleFishAI : AnimalBase
     // 与玩家形态的 BubbleState 解耦，供路径跟随等 NPC 行为使用
     private const string SwimStateParam = "SwimState";
 
-    // Perlin 噪声相位种子：每只鱼随机，避免整群垂直漂移同步
-    private float _driftSeed;
+    private float _driftTimer;
+    private float _driftDirectionY;
 
     /// <summary>
     /// 泡泡鱼始终处于"水"中，无需地面检测。
@@ -47,8 +50,6 @@ public class BubbleFishAI : AnimalBase
             Rb.gravityScale = 0f;
             Rb.drag = 0f;
         }
-
-        _driftSeed = Random.value * 100f;
     }
 
     /// <summary>
@@ -61,10 +62,17 @@ public class BubbleFishAI : AnimalBase
         // 水平游动
         float horizontalVelocity = direction * _swimSpeed * speedMultiplier;
 
-        // 轻微的垂直漂移：Perlin 噪声连续驱动，替代随机换符号造成的"台阶式"上下跳
-        float verticalVelocity = GetNoiseDrift();
+        // 轻微的垂直漂移，让游动看起来更自然
+        _driftTimer += Time.deltaTime;
+        if (_driftTimer > 1.5f)
+        {
+            _driftTimer = 0f;
+            _driftDirectionY = Random.Range(-1f, 1f);
+        }
 
-        SetVelocitySmooth(new Vector2(horizontalVelocity, verticalVelocity));
+        float verticalVelocity = _driftDirectionY * _swimVerticalDrift;
+
+        Rb.velocity = new Vector2(horizontalVelocity, verticalVelocity);
 
         // 翻转朝向
         if (SpriteRenderer != null && Mathf.Abs(direction) > 0.05f)
@@ -72,30 +80,9 @@ public class BubbleFishAI : AnimalBase
     }
 
     /// <summary>
-    /// Perlin 噪声驱动的垂直漂移速度：曲线连续，替代随机换符号的"台阶式"跳变。
-    /// 频率固定，种子每只鱼随机，避免整群同步浮沉。
-    /// </summary>
-    private float GetNoiseDrift()
-    {
-        const float noiseFrequency = 0.4f; // 漂移变化频率（Hz），越大浮沉越快
-        float noise = Mathf.PerlinNoise(Time.time * noiseFrequency, _driftSeed);
-        return (noise * 2f - 1f) * _swimVerticalDrift;
-    }
-
-    /// <summary>
-    /// 平滑逼近目标速度（加速度模型）：每帧最多变化 accel·dt，消除瞬时赋值造成的速度突变。
-    /// 加速与减速使用同一上限，保证换向/停靠都有过渡而非瞬间跳变。
-    /// </summary>
-    private void SetVelocitySmooth(Vector2 targetVelocity)
-    {
-        if (Rb == null) return;
-        float maxDelta = _acceleration * Time.deltaTime;
-        Rb.velocity = Vector2.MoveTowards(Rb.velocity, targetVelocity, maxDelta);
-    }
-
-    /// <summary>
     /// 朝任意方向游动（路径跟随等垂直+水平混合移动用）。
-    /// 与 PerformMove 不同，方向向量同时作用于 x 和 y，无随机漂移。
+    /// 各向异性速度：水平分量按 _swimSpeed；垂直（上下）分量 = 水平 × _verticalSpeedRatio，
+    /// 上升再 × _ascendSpeedRatio（上升比下降更慢），体现鱼体的体积感——上下游动明显慢于水平游动。
     /// </summary>
     /// <param name="direction">游动方向（归一化向量）</param>
     /// <param name="speedMultiplier">速度倍率</param>
@@ -106,7 +93,14 @@ public class BubbleFishAI : AnimalBase
         if (direction.sqrMagnitude > 0.0001f)
             direction.Normalize();
 
-        SetVelocitySmooth(direction * _swimSpeed * speedMultiplier);
+        // 各向异性：水平 / 垂直 / 上升(更慢) 分开计算
+        float horizontalVelocity = direction.x * _swimSpeed * speedMultiplier;
+        float verticalSpeed = _swimSpeed * _verticalSpeedRatio * speedMultiplier;
+        if (direction.y > 0f)
+            verticalSpeed *= _ascendSpeedRatio; // 上升更慢，模拟浮力阻力
+        float verticalVelocity = direction.y * verticalSpeed;
+
+        Rb.velocity = new Vector2(horizontalVelocity, verticalVelocity);
 
         // 翻转朝向：只有水平分量明显时才翻转，防止纯上浮时抖动
         if (SpriteRenderer != null && Mathf.Abs(direction.x) > 0.2f)
