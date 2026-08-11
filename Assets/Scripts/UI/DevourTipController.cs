@@ -48,6 +48,11 @@ public class DevourTipController : MonoBehaviour
     {
         MockEventCenter.OnDevourableEnterRange -= HandleDevourableEnterRange;
         MockEventCenter.OnDevourableExitRange -= HandleDevourableExitRange;
+
+        if (_canvasGroup != null)
+        {
+            _canvasGroup.DOKill();
+        }
     }
 
     //处理可吞噬目标进入检测范围，UI显现的逻辑

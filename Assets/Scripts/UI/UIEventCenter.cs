@@ -40,4 +40,11 @@ public static class UIEventCenter
     {
         OnMainMenuSettingPanelClosed?.Invoke();
     }
+
+    public static event Action OnGetCoin;
+
+    public static void TriggerGetCoin()
+    {
+        OnGetCoin?.Invoke();
+    }
 }
