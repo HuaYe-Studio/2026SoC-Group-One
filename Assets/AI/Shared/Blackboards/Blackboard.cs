@@ -34,6 +34,10 @@ public class Blackboard
     /// <summary>动物自身当前位置（由 EnvironmentMonitor 每帧写入，用于近似距离计算）。</summary>
     public Vector2 AnimalPosition;
 
+    /// <summary>玩家当前世界位置（由方向 × 距离推导，仅 IsPlayerVisible 时有意义）。
+    /// 供代价判定/逃生目标等需要玩家坐标的场景使用，避免各处重复推导。</summary>
+    public Vector2 PlayerPosition => AnimalPosition + PlayerDirection * PlayerDistance;
+
     /// <summary>威胁记忆是否仍有效（未超过记忆保留时长）。</summary>
     public bool HasThreatMemory => Time.time - LastSeenPlayerTime <= MemoryDuration;
 
@@ -94,6 +98,13 @@ public class Blackboard
 
     /// <summary>当前是否存在未完成的回撤目标。</summary>
     public bool HasRetreatTarget;
+
+    // ---- 安全点（由 SafePointGenerator 生成，寻路回家/漫游使用）----
+    /// <summary>安全点列表（多个，避免单点导致来回抖动）。</summary>
+    public Vector2[] SafePoints;
+
+    /// <summary>当前选中的安全点索引（带迟滞选择，避免频繁切换）。</summary>
+    public int SafePointIndex;
 
     // ---- 便捷语义属性（决策层常用组合判断）----
     // 迟滞状态：当前是否处于威胁中（避免 IsThreatUrgent 在 FleeRadius 边界反复跳变）
@@ -192,6 +203,17 @@ public class Blackboard
         IsPlayerVisible = false;
     }
 
+    /// <summary>
+    /// 写入短时威胁记忆（供群体恐惧传播等外部认知注入使用）。
+    /// 同时更新位置与时间戳，保证 HasThreatMemory 生效且 LastKnownPlayerPos
+    /// 不会被感知层（EnvironmentMonitor）当作无记忆而清空。
+    /// </summary>
+    public void RememberThreat(Vector2 position, float timestamp)
+    {
+        LastKnownPlayerPos = position;
+        LastSeenPlayerTime = timestamp;
+    }
+
     /// <summary>重置所有认知状态（用于 AI 重置或出生）。</summary>
     public void Clear()
     {
@@ -211,6 +233,8 @@ public class Blackboard
         CurrentBehavior = "";
         RetreatTarget = Vector2.zero;
         HasRetreatTarget = false;
+        SafePoints = null;
+        SafePointIndex = 0;
         _isThreatUrgent = false;
         _threatEnterTime = float.NegativeInfinity;
     }

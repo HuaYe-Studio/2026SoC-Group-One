@@ -29,7 +29,7 @@ public class BTRestAction : BTNode
                 return State.Running;
 
             _animal.StopMoving();
-            _animal.PlayAnimation("Rest");
+            _animal.PlayAnimation(AnimalAnimNames.Rest);
             _restEndTime = Time.time + Random.Range(_durationMin, _durationMax);
             _isResting = true;
         }

@@ -55,7 +55,7 @@ public class BTFleeAction : BTNode
         if (!_bb.IsPlayerVisible || _bb.PlayerDistance > _animal.FleeSafeDistance)
         {
             _animal.StopMoving();
-            _animal.PlayAnimation("Idle");
+            _animal.PlayAnimation(AnimalAnimNames.Idle);
             ResetInternalState();
             return State.Success;
         }
@@ -137,7 +137,7 @@ public class BTFleeAction : BTNode
         else if (_animal is BubbleFishAI fish)
         {
             fish.Swim(-_bb.PlayerDirection, speedMultiplier);
-            fish.PlayAnimation("Flee");
+            fish.PlayAnimation(AnimalAnimNames.Flee);
         }
         else
             _animal.PerformMove(finalDirection, speedMultiplier);
