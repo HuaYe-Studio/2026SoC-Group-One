@@ -6,7 +6,6 @@ public class DevourableObject : MonoBehaviour, IDevourable
     [Header("Devour Config")]
     [SerializeField] private bool devourableOnce = true;
     [SerializeField] private float priority;
-    [SerializeField] private bool destroyAfterDevour = true;
 
     [Header("Effect")]
     [SerializeField] private UnityEvent onDevourEffect;
@@ -14,45 +13,60 @@ public class DevourableObject : MonoBehaviour, IDevourable
     [Header("Audio")]
     [SerializeField] private AudioClip devourSound;
 
-    private bool _hasBeenDevoured;
+    protected bool hasBeenDevoured;
 
     // IDevourable
     Transform IDevourable.Transform => transform;
     public SpriteRenderer SpriteRenderer { get; private set; }
     public bool IsTargeted { get; set; }
-    float IDevourable.Priority => priority;
-    bool IDevourable.DestroyAfterDevour => destroyAfterDevour;
+
+    float IDevourable.Priority => GetPriority();
+    bool IDevourable.DestroyAfterDevour => GetDestroyAfterDevour();
 
     private void Awake()
     {
         SpriteRenderer = GetComponent<SpriteRenderer>();
     }
 
-    bool IDevourable.CanBeDevoured(PlayerController _)
+    bool IDevourable.CanBeDevoured(PlayerController pc) => CanBeDevouredOverride(pc);
+
+    void IDevourable.OnBeingDevoured() => OnBeingDevouredOverride();
+
+    void IDevourable.ExecuteDevourOutcome(PlayerController pc) => ExecuteDevourOutcomeOverride(pc);
+
+    void IDevourable.OnBeingSpitOut(Vector2 direction) => OnBeingSpitOutOverride(direction);
+
+    // ── protected virtual hooks for subclass overrides ──
+
+    protected virtual float GetPriority() => priority;
+
+    protected virtual bool GetDestroyAfterDevour() => true;
+
+    protected virtual bool CanBeDevouredOverride(PlayerController pc)
     {
-        return !(devourableOnce && _hasBeenDevoured);
+        return !(devourableOnce && hasBeenDevoured);
     }
 
-    void IDevourable.OnBeingDevoured()
+    protected virtual void OnBeingDevouredOverride()
     {
         if (devourSound != null)
             AudioManager.Instance?.PlaySfx(devourSound);
     }
 
-    void IDevourable.ExecuteDevourOutcome(PlayerController _)
+    protected virtual void ExecuteDevourOutcomeOverride(PlayerController pc)
     {
-        _hasBeenDevoured = true;
+        hasBeenDevoured = true;
         onDevourEffect?.Invoke();
     }
 
-    void IDevourable.OnBeingSpitOut(Vector2 direction)
+    protected virtual void OnBeingSpitOutOverride(Vector2 direction)
     {
         // one-shot objects self-destruct via destroyAfterDevour; no restore needed
     }
 
-    public void ResetDevoured()
+    protected void ResetDevoured()
     {
-        _hasBeenDevoured = false;
+        hasBeenDevoured = false;
         IsTargeted = false;
     }
 }
