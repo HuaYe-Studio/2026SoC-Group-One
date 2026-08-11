@@ -34,22 +34,17 @@ public class DisappearingPlatform : MonoBehaviour
     {
         isTriggered = true;
 
-        // 1. 等待指定的接触延迟时间
         yield return new WaitForSeconds(delayBeforeDisappear);
 
-        // 2. 隐藏物体
         SetPlatformState(false);
 
-        // 3. 等待指定的消失持续时间
         yield return new WaitForSeconds(delayBeforeReappear);
 
-        // 4. 重新显示物体
         SetPlatformState(true);
 
-        isTriggered = false; // 重置触发状态，允许下一次踩踏
+        isTriggered = false; 
     }
 
-    // 统一控制物体的显示/隐藏和碰撞状态
     private void SetPlatformState(bool active)
     {
         if (spriteRenderer != null)
