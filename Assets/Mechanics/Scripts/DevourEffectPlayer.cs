@@ -16,15 +16,15 @@ public class DevourEffectPlayer : MonoBehaviour
     [SerializeField] private float shakeStrength = 0.2f;
     [SerializeField] private float shakeDuration = 0.3f;
 
-    private Camera mainCam;
-    private float originalOrthoSize;
-    private Vector3 originalPosition;
+    private Camera _mainCam;
+    private float _originalOrthoSize;
+    private Vector3 _originalPosition;
 
     private void Awake()
     {
-        mainCam = GetComponent<Camera>();
-        originalOrthoSize = mainCam.orthographicSize;
-        originalPosition = transform.position;
+        _mainCam = GetComponent<Camera>();
+        _originalOrthoSize = _mainCam.orthographicSize;
+        _originalPosition = transform.position;
     }
 
     public IEnumerator PlayZoomIn(Vector3 targetPosition)
@@ -35,11 +35,11 @@ public class DevourEffectPlayer : MonoBehaviour
             .SetEase(zoomEase)
             .SetUpdate(true);
 
-        if (mainCam != null)
+        if (_mainCam != null)
         {
             DOTween.To(
-                () => mainCam.orthographicSize,
-                sz => mainCam.orthographicSize = sz,
+                () => _mainCam.orthographicSize,
+                sz => _mainCam.orthographicSize = sz,
                 closeUpOrthoSize,
                 zoomInDuration)
                 .SetEase(zoomEase)
@@ -51,8 +51,8 @@ public class DevourEffectPlayer : MonoBehaviour
 
     public IEnumerator PlayDevour(IDevourable target)
     {
-        if (mainCam != null)
-            mainCam.transform.DOShakePosition(shakeDuration, shakeStrength).SetUpdate(true);
+        if (_mainCam != null)
+            _mainCam.transform.DOShakePosition(shakeDuration, shakeStrength).SetUpdate(true);
 
         Transform targetTransform = target.Transform;
         SpriteRenderer sr = target.SpriteRenderer;
@@ -76,16 +76,16 @@ public class DevourEffectPlayer : MonoBehaviour
 
     public IEnumerator PlayZoomOut()
     {
-        transform.DOMove(originalPosition, zoomOutDuration)
+        transform.DOMove(_originalPosition, zoomOutDuration)
             .SetEase(Ease.InQuad)
             .SetUpdate(true);
 
-        if (mainCam != null)
+        if (_mainCam != null)
         {
             DOTween.To(
-                () => mainCam.orthographicSize,
-                sz => mainCam.orthographicSize = sz,
-                originalOrthoSize,
+                () => _mainCam.orthographicSize,
+                sz => _mainCam.orthographicSize = sz,
+                _originalOrthoSize,
                 zoomOutDuration)
                 .SetEase(Ease.InQuad)
                 .SetUpdate(true);
@@ -97,11 +97,11 @@ public class DevourEffectPlayer : MonoBehaviour
     public void ResetAll()
     {
         DOTween.Kill(transform);
-        if (mainCam != null)
+        if (_mainCam != null)
         {
-            DOTween.Kill(mainCam);
-            mainCam.orthographicSize = originalOrthoSize;
+            DOTween.Kill(_mainCam);
+            _mainCam.orthographicSize = _originalOrthoSize;
         }
-        transform.position = originalPosition;
+        transform.position = _originalPosition;
     }
 }

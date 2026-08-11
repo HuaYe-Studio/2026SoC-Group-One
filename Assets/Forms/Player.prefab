@@ -353,13 +353,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c693b4ce3d1949289012545b2fa124ad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  detectionRadius: 4
+  detectionRadius: 2
   devourableLayer:
     serializedVersion: 2
     m_Bits: 128
   pounceSpeed: 14
   pounceMaxDuration: 0.6
   cooldownSeconds: 0.5
+  animalFlightSpeed: 5
   pounceClip: {fileID: 0}
   devourClip: {fileID: 0}
   spitClip: {fileID: 0}

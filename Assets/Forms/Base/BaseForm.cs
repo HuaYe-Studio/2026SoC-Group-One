@@ -24,6 +24,11 @@ public abstract class BaseForm : MonoBehaviour
     [SerializeField] protected float gravityScale = 1f;
     [SerializeField] protected float fallGravityMultiplier = 1.5f;
 
+    // Public accessors for holdable modifier system
+    public float MoveSpeed { get => moveSpeed; set => moveSpeed = value; }
+    public float GravityScale { get => gravityScale; set => gravityScale = value; }
+    public float FallGravityMultiplier { get => fallGravityMultiplier; set => fallGravityMultiplier = value; }
+
     [Header("Ground Check")]
     [SerializeField] protected float groundCheckWidth = 0.8f;
     [SerializeField] protected float groundCheckHeight = 0.05f;
@@ -41,12 +46,23 @@ public abstract class BaseForm : MonoBehaviour
     [SerializeField] private List<AbilityInputBinding> abilityBindings = new();
     private readonly Dictionary<AbilityInputBinding, System.Action> _bindingHandlers = new();
 
+    // Holdable modifier original values for clean revert
+    private float _originalMoveSpeed;
+    private float _originalGravityScale;
+    private float _originalFallGravityMultiplier;
+    private float _originalMass;
+    private Color _originalTint;
+    private GameObject _overlaySpriteObject;
+    private AbilityInputBinding _grantedAbilityInstance;
+
     protected ActionState currentState = ActionState.Idle;
     protected float ignoreGroundUntil;
 
     protected bool IsGrounded { get; set; }
     public ActionState CurrentState => currentState;
     public Animator Animator => animator;
+    public Vector2 FacingDirection => spriteRenderer != null && spriteRenderer.flipX
+        ? Vector2.left : Vector2.right;
 
     protected static float HorizontalInput =>
         PlayerInputReader.HasInstance ? PlayerInputReader.Instance.MoveValue.x : 0f;
@@ -306,6 +322,98 @@ public abstract class BaseForm : MonoBehaviour
                     default: if (add) Debug.LogWarning($"AbilitySystem: Invalid phase [{phase}] for AnimalWheel."); break;
                 }
                 break;
+        }
+    }
+
+    public virtual void ApplyHoldableModifier(HoldableModifier m)
+    {
+        if (!m.HasAnyEffect) return;
+
+        _originalMoveSpeed = moveSpeed;
+        _originalGravityScale = gravityScale;
+        _originalFallGravityMultiplier = fallGravityMultiplier;
+        if (rb != null) _originalMass = rb.mass;
+
+        if (!Mathf.Approximately(m.moveSpeedMultiplier, 1f))
+            moveSpeed = _originalMoveSpeed * m.moveSpeedMultiplier;
+        if (!Mathf.Approximately(m.gravityScaleMultiplier, 1f))
+            gravityScale = _originalGravityScale * m.gravityScaleMultiplier;
+        if (!Mathf.Approximately(m.fallGravityMultiplier, 1f))
+            fallGravityMultiplier = _originalFallGravityMultiplier * m.fallGravityMultiplier;
+        if (!Mathf.Approximately(m.massMultiplier, 1f) && rb != null)
+            rb.mass = _originalMass * m.massMultiplier;
+
+        if (spriteRenderer != null && m.tintColor.a > 0f)
+        {
+            _originalTint = spriteRenderer.color;
+            spriteRenderer.color = m.tintColor;
+        }
+
+        if (spriteRenderer != null && m.overlaySprite != null)
+        {
+            _overlaySpriteObject = new GameObject("HoldableOverlay");
+            _overlaySpriteObject.transform.SetParent(spriteRenderer.transform, false);
+            _overlaySpriteObject.transform.localPosition = Vector3.zero;
+            _overlaySpriteObject.transform.localScale = Vector3.one;
+            var overlaySr = _overlaySpriteObject.AddComponent<SpriteRenderer>();
+            overlaySr.sprite = m.overlaySprite;
+            overlaySr.sortingOrder = spriteRenderer.sortingOrder + 1;
+        }
+
+        if (m.grantedAbility != null)
+        {
+            _grantedAbilityInstance = m.grantedAbility;
+            AddAbilityBinding(_grantedAbilityInstance);
+        }
+    }
+
+    public virtual void RemoveHoldableModifier(HoldableModifier m)
+    {
+        moveSpeed = _originalMoveSpeed;
+        gravityScale = _originalGravityScale;
+        fallGravityMultiplier = _originalFallGravityMultiplier;
+        if (rb != null) rb.mass = _originalMass;
+
+        if (spriteRenderer != null)
+            spriteRenderer.color = _originalTint;
+
+        if (_overlaySpriteObject != null)
+        {
+            if (Application.isPlaying)
+                Destroy(_overlaySpriteObject);
+            else
+                DestroyImmediate(_overlaySpriteObject);
+            _overlaySpriteObject = null;
+        }
+
+        if (_grantedAbilityInstance != null)
+        {
+            RemoveAbilityBinding(_grantedAbilityInstance);
+            _grantedAbilityInstance = null;
+        }
+    }
+
+    public void AddAbilityBinding(AbilityInputBinding binding)
+    {
+        if (binding == null) return;
+        abilityBindings.Add(binding);
+        if (PlayerInputReader.HasInstance)
+        {
+            System.Action handler = () => binding.onInputFired.Invoke();
+            _bindingHandlers[binding] = handler;
+            SubscribeToSlot(binding.inputSlot, binding.phase, handler);
+        }
+    }
+
+    public void RemoveAbilityBinding(AbilityInputBinding binding)
+    {
+        if (binding == null) return;
+        abilityBindings.Remove(binding);
+        if (_bindingHandlers.TryGetValue(binding, out var handler))
+        {
+            if (PlayerInputReader.HasInstance)
+                UnsubscribeFromSlot(binding.inputSlot, binding.phase, handler);
+            _bindingHandlers.Remove(binding);
         }
     }
 

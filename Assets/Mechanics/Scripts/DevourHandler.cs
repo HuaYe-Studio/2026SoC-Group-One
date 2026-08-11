@@ -4,10 +4,10 @@ using UnityEngine;
 using UnityEngine.Serialization;
 
 [RequireComponent(typeof(SlimeForm))]
-public class SlimeDevourHandler : MonoBehaviour
+public class DevourHandler : MonoBehaviour
 {
     [Header("Detection")]
-    [SerializeField] private float detectionRadius = 4f;
+    [SerializeField] private float detectionRadius = 2f;
     [SerializeField]
     [FormerlySerializedAs("animalLayer")]
     private LayerMask devourableLayer;
@@ -17,60 +17,75 @@ public class SlimeDevourHandler : MonoBehaviour
     [SerializeField] private float pounceMaxDuration = 0.6f;
     [SerializeField] private float cooldownSeconds = 0.5f;
 
+    [Header("Devour Sequence")]
+    [SerializeField] private float animalFlightSpeed = 5f;
+
     [Header("Audio")]
     [SerializeField] private AudioClip pounceClip;
     [SerializeField] private AudioClip devourClip;
     [SerializeField] private AudioClip spitClip;
 
-    private SlimeForm slimeForm;
-    private BaseForm baseForm;
-    private Rigidbody2D rb;
-    private PlayerController playerController;
-    private DevourEffectPlayer effectPlayer;
+    private SlimeForm _slimeForm;
+    private BaseForm _baseForm;
+    private Rigidbody2D _rb;
+    private PlayerController _playerController;
+    private DevourEffectPlayer _effectPlayer;
 
     private IDevourable _currentTarget;
     private bool _isPouncing;
     public bool IsPouncing => _isPouncing;
     private bool _devourSequenceRunning;
+    private Vector2 _pounceStartPos;
+    private bool _devourInitiatedSwitchPending;
+    private FormType _deferredFormType;
+    public bool IsDevourInitiatedSwitchPending => _devourInitiatedSwitchPending;
     private float _pounceEndTime;
     private float _cooldownEndTime;
 
-    private HashSet<MonoBehaviour> _devourablesInRange = new HashSet<MonoBehaviour>();
-    private List<MonoBehaviour> _rangeCheckResults = new List<MonoBehaviour>();
-    private Collider2D[] _overlapBuffer = new Collider2D[32];
+    private IHoldable _heldObject;
+    public bool HasHeldObject => _heldObject != null;
+
+    private readonly HashSet<MonoBehaviour> _devourablesInRange = new HashSet<MonoBehaviour>();
+    private readonly List<MonoBehaviour> _rangeCheckResults = new List<MonoBehaviour>();
+    private readonly Collider2D[] _overlapBuffer = new Collider2D[32];
 
     private static readonly int IsSwoopingHash = Animator.StringToHash("IsSwooping");
 
     private void Awake()
     {
-        slimeForm = GetComponent<SlimeForm>();
-        baseForm = slimeForm;
-        rb = GetComponentInParent<Rigidbody2D>();
-        playerController = GetComponentInParent<PlayerController>();
+        _slimeForm = GetComponent<SlimeForm>();
+        _baseForm = _slimeForm;
+        _rb = GetComponentInParent<Rigidbody2D>();
+        _playerController = GetComponentInParent<PlayerController>();
     }
 
     private void Start()
     {
-        effectPlayer = Camera.main?.GetComponent<DevourEffectPlayer>();
-        if (effectPlayer == null)
-            Debug.LogWarning("SlimeDevourHandler: No DevourEffectPlayer on Main Camera.");
+        _effectPlayer = Camera.main?.GetComponent<DevourEffectPlayer>();
+        if (_effectPlayer == null)
+            Debug.LogWarning("DevourHandler: No DevourEffectPlayer on Main Camera.");
     }
 
     private void OnEnable()
     {
         if (PlayerInputReader.HasInstance)
+        {
             PlayerInputReader.Instance.OnInput_Space += TryHandleDevourInput;
+            PlayerInputReader.Instance.OnSpit += TrySpitOutHeldObject;
+        }
     }
 
     private void OnDisable()
     {
         if (PlayerInputReader.HasInstance)
+        {
             PlayerInputReader.Instance.OnInput_Space -= TryHandleDevourInput;
+            PlayerInputReader.Instance.OnSpit -= TrySpitOutHeldObject;
+        }
 
         foreach (MonoBehaviour mb in _devourablesInRange)
         {
-            IDevourable d = mb as IDevourable;
-            if (d != null)
+            if (mb is IDevourable d)
                 MockEventCenter.TriggerDevourableExitRange(d);
         }
         _devourablesInRange.Clear();
@@ -78,10 +93,8 @@ public class SlimeDevourHandler : MonoBehaviour
         StopAllCoroutines();
         _isPouncing = false;
         _devourSequenceRunning = false;
+        _devourInitiatedSwitchPending = false;
         _currentTarget = null;
-        Time.timeScale = 1f;
-        if (baseForm.Animator != null)
-            baseForm.Animator.updateMode = AnimatorUpdateMode.Normal;
     }
 
     private void Update()
@@ -98,7 +111,7 @@ public class SlimeDevourHandler : MonoBehaviour
         for (int i = 0; i < count; i++)
         {
             IDevourable devourable = GetDevourable(_overlapBuffer[i]);
-            if (devourable != null && devourable.CanBeDevoured(playerController))
+            if (devourable != null && devourable.CanBeDevoured(_playerController))
                 _rangeCheckResults.Add((MonoBehaviour)devourable);
         }
 
@@ -106,8 +119,7 @@ public class SlimeDevourHandler : MonoBehaviour
         {
             if (!_rangeCheckResults.Contains(mb))
             {
-                IDevourable d = mb as IDevourable;
-                if (d != null)
+                if (mb is IDevourable d)
                     MockEventCenter.TriggerDevourableExitRange(d);
             }
         }
@@ -117,8 +129,7 @@ public class SlimeDevourHandler : MonoBehaviour
         {
             if (_devourablesInRange.Add(mb))
             {
-                IDevourable d = mb as IDevourable;
-                if (d != null)
+                if (mb is IDevourable d)
                     MockEventCenter.TriggerDevourableEnterRange(d);
             }
         }
@@ -142,7 +153,7 @@ public class SlimeDevourHandler : MonoBehaviour
         }
 
         Vector2 toTarget = (_currentTarget.Transform.position - transform.root.position).normalized;
-        rb.velocity = toTarget * pounceSpeed;
+        _rb.velocity = toTarget * pounceSpeed;
     }
 
     private void OnTriggerEnter2D(Collider2D other)
@@ -159,9 +170,11 @@ public class SlimeDevourHandler : MonoBehaviour
 
     private void TryHandleDevourInput()
     {
-        if (baseForm.CurrentState == ActionState.SpecialAction) return;
-        if (baseForm.CurrentState == ActionState.WallCling) return;
+        if (_baseForm.CurrentState == ActionState.SpecialAction) return;
+        if (_baseForm.CurrentState == ActionState.WallCling) return;
         if (_isPouncing) return;
+        if (_devourSequenceRunning) return;
+        if (_heldObject != null) return;
         if (Time.time < _cooldownEndTime) return;
 
         IDevourable target = FindNearestDevourable();
@@ -174,20 +187,48 @@ public class SlimeDevourHandler : MonoBehaviour
 
     public void CancelAll()
     {
+        SpitOutHeldObject();
+
         StopAllCoroutines();
-        effectPlayer?.ResetAll();
+        _effectPlayer?.ResetAll();
         _isPouncing = false;
         _devourSequenceRunning = false;
+        _devourInitiatedSwitchPending = false;
         if (_currentTarget != null)
         {
             _currentTarget.IsTargeted = false;
+            if (_currentTarget is DevourableAnimal da)
+                da.IsInDevourSequence = false;
             _currentTarget = null;
         }
-        rb.velocity = Vector2.zero;
-        Time.timeScale = 1f;
-        if (baseForm.Animator != null)
-            baseForm.Animator.updateMode = AnimatorUpdateMode.Normal;
-        baseForm.SetActionState(ActionState.Idle);
+        _rb.velocity = Vector2.zero;
+        _baseForm.SetActionState(ActionState.Idle);
+    }
+
+    public void SpitOutHeldObject()
+    {
+        if (_heldObject == null) return;
+
+        IHoldable holdable = _heldObject;
+        _heldObject = null;
+
+        Vector3 spitPos = transform.root.position + (Vector3)(_baseForm.FacingDirection * 1f);
+
+        holdable.PlaceInWorld(spitPos);
+        holdable.OnUnequip(_playerController);
+
+        AudioManager.Instance?.PlaySfx(spitClip);
+
+        if (holdable is MonoBehaviour)
+            MockEventCenter.TriggerDevourableExitRange(holdable);
+    }
+
+    private void TrySpitOutHeldObject()
+    {
+        if (_heldObject == null) return;
+        if (!_heldObject.CanVoluntarySpit) return;
+
+        SpitOutHeldObject();
     }
 
     private IDevourable FindNearestDevourable()
@@ -204,11 +245,11 @@ public class SlimeDevourHandler : MonoBehaviour
         {
             IDevourable devourable = GetDevourable(_overlapBuffer[i]);
             if (devourable == null) continue;
-            if (!devourable.CanBeDevoured(playerController)) continue;
+            if (!devourable.CanBeDevoured(_playerController)) continue;
 
             float dSq = ((Vector2)devourable.Transform.position - origin).sqrMagnitude;
             if (devourable.Priority > bestPriority ||
-                (devourable.Priority == bestPriority && dSq < bestDistSq))
+                (Mathf.Approximately(devourable.Priority, bestPriority) && dSq < bestDistSq))
             {
                 bestPriority = devourable.Priority;
                 bestDistSq = dSq;
@@ -223,13 +264,15 @@ public class SlimeDevourHandler : MonoBehaviour
     {
         if (_currentTarget == null) return;
 
+        _pounceStartPos = transform.root.position;
+
         _isPouncing = true;
         _pounceEndTime = Time.fixedTime + pounceMaxDuration;
-        baseForm.SetActionState(ActionState.SpecialAction);
-        baseForm.SetAnimatorBool(IsSwoopingHash, true);
+        _baseForm.SetActionState(ActionState.SpecialAction);
+        _baseForm.SetAnimatorBool(IsSwoopingHash, true);
 
         Vector2 toTarget = (_currentTarget.Transform.position - transform.root.position).normalized;
-        rb.velocity = toTarget * pounceSpeed;
+        _rb.velocity = toTarget * pounceSpeed;
 
         AudioManager.Instance?.PlaySfx(pounceClip);
     }
@@ -242,9 +285,9 @@ public class SlimeDevourHandler : MonoBehaviour
             _currentTarget.IsTargeted = false;
             _currentTarget = null;
         }
-        rb.velocity = Vector2.zero;
-        baseForm.SetActionState(ActionState.Idle);
-        baseForm.SetAnimatorBool(IsSwoopingHash, false);
+        _rb.velocity = Vector2.zero;
+        _baseForm.SetActionState(ActionState.Idle);
+        _baseForm.SetAnimatorBool(IsSwoopingHash, false);
         _cooldownEndTime = Time.time + cooldownSeconds;
     }
 
@@ -252,59 +295,91 @@ public class SlimeDevourHandler : MonoBehaviour
     {
         _devourSequenceRunning = true;
         _isPouncing = false;
-        rb.velocity = Vector2.zero;
+        _rb.velocity = Vector2.zero;
 
-        Vector2 spitDirection = (transform.root.position - target.Transform.position).normalized;
+        Vector2 pointA = _pounceStartPos;
+        Vector2 pointB = target.Transform.position;
+        Vector2 spitDirection = (pointA - pointB).normalized;
+
+        MonoBehaviour targetMb = target as MonoBehaviour;
+
+        bool isHoldable = target is IHoldable;
+        DevourableAnimal devAnimal = target as DevourableAnimal;
+        bool isFirstDevour = !isHoldable && devAnimal != null
+            && !_playerController.IsFormUnlocked(devAnimal.GrantedForm);
 
         yield return null;
 
+        // ── Engulf: time freeze + DOTween ──
         target.OnBeingDevoured();
 
-        if (baseForm.Animator != null)
-            baseForm.Animator.updateMode = AnimatorUpdateMode.UnscaledTime;
+        if (_baseForm.Animator != null)
+            _baseForm.Animator.updateMode = AnimatorUpdateMode.UnscaledTime;
 
         Time.timeScale = 0f;
 
-        if (effectPlayer != null)
-            yield return effectPlayer.PlayZoomIn(target.Transform.position);
+        if (_effectPlayer != null)
+            yield return _effectPlayer.PlayZoomIn(target.Transform.position);
         else
             yield return new WaitForSecondsRealtime(0.4f);
 
         AudioManager.Instance?.PlaySfx(devourClip);
 
-        if (effectPlayer != null)
-            yield return effectPlayer.PlayDevour(target);
+        if (_effectPlayer != null)
+            yield return _effectPlayer.PlayDevour(target);
         else
             yield return new WaitForSecondsRealtime(1.0f);
 
-        target.ExecuteDevourOutcome(playerController);
-
-        AudioManager.Instance?.PlaySfx(spitClip);
-
-        // null-check: DevourableObject may have self-destructed via UnityEvent
-        MonoBehaviour targetMb = target as MonoBehaviour;
-        if (targetMb != null)
+        // ── Outcome (during freeze, unlock only — no form switch) ──
+        if (!isHoldable)
+        {
+            target.ExecuteDevourOutcome(_playerController);
+            AudioManager.Instance?.PlaySfx(spitClip);
             target.OnBeingSpitOut(spitDirection);
+        }
+        else
+        {
+            IHoldable holdable = (IHoldable)target;
+            holdable.OnEquip(_playerController);
+            _heldObject = holdable;
+            targetMb?.gameObject.SetActive(false);
+        }
 
-        if (effectPlayer != null)
-            yield return effectPlayer.PlayZoomOut();
+        if (_effectPlayer != null)
+            yield return _effectPlayer.PlayZoomOut();
         else
             yield return new WaitForSecondsRealtime(0.4f);
 
         Time.timeScale = 1f;
 
-        if (baseForm.Animator != null)
-            baseForm.Animator.updateMode = AnimatorUpdateMode.Normal;
+        if (_baseForm.Animator != null)
+            _baseForm.Animator.updateMode = AnimatorUpdateMode.Normal;
 
-        if (target.DestroyAfterDevour && targetMb != null)
+        // ── Spit animal in BA direction then decelerate + stun (on animal, survives form switch) ──
+        if (!isHoldable && devAnimal != null)
+        {
+            devAnimal.LaunchAndStun(spitDirection, animalFlightSpeed);
+        }
+
+        // ── Cleanup ──
+        _baseForm.SetAnimatorBool(IsSwoopingHash, false);
+        if (!isHoldable && target.DestroyAfterDevour && targetMb != null)
             Destroy(targetMb.gameObject);
 
-        baseForm.SetAnimatorBool(IsSwoopingHash, false);
-        baseForm.SetActionState(ActionState.Idle);
+        _baseForm.SetActionState(ActionState.Idle);
         target.IsTargeted = false;
         _currentTarget = null;
         _cooldownEndTime = Time.time + cooldownSeconds;
         _devourSequenceRunning = false;
+
+        // ── Deferred form switch (first-time devour only) ──
+        if (isFirstDevour && devAnimal != null)
+        {
+            _devourInitiatedSwitchPending = true;
+            _deferredFormType = devAnimal.GrantedForm;
+            _playerController.SwitchToFormByType(_deferredFormType);
+            _devourInitiatedSwitchPending = false;
+        }
     }
 
     private static IDevourable GetDevourable(Component c)

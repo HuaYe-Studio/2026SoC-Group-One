@@ -7,7 +7,7 @@ public class SlimeForm : BaseForm
     [SerializeField] private float deceleration = 0.5f;
 
     [Header("Devour")]
-    [SerializeField] private SlimeDevourHandler devourHandler;
+    [SerializeField] private DevourHandler devourHandler;
 
     [Header("Wall Climb")]
     [SerializeField] private PhysicsMaterial2D slimePhysicsMaterial;
@@ -23,6 +23,12 @@ public class SlimeForm : BaseForm
     [SerializeField] private float wallClingCooldown = 0.15f;
     [SerializeField] private float wallExhaustedGraceTime = 1.5f;
 
+    // Public accessors for holdable modifier system
+    public float ClimbSpeed { get => climbSpeed; set => climbSpeed = value; }
+    public float SlideDownSpeed { get => slideDownSpeed; set => slideDownSpeed = value; }
+    public float ClimbStaminaPerSec { get => climbStaminaPerSec; set => climbStaminaPerSec = value; }
+    public float ClingStaminaPerSec { get => clingStaminaPerSec; set => clingStaminaPerSec = value; }
+
     [Header("Audio")]
     [SerializeField] private AudioClip walkClip;
     [SerializeField] private float walkSoundInterval = 0.4f;
@@ -35,6 +41,12 @@ public class SlimeForm : BaseForm
     private float _staminaExhaustedTime = -1f;
     private bool _exhaustedFall;
 
+    // Holdable modifier original values for clean revert
+    private float _originalClimbSpeed;
+    private float _originalSlideDownSpeed;
+    private float _originalClimbStaminaPerSec;
+    private float _originalClingStaminaPerSec;
+
     private static readonly int SpeedHash = Animator.StringToHash("Speed");
     private static readonly int IsWallClingHash = Animator.StringToHash("IsWallCling");
 
@@ -46,7 +58,7 @@ public class SlimeForm : BaseForm
         fallGravityMultiplier = 1.8f;
 
         if (devourHandler == null)
-            devourHandler = GetComponent<SlimeDevourHandler>();
+            devourHandler = GetComponent<DevourHandler>();
 
         if (slimePhysicsMaterial != null && myCollider != null)
             myCollider.sharedMaterial = slimePhysicsMaterial;
@@ -90,7 +102,11 @@ public class SlimeForm : BaseForm
         if (currentState == ActionState.WallCling)
             ExitWallCling();
         if (devourHandler != null)
-            devourHandler.CancelAll();
+        {
+            devourHandler.SpitOutHeldObject();
+            if (!devourHandler.IsDevourInitiatedSwitchPending)
+                devourHandler.CancelAll();
+        }
     }
 
     protected override void FixedUpdate()
@@ -235,6 +251,35 @@ public class SlimeForm : BaseForm
 
         animator.SetBool(IsWallClingHash, currentState == ActionState.WallCling);
         animator.SetFloat(SpeedHash, Mathf.Abs(rb.velocity.x));
+    }
+
+    public override void ApplyHoldableModifier(HoldableModifier m)
+    {
+        _originalClimbSpeed = climbSpeed;
+        _originalSlideDownSpeed = slideDownSpeed;
+        _originalClimbStaminaPerSec = climbStaminaPerSec;
+        _originalClingStaminaPerSec = clingStaminaPerSec;
+
+        base.ApplyHoldableModifier(m);
+
+        if (!Mathf.Approximately(m.climbSpeedMultiplier, 1f))
+            climbSpeed = _originalClimbSpeed * m.climbSpeedMultiplier;
+        if (!Mathf.Approximately(m.slideDownSpeedMultiplier, 1f))
+            slideDownSpeed = _originalSlideDownSpeed * m.slideDownSpeedMultiplier;
+        if (!Mathf.Approximately(m.climbStaminaCostMultiplier, 1f))
+            climbStaminaPerSec = _originalClimbStaminaPerSec * m.climbStaminaCostMultiplier;
+        if (!Mathf.Approximately(m.clingStaminaCostMultiplier, 1f))
+            clingStaminaPerSec = _originalClingStaminaPerSec * m.clingStaminaCostMultiplier;
+    }
+
+    public override void RemoveHoldableModifier(HoldableModifier m)
+    {
+        base.RemoveHoldableModifier(m);
+
+        climbSpeed = _originalClimbSpeed;
+        slideDownSpeed = _originalSlideDownSpeed;
+        climbStaminaPerSec = _originalClimbStaminaPerSec;
+        clingStaminaPerSec = _originalClingStaminaPerSec;
     }
 
 #if UNITY_EDITOR

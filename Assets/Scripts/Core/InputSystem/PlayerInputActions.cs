@@ -172,6 +172,15 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""Spit"",
+                    ""type"": ""Button"",
+                    ""id"": ""a1b2c3d4-0001-4000-8000-000000000001"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -546,6 +555,28 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": "";Keyboard&Mouse"",
                     ""action"": ""Scroll"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""a1b2c3d4-0002-4000-8000-000000000002"",
+                    ""path"": ""<Keyboard>/k"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""Spit"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""a1b2c3d4-0003-4000-8000-000000000003"",
+                    ""path"": ""<Gamepad>/buttonWest"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Gamepad"",
+                    ""action"": ""Spit"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -1142,6 +1173,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         m_Slime_AnimalWheel = m_Slime.FindAction("AnimalWheel", throwIfNotFound: true);
         m_Slime_Menu = m_Slime.FindAction("Menu", throwIfNotFound: true);
         m_Slime_Scroll = m_Slime.FindAction("Scroll", throwIfNotFound: true);
+        m_Slime_Spit = m_Slime.FindAction("Spit", throwIfNotFound: true);
         // UI
         m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
         m_UI_Navigate = m_UI.FindAction("Navigate", throwIfNotFound: true);
@@ -1244,6 +1276,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Slime_AnimalWheel;
     private readonly InputAction m_Slime_Menu;
     private readonly InputAction m_Slime_Scroll;
+    private readonly InputAction m_Slime_Spit;
     /// <summary>
     /// Provides access to input actions defined in input action map "Slime".
     /// </summary>
@@ -1291,6 +1324,10 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Slime/Scroll".
         /// </summary>
         public InputAction @Scroll => m_Wrapper.m_Slime_Scroll;
+        /// <summary>
+        /// Provides access to the underlying input action "Slime/Spit".
+        /// </summary>
+        public InputAction @Spit => m_Wrapper.m_Slime_Spit;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -1344,6 +1381,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @Scroll.started += instance.OnScroll;
             @Scroll.performed += instance.OnScroll;
             @Scroll.canceled += instance.OnScroll;
+            @Spit.started += instance.OnSpit;
+            @Spit.performed += instance.OnSpit;
+            @Spit.canceled += instance.OnSpit;
         }
 
         /// <summary>
@@ -1382,6 +1422,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @Scroll.started -= instance.OnScroll;
             @Scroll.performed -= instance.OnScroll;
             @Scroll.canceled -= instance.OnScroll;
+            @Spit.started -= instance.OnSpit;
+            @Spit.performed -= instance.OnSpit;
+            @Spit.canceled -= instance.OnSpit;
         }
 
         /// <summary>
@@ -1745,6 +1788,13 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnScroll(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Spit" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnSpit(InputAction.CallbackContext context);
     }
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "UI" which allows adding and removing callbacks.
