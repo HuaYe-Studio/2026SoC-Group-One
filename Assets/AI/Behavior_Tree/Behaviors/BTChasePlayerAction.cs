@@ -42,7 +42,7 @@ public class BTChasePlayerAction : BTNode
         if (!_bb.IsPlayerVisible || _bb.PlayerDistance > _spider.AbandonChaseDistance || _bb.IsPlayerSameForm)
         {
             Reset();
-            _animal.PlayAnimation("Idle");
+            _animal.PlayAnimation(AnimalAnimNames.Idle);
             return State.Failure;
         }
 
@@ -50,7 +50,7 @@ public class BTChasePlayerAction : BTNode
         if (Time.time - _startTime > _timeout)
         {
             Reset();
-            _animal.PlayAnimation("Idle");
+            _animal.PlayAnimation(AnimalAnimNames.Idle);
             return State.Failure;
         }
 
@@ -58,7 +58,7 @@ public class BTChasePlayerAction : BTNode
         if (_bb.PlayerDistance <= _arriveRadius)
         {
             Reset();
-            _animal.PlayAnimation("Idle");
+            _animal.PlayAnimation(AnimalAnimNames.Idle);
             return State.Success;
         }
 

@@ -120,10 +120,10 @@ public class FrogAI : AnimalBase
         int state = 0;
         switch (stateName)
         {
-            case "Jump": state = 1; break;
-            case "Rest": state = 2; break;
-            case "Flee": state = 3; break;
-            case "Prey": state = 4; break;
+            case AnimalAnimNames.Jump: state = 1; break;
+            case AnimalAnimNames.Rest: state = 2; break;
+            case AnimalAnimNames.Flee: state = 3; break;
+            case AnimalAnimNames.Prey: state = 4; break;
         }
 
         _animator.SetInteger(AnimStateParam, state);

@@ -232,8 +232,9 @@ public class AnimalBase : MonoBehaviour
 
     /// <summary>
     /// 停止水平移动（保留垂直速度以保持重力效果）。
+    /// 子类可覆写以定制停止行为（如无视重力的鱼需要完全停住）。
     /// </summary>
-    public void StopMoving()
+    public virtual void StopMoving()
     {
         _rb.velocity = new Vector2(0f, _rb.velocity.y);
     }

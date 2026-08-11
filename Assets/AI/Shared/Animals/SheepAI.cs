@@ -76,7 +76,7 @@ public class SheepAI : AnimalBase
         if (SpriteRenderer != null)
             SpriteRenderer.flipX = _chargeDirection < 0;
 
-        PlayAnimation("Charge");
+        PlayAnimation(AnimalAnimNames.Charge);
     }
 
     /// <summary>
@@ -89,7 +89,7 @@ public class SheepAI : AnimalBase
 
         _isCharging = false;
         Rb.velocity = new Vector2(0f, Rb.velocity.y);
-        PlayAnimation("Idle");
+        PlayAnimation(AnimalAnimNames.Idle);
     }
 
     /// <summary>
@@ -119,7 +119,7 @@ public class SheepAI : AnimalBase
             return;
 
         base.PerformMove(direction, speedMultiplier);
-        PlayAnimation("Walk");
+        PlayAnimation(AnimalAnimNames.Walk);
     }
 
     /// <summary>
@@ -132,10 +132,10 @@ public class SheepAI : AnimalBase
         int state = 0;
         switch (stateName)
         {
-            case "Walk": state = 1; break;
-            case "Charge": state = 2; break;
-            case "Flee": state = 3; break;
-            case "Prey": state = 4; break;
+            case AnimalAnimNames.Walk: state = 1; break;
+            case AnimalAnimNames.Charge: state = 2; break;
+            case AnimalAnimNames.Flee: state = 3; break;
+            case AnimalAnimNames.Prey: state = 4; break;
         }
 
         _animator.SetInteger(AnimStateParam, state);

@@ -65,7 +65,7 @@ public class SpiderAI : AnimalBase
     public void ChasePlayer(float speedMultiplier = 1f)
     {
         Move8(Board.PlayerDirection, speedMultiplier);
-        PlayAnimation("Chase");
+        PlayAnimation(AnimalAnimNames.Chase);
     }
 
     /// <summary>
@@ -74,7 +74,7 @@ public class SpiderAI : AnimalBase
     public override void PerformMove(float direction, float speedMultiplier = 1f)
     {
         Move8(new Vector2(direction, 0f), speedMultiplier);
-        PlayAnimation("Walk");
+        PlayAnimation(AnimalAnimNames.Walk);
     }
 
     /// <summary>
@@ -87,10 +87,10 @@ public class SpiderAI : AnimalBase
         int state = 0;
         switch (stateName)
         {
-            case "Walk": state = 1; break;
-            case "Chase": state = 2; break;
-            case "Flee": state = 3; break;
-            case "Prey": state = 4; break;
+            case AnimalAnimNames.Walk: state = 1; break;
+            case AnimalAnimNames.Chase: state = 2; break;
+            case AnimalAnimNames.Flee: state = 3; break;
+            case AnimalAnimNames.Prey: state = 4; break;
         }
 
         _animator.SetInteger(AnimStateParam, state);

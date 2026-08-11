@@ -22,7 +22,7 @@ public class BTAvoidAction : BTNode
         if (_startPos == Vector2.zero)
         {
             _startPos = _animal.transform.position;
-            _animal.PlayAnimation("Flee");
+            _animal.PlayAnimation(AnimalAnimNames.Flee);
 
             _direction = -Mathf.Sign(_animal.PlayerDirection.x);
             if (Mathf.Abs(_direction) < 0.01f)
@@ -32,7 +32,7 @@ public class BTAvoidAction : BTNode
         if (Vector2.Distance(_startPos, _animal.transform.position) >= _stepDistance)
         {
             _animal.StopMoving();
-            _animal.PlayAnimation("Idle");
+            _animal.PlayAnimation(AnimalAnimNames.Idle);
             _startPos = Vector2.zero;
             return State.Success;
         }

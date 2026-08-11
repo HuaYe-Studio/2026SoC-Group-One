@@ -1610,26 +1610,6 @@ PrefabInstance:
       propertyPath: _verticalSpeedRatio
       value: 0.981
       objectReference: {fileID: 0}
-    - target: {fileID: 1580285527092407765, guid: ec5b0cd22b5e14a4a93087cffb339f76, type: 3}
-      propertyPath: _points.Array.data[2].x
-      value: 3.4264832
-      objectReference: {fileID: 0}
-    - target: {fileID: 1580285527092407765, guid: ec5b0cd22b5e14a4a93087cffb339f76, type: 3}
-      propertyPath: _points.Array.data[2].y
-      value: 4.106832
-      objectReference: {fileID: 0}
-    - target: {fileID: 1580285527092407765, guid: ec5b0cd22b5e14a4a93087cffb339f76, type: 3}
-      propertyPath: _points.Array.data[5].x
-      value: -0.78139937
-      objectReference: {fileID: 0}
-    - target: {fileID: 1580285527092407765, guid: ec5b0cd22b5e14a4a93087cffb339f76, type: 3}
-      propertyPath: _points.Array.data[5].y
-      value: 0.124091625
-      objectReference: {fileID: 0}
-    - target: {fileID: 3675521295355706683, guid: ec5b0cd22b5e14a4a93087cffb339f76, type: 3}
-      propertyPath: _obstacleMask.m_Bits
-      value: 8
-      objectReference: {fileID: 0}
     - target: {fileID: 6228823700303011281, guid: ec5b0cd22b5e14a4a93087cffb339f76, type: 3}
       propertyPath: m_Name
       value: BubbleFish

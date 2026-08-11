@@ -1,60 +1,5 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &864559561823438663
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 5641853356451613811}
-  - component: {fileID: 1580285527092407765}
-  m_Layer: 7
-  m_Name: Nomal
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &5641853356451613811
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 864559561823438663}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 6715347995071612814}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1580285527092407765
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 864559561823438663}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 23c8902ad7e380d4a80dd3ea5be273bb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _pathType: 0
-  _points:
-  - {x: 0.14853907, y: -0.12163532}
-  - {x: 2, y: 0}
-  - {x: 5.0678334, y: 3.1220212}
-  - {x: -0.13566542, y: 4.4194827}
-  - {x: -1.8116837, y: 4.0545726}
-  - {x: -1.0549569, y: 1.0541916}
-  _loop: 1
-  _speedMultiplier: 1
-  _arriveRadius: 0.4
 --- !u!1 &6228823700303011281
 GameObject:
   m_ObjectHideFlags: 0
@@ -72,6 +17,7 @@ GameObject:
   - component: {fileID: 60438271284560235}
   - component: {fileID: 3675521295355706683}
   - component: {fileID: 4876984171877391428}
+  - component: {fileID: 6072381548197520463}
   m_Layer: 7
   m_Name: BubbleFish
   m_TagString: BubbleFish
@@ -91,9 +37,7 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 8792963179697434524}
-  - {fileID: 5641853356451613811}
+  m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &5917628786592095552
@@ -306,6 +250,13 @@ MonoBehaviour:
   _stuckRetryCooldown: 3
   _swimSpeed: 2
   _swimVerticalDrift: 0.5
+  _verticalSpeedRatio: 0.4
+  _ascendSpeedRatio: 0.5
+  _expansionSampleInterval: 0.3
+  _expansionMoveThreshold: 0.05
+  _expansionSmoothFactor: 8
+  _compressedScaleY: 0.8
+  _stretchedScaleY: 1.2
   _animator: {fileID: 0}
 --- !u!114 &3675521295355706683
 MonoBehaviour:
@@ -319,26 +270,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26c81c78ac62d5b4093e752006c3c8f9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _escapePaths:
-  - {fileID: 208299913439118475}
-  - {fileID: 8620980584460659218}
-  - {fileID: 6122856243209734698}
-  - {fileID: 6546653147206003745}
-  - {fileID: 4460084179482756288}
-  - {fileID: 2868776085975157027}
-  - {fileID: 7227446784349146640}
-  - {fileID: 9207694602884712859}
-  _obstacleMask:
-    serializedVersion: 2
-    m_Bits: 0
-  _redecideInterval: 1.5
-  _newPathBias: 0.15
-  _retreatSpeedMultiplier: 1
-  _retreatArriveRadius: 0.4
-  _wanderRange: 6
-  _path: {fileID: 1580285527092407765}
+  _safePointCount: 4
+  _safePointRadius: 8
+  _safePointSpacing: 3
+  _regionType: 0
+  _repathInterval: 0.8
+  _arriveRadius: 0.5
+  _escapeSpeedMultiplier: 1.5
+  _airCost: 1000
+  _playerPenaltyRadius: 3
+  _playerPenaltyCost: 200
   _enableDebugLog: 0
-  _debugCurrentEscapePath: {fileID: 0}
   _debugBranch: 
 --- !u!114 &4876984171877391428
 MonoBehaviour:
@@ -379,153 +321,27 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 0
   _enableDebugLog: 0
---- !u!1001 &9209849880934938997
-PrefabInstance:
+--- !u!114 &6072381548197520463
+MonoBehaviour:
   m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 6715347995071612814}
-    m_Modifications:
-    - target: {fileID: 416887287506835177, guid: c4aa3fb32c558e8438cef769a87cc5a9, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -1.8574601
-      objectReference: {fileID: 0}
-    - target: {fileID: 416887287506835177, guid: c4aa3fb32c558e8438cef769a87cc5a9, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0.26618844
-      objectReference: {fileID: 0}
-    - target: {fileID: 416887287506835177, guid: c4aa3fb32c558e8438cef769a87cc5a9, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -0.030499702
-      objectReference: {fileID: 0}
-    - target: {fileID: 416887287506835177, guid: c4aa3fb32c558e8438cef769a87cc5a9, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 416887287506835177, guid: c4aa3fb32c558e8438cef769a87cc5a9, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 416887287506835177, guid: c4aa3fb32c558e8438cef769a87cc5a9, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 416887287506835177, guid: c4aa3fb32c558e8438cef769a87cc5a9, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 416887287506835177, guid: c4aa3fb32c558e8438cef769a87cc5a9, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 416887287506835177, guid: c4aa3fb32c558e8438cef769a87cc5a9, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 416887287506835177, guid: c4aa3fb32c558e8438cef769a87cc5a9, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4910759778232288071, guid: c4aa3fb32c558e8438cef769a87cc5a9, type: 3}
-      propertyPath: m_Name
-      value: TheBubbleFishPath(Escape)
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: c4aa3fb32c558e8438cef769a87cc5a9, type: 3}
---- !u!114 &208299913439118475 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 9019568766199299582, guid: c4aa3fb32c558e8438cef769a87cc5a9, type: 3}
-  m_PrefabInstance: {fileID: 9209849880934938997}
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 6228823700303011281}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 23c8902ad7e380d4a80dd3ea5be273bb, type: 3}
+  m_Script: {fileID: 11500000, guid: 8f2a7c9e4d1b4f3a9c6e5d2b8a7f3c41, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &2868776085975157027 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 6341073829324107862, guid: c4aa3fb32c558e8438cef769a87cc5a9, type: 3}
-  m_PrefabInstance: {fileID: 9209849880934938997}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 23c8902ad7e380d4a80dd3ea5be273bb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &4460084179482756288 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 4767785084275408309, guid: c4aa3fb32c558e8438cef769a87cc5a9, type: 3}
-  m_PrefabInstance: {fileID: 9209849880934938997}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 23c8902ad7e380d4a80dd3ea5be273bb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &6122856243209734698 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3114015922684195679, guid: c4aa3fb32c558e8438cef769a87cc5a9, type: 3}
-  m_PrefabInstance: {fileID: 9209849880934938997}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 23c8902ad7e380d4a80dd3ea5be273bb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &6546653147206003745 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 2672209018229151060, guid: c4aa3fb32c558e8438cef769a87cc5a9, type: 3}
-  m_PrefabInstance: {fileID: 9209849880934938997}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 23c8902ad7e380d4a80dd3ea5be273bb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &7227446784349146640 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1982420725417867109, guid: c4aa3fb32c558e8438cef769a87cc5a9, type: 3}
-  m_PrefabInstance: {fileID: 9209849880934938997}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 23c8902ad7e380d4a80dd3ea5be273bb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &8620980584460659218 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 606883697133474663, guid: c4aa3fb32c558e8438cef769a87cc5a9, type: 3}
-  m_PrefabInstance: {fileID: 9209849880934938997}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 23c8902ad7e380d4a80dd3ea5be273bb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!4 &8792963179697434524 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 416887287506835177, guid: c4aa3fb32c558e8438cef769a87cc5a9, type: 3}
-  m_PrefabInstance: {fileID: 9209849880934938997}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &9207694602884712859 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 2173594078900462, guid: c4aa3fb32c558e8438cef769a87cc5a9, type: 3}
-  m_PrefabInstance: {fileID: 9209849880934938997}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 23c8902ad7e380d4a80dd3ea5be273bb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  _spreadRadius: 6
+  _fellowLayers:
+    serializedVersion: 2
+    m_Bits: 128
+  _speciesTag: BubbleFish
+  _spreadThreshold: 50
+  _fearAmount: 30
+  _maxFearLevel: 80
+  _spreadCooldown: 1.5
+  _maxHops: 2
+  _spreadOnAttacked: 1
+  _leaderCheckInterval: 0.5

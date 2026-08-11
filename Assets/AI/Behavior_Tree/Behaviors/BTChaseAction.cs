@@ -40,7 +40,7 @@ public class BTChaseAction : BTNode
         if (!_animal.IsFoodDetected || _animal.FoodDistance > _animal.DetectionRadius * 1.5f)
         {
             Reset();
-            _animal.PlayAnimation("Idle");
+            _animal.PlayAnimation(AnimalAnimNames.Idle);
             return State.Failure;
         }
 
@@ -48,7 +48,7 @@ public class BTChaseAction : BTNode
         if (Time.time - _startTime > _timeout)
         {
             Reset();
-            _animal.PlayAnimation("Idle");
+            _animal.PlayAnimation(AnimalAnimNames.Idle);
             return State.Failure;
         }
 
@@ -57,7 +57,7 @@ public class BTChaseAction : BTNode
         {
             EatFood();
             Reset();
-            _animal.PlayAnimation("Idle");
+            _animal.PlayAnimation(AnimalAnimNames.Idle);
             return State.Success;
         }
 
