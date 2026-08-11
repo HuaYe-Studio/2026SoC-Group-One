@@ -24,21 +24,21 @@ public static class UIEventCenter
     /// <summary>
     /// 面板打开事件
     /// </summary>
-    public static event Action OnMainMenuSettingPanelOpened;
+    public static event Action OnSettingPanelOpened;
 
-    public static void TriggerMainMenuSettingPanelOpened()//主菜单设置面板打开时调用此方法触发事件
+    public static void TriggerSettingPanelOpened()//主菜单设置面板打开时调用此方法触发事件
     {
-        OnMainMenuSettingPanelOpened?.Invoke();
+        OnSettingPanelOpened?.Invoke();
     }
 
     /// <summary>
     /// 面板关闭事件
     /// </summary>
-    public static event Action OnMainMenuSettingPanelClosed;
+    public static event Action OnSettingPanelClosed;
 
-    public static void TriggerMainMenuSettingPanelClosed()//主菜单设置面板关闭时调用此方法触发事件
+    public static void TriggerSettingPanelClosed()//主菜单设置面板关闭时调用此方法触发事件
     {
-        OnMainMenuSettingPanelClosed?.Invoke();
+        OnSettingPanelClosed?.Invoke();
     }
 
     public static event Action OnGetCoin;
