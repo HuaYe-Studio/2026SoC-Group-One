@@ -92,6 +92,10 @@ public class Blackboard
     /// <summary>当前是否处于眩晕中（僵直，不感知、不行动）。</summary>
     public bool IsStunned => Time.time < StunUntilTime;
 
+    /// <summary>是否处于连跳组间的喘息停顿（跳一组后的短暂休息，播放 Rest 动画）。
+    /// 与 IsStunned 互斥：喘息是觅食节奏的一部分，眩晕是吞噬/受击僵直。</summary>
+    public bool IsPanting;
+
     // ---- 回撤状态（由逃生节点写入，回撤节点读取）----
     /// <summary>逃生起点：脱离危险后需要返回的位置（由逃生节点进入时记录）。</summary>
     public Vector2 RetreatTarget;
@@ -220,6 +224,7 @@ public class Blackboard
         ClearThreat();
         IsPlayerSameForm = false;
         StunUntilTime = float.NegativeInfinity;
+        IsPanting = false;
         PlayerDistance = 0f;
         PlayerDirection = Vector2.zero;
         IsFoodDetected = false;

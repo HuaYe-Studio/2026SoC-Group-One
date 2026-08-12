@@ -20,11 +20,12 @@ using UnityEngine;
 ///   实现"领头决定逃向、群体跟随逃窜"。
 ///
 /// 同类识别：_speciesTag 按 Tag 区分同类（本项目动物共用 layer 7 Animal，层位不足以区分物种）。
-/// 跨物种接口预留：扩展为多 Tag 匹配或引入 SpeciesId 枚举即可跨物种传播（如鱼群受惊惊动岸上羊群），
-/// 传播/接收/跳数逻辑无需改动。
+/// 跨物种传播（IFearReceiver 口子）：_crossSpeciesTags 列表中的动物（挂 IFearReceiver）
+/// 也会收到恐惧——但跳数恒为 0（不续传）、恐惧量按 _crossSpeciesFactor 衰减，
+/// 例如鱼群受惊惊动岸边蜘蛛，恐慌不会跨物种级联放大。
 /// </summary>
 [RequireComponent(typeof(AnimalBase))]
-public class FearSpreader : MonoBehaviour
+public class FearSpreader : MonoBehaviour, IFearReceiver
 {
     [Header("恐惧传播")]
     [Tooltip("传播半径（米）")]
@@ -53,6 +54,13 @@ public class FearSpreader : MonoBehaviour
 
     [Tooltip("被攻击（吞噬/受击）时立即向群体传播一次恐惧")]
     [SerializeField] private bool _spreadOnAttacked = true;
+
+    [Header("跨物种传播（口子）")]
+    [Tooltip("跨物种接收 Tag 列表：传播半径内这些 Tag 的动物（挂 IFearReceiver）也会收到恐惧，但不可续传。空数组 = 仅同类传播")]
+    [SerializeField] private string[] _crossSpeciesTags = new string[0];
+
+    [Tooltip("跨物种恐惧衰减系数：跨物种接收的恐惧量 = 正常恐惧量 × 此系数（恐慌跨物种打折）")]
+    [SerializeField, Range(0f, 1f)] private float _crossSpeciesFactor = 0.5f;
 
     [Header("领头机制")]
     [Tooltip("领头判定采样间隔（秒）")]
@@ -160,7 +168,8 @@ public class FearSpreader : MonoBehaviour
     /// <summary>
     /// 向半径内同类传播一次恐惧。
     /// 传播携带剩余跳数：接收者续传时跳数 -1，到 0 不再续传（次数上限）。
-    /// 同类 = 同 Tag（跨物种接口预留：扩展多 Tag/物种 ID 即可跨物种传播）。
+    /// 同类 = 同 Tag，走 IFearReceiver 接口派发；
+    /// 跨物种（_crossSpeciesTags 列表）也接收，但跳数恒为 0（不续传）且恐惧量按系数衰减。
     /// </summary>
     private void SpreadFear(int hops)
     {
@@ -177,12 +186,35 @@ public class FearSpreader : MonoBehaviour
         foreach (Collider2D hit in hits)
         {
             if (hit.transform == transform) continue;
-            if (_speciesTag.Length > 0 && !hit.CompareTag(_speciesTag)) continue;
 
-            FearSpreader other = hit.GetComponent<FearSpreader>();
-            if (other == null) continue;
-            other.ReceiveFear(knownPlayer, sourceKnowsPlayer, _fearAmount, hops - 1);
+            bool isFellow = _speciesTag.Length > 0 && hit.CompareTag(_speciesTag);
+            if (!isFellow && !IsCrossSpeciesReceiver(hit)) continue;
+
+            IFearReceiver receiver = hit.GetComponent<IFearReceiver>();
+            if (receiver == null) continue;
+
+            if (isFellow)
+            {
+                // 同类：正常传播，可续传（跳数 -1）
+                receiver.ReceiveFear(knownPlayer, sourceKnowsPlayer, _fearAmount, hops - 1);
+            }
+            else
+            {
+                // 跨物种口子：只接收、不续传（hops 恒 0），恐惧量按系数衰减
+                receiver.ReceiveFear(knownPlayer, sourceKnowsPlayer, _fearAmount * _crossSpeciesFactor, 0);
+            }
         }
+    }
+
+    /// <summary>命中物是否配置的跨物种接收者（Tag 匹配 _crossSpeciesTags）。</summary>
+    private bool IsCrossSpeciesReceiver(Collider2D hit)
+    {
+        for (int i = 0; i < _crossSpeciesTags.Length; i++)
+        {
+            if (hit.CompareTag(_crossSpeciesTags[i]))
+                return true;
+        }
+        return false;
     }
 
     /// <summary>

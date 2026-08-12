@@ -2,7 +2,10 @@ using UnityEngine;
 
 /// <summary>
 /// [BT] 青蛙行为树：挂载并启用后驱动青蛙AI。
-/// 优先级从高到低：逃跑 > 搜索（威胁记忆）> 捕食 > 觅食循环（落地休息 → 跳一次）。
+/// 优先级从高到低：逃跑 > 搜索（威胁记忆）> 捕食 > 觅食循环（连跳一组 → 喘息）。
+/// 连跳组：组内每次跳跃高度递减、间隔缩短，模仿真实青蛙急促连跳；
+/// 喘息：一组跳完的短暂停顿（Rest 动画），与吞噬眩晕(IsStunned)互斥。
+/// 捕食/逃跑保持独立节奏：捕食单次扑跳，逃跑按紧迫度升级，不参与连跳组。
 /// 所有感知判断统一从 Blackboard 读取语义化认知状态。
 /// 动画统一由 FrogAI.PlayAnimation 控制 Animator 整数参数
 /// FROG_AnimState：0=Idle 1=Jump 2=Rest 3=Flee 4=Prey。
@@ -10,9 +13,25 @@ using UnityEngine;
 [RequireComponent(typeof(FrogAI))]
 public class FrogBT : MonoBehaviour
 {
-    [Header("Rest")]
-    [SerializeField] private float _restDurationMin = 3f;
-    [SerializeField] private float _restDurationMax = 6f;
+    [Header("Burst Hop")]
+    [Tooltip("每组连跳次数（=1 时退化为单跳，可作回退开关）")]
+    [SerializeField] private int _jumpsPerBurst = 3;
+
+    [Tooltip("每次跳跃高度衰减系数（0~1，越小越矮）")]
+    [SerializeField] private float _hopHeightDecay = 0.8f;
+
+    [Tooltip("落地后到下一跳的间隔衰减系数（0~1，越小越快）")]
+    [SerializeField] private float _hopIntervalDecay = 0.7f;
+
+    [Tooltip("第一次落地后到下一次起跳的基础间隔（秒）")]
+    [SerializeField] private float _baseHopInterval = 0.15f;
+
+    [Header("Pant")]
+    [Tooltip("组间喘息最短时长（秒）")]
+    [SerializeField] private float _pantDurationMin = 0.8f;
+
+    [Tooltip("组间喘息最长时长（秒）")]
+    [SerializeField] private float _pantDurationMax = 1.5f;
 
     [Header("Search")]
     [Tooltip("威胁值高于此值时触发搜索行为")]
@@ -71,10 +90,12 @@ public class FrogBT : MonoBehaviour
             new BTCondition(() => bb.IsFoodDetected),
             new BTChaseAction(_frog, 1.8f, 0.6f));
 
-        // 分支5：默认觅食循环 → 落地后先休息几秒 → 跳一次 → 落地再休息，循环
+        // 分支5：默认觅食循环 → 连跳一组 → 喘息 → 循环
+        // 连跳组内高度递减/间隔缩短（BTBurstHopAction），一组跳完喘息短暂停顿（BTPantAction）
         BTNode forageBranch = new BTSequence(
-            new BTRestAction(_frog, _restDurationMin, _restDurationMax),
-            new BTMoveAction(_frog, GetForageDirection, 1f, () => _enableDebugLog));
+            new BTBurstHopAction(_frog, GetForageDirection, 1f,
+                _jumpsPerBurst, _hopHeightDecay, _hopIntervalDecay, _baseHopInterval),
+            new BTPantAction(_frog, _pantDurationMin, _pantDurationMax));
 
         return new BTSelector(stunnedBranch, unstickBranch, fleeBranch, searchBranch, pounceBranch, forageBranch);
     }

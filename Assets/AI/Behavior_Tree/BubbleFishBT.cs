@@ -57,6 +57,28 @@ public class BubbleFishBT : MonoBehaviour
     [Tooltip("逃跑目标轮换数：从离玩家最远的 N 个安全点中轮换选取，防止路径永远固定被玩家守点")]
     [SerializeField] private int _escapePickCount = 2;
 
+    [Header("群体巡游 (Boids)")]
+    [Tooltip("启用 Boids 三力修正漫游方向（聚合/对齐/分离，需挂 FlockMember）。\n关闭时完全退化为纯 A* 漫游（回退开关）")]
+    [SerializeField] private bool _enableBoids = true;
+
+    [Tooltip("邻居查询半径（米）：只与同群（FlockId 相同）的同类结群")]
+    [SerializeField] private float _flockNeighborRadius = 5f;
+
+    [Tooltip("分离半径（米）：小于此距离的同类产生排斥（防扎堆）")]
+    [SerializeField] private float _flockSeparationRadius = 1.2f;
+
+    [Tooltip("分离力权重（三力中最高，防扎堆优先）")]
+    [SerializeField] private float _separationWeight = 0.8f;
+
+    [Tooltip("对齐力权重（朝群体平均游向修正）")]
+    [SerializeField] private float _alignmentWeight = 0.4f;
+
+    [Tooltip("聚合权重（朝群体质心修正；过强会群体收缩挤成一团，建议 ≤0.3）")]
+    [SerializeField] private float _cohesionWeight = 0.25f;
+
+    [Tooltip("修正强度上限（0~1：三力相对 A* 导航方向的最大混合比例，防三力盖过导航）")]
+    [SerializeField, Range(0f, 1f)] private float _flockMaxSteer = 0.6f;
+
     [Header("Debug")]
     [SerializeField] private bool _enableDebugLog;
 
@@ -71,6 +93,10 @@ public class BubbleFishBT : MonoBehaviour
 
     // 群体行为：恐惧传播 + 领头机制（跟随者朝领头逃向）
     private FearSpreader _fearSpreader;
+
+    // 群体巡游（Boids）：成员标识 + 邻居查询缓冲（复用，非分配）
+    private FlockMember _flockMember;
+    private readonly List<FlockMember> _neighbors = new List<FlockMember>(16);
 
     // 漫游轮换游历状态：到达当前安全点 → 停留 → 切下一个，循环巡游
     private int _wanderIndex;
@@ -87,6 +113,11 @@ public class BubbleFishBT : MonoBehaviour
     {
         _fish = GetComponent<BubbleFishAI>();
         _fearSpreader = GetComponent<FearSpreader>();
+        _flockMember = GetComponent<FlockMember>();
+
+        // Boids 兜底：prefab 未挂 FlockMember 时运行时补挂（Awake 阶段添加，当帧完成群注册）
+        if (_flockMember == null && _enableBoids)
+            _flockMember = gameObject.AddComponent<FlockMember>();
 
         Blackboard bb = _fish.Board;
         if (_manualSafePoints != null && _manualSafePoints.Length > 0)
@@ -158,13 +189,14 @@ public class BubbleFishBT : MonoBehaviour
         ));
 
         // 漫游：无威胁 → A* 到食物点（若有）否则到择近安全点（带迟滞，多点防抖）
+        // 移动方向经 Boids 三力偏移修正（群体协同巡游），动画仍按导航方向解析（反应宏观动向）
         BTNode wanderBranch = WithDebug("Wander", new BTAStarMoveAction(_fish,
             targetProvider: GetWanderTarget,
             costAt: CostAt,
             speedMultiplier: 1f,
             arriveRadius: _arriveRadius,
             repathInterval: _repathInterval,
-            move: (direction, mult) => _fish.Swim(direction, mult),
+            move: (direction, mult) => _fish.Swim(ApplyFlockSteering(direction), mult),
             animResolver: ResolvePathAnimation));
 
         return new BTSelector(stunnedBranch, unstickBranch, escapeBranch, searchBranch, wanderBranch);
@@ -296,6 +328,23 @@ public class BubbleFishBT : MonoBehaviour
         }
 
         return current;
+    }
+
+    /// <summary>
+    /// Boids 三力修正：仅作用于漫游分支，聚合/对齐/分离叠加在 A* 导航方向上（只做偏移修正，
+    /// 目标导航仍由 A* 负责）。未挂 FlockMember、功能关闭或无邻居时原样返回，完全退化为纯 A* 漫游。
+    /// </summary>
+    private Vector2 ApplyFlockSteering(Vector2 direction)
+    {
+        if (!_enableBoids || _flockMember == null)
+            return direction;
+
+        if (FlockManager.GetNeighbors(_flockMember, _flockNeighborRadius, _neighbors) == 0)
+            return direction;
+
+        return BoidsSteering.Apply(direction, _flockMember.transform.position, _flockMember.Velocity,
+            _neighbors, _flockSeparationRadius, _separationWeight, _alignmentWeight,
+            _cohesionWeight, _flockMaxSteer);
     }
 
     /// <summary>

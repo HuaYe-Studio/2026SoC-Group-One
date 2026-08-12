@@ -233,7 +233,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   grantedForm: 1
-  stunDurationAfterSpit: 2.5
   priority: 0
   destroyAfterDevour: 0
 --- !u!114 &4664454892179609109
@@ -320,7 +319,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ce5cc5ed19c2d3e428ec1f833faea3ae, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _restDurationMin: 3
-  _restDurationMax: 6
+  _jumpsPerBurst: 1
+  _hopHeightDecay: 0.8
+  _hopIntervalDecay: 0.7
+  _baseHopInterval: 0.15
+  _pantDurationMin: 0.8
+  _pantDurationMax: 1.5
   _searchThreatThreshold: 30
   _enableDebugLog: 0
