@@ -18,7 +18,7 @@ public class SelectableOption : MonoBehaviour, IPointerEnterHandler, IPointerExi
     [SerializeField] private GameObject _right;
     [SerializeField] private float _scaleAmount;
     [SerializeField] private GameObject _tips;
-    [SerializeField] private bool _isWithSettingPanel;
+    [SerializeField] private bool _isWithPanel;
     private Vector3 _originalScale;
     private RectTransform _optionRectTransform;
     private RectTransform _tipsRectTransform;
@@ -37,19 +37,19 @@ public class SelectableOption : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     void OnEnable()
     {
-        if (_isWithSettingPanel)
+        if (_isWithPanel)
         {
-            UIEventCenter.OnSettingPanelOpened += OnSettingPanelOpend;
-            UIEventCenter.OnSettingPanelClosed += OnSettingPanelClosed;
+            UIEventCenter.OnPanelOpened += OnPanelOpend;
+            UIEventCenter.OnPanelClosed += OnPanelClosed;
         }
     }
 
     void OnDisable()
     {
-        if (_isWithSettingPanel)
+        if (_isWithPanel)
         {
-            UIEventCenter.OnSettingPanelOpened -= OnSettingPanelOpend;
-            UIEventCenter.OnSettingPanelClosed -= OnSettingPanelClosed;
+            UIEventCenter.OnPanelOpened -= OnPanelOpend;
+            UIEventCenter.OnPanelClosed -= OnPanelClosed;
         }
     }
 
@@ -98,14 +98,14 @@ public class SelectableOption : MonoBehaviour, IPointerEnterHandler, IPointerExi
         }
     }
 
-    private void OnSettingPanelOpend()
+    private void OnPanelOpend()
     {
         _canvasGroup.DOFade(0f, 0.2f).SetUpdate(true);
         _canvasGroup.blocksRaycasts = false;
         _canvasGroup.interactable = false;
     }
 
-    private void OnSettingPanelClosed()
+    private void OnPanelClosed()
     {
         _canvasGroup.DOFade(1f, 0.2f).SetUpdate(true);
         _canvasGroup.blocksRaycasts = true;
