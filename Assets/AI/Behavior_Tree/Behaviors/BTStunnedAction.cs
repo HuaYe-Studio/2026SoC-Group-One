@@ -32,7 +32,7 @@ public class BTStunnedAction : BTNode
         // 首次进入：播放眩晕动画
         if (!_isPlayingAnim)
         {
-            _animal.PlayAnimation("Stunned");
+            _animal.PlayAnimation(AnimalAnimNames.Stunned);
             _isPlayingAnim = true;
         }
 

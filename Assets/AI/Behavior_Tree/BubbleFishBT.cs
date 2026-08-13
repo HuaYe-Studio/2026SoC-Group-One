@@ -1,54 +1,89 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
 /// [BT] 泡泡鱼行为树：挂载并启用后驱动泡泡鱼AI。
-/// 优先级：被吞噬眩晕 > 脱困 > 路径逃生(按威胁方向选路) > 直接逃跑(无路径兜底) > 回撤(回逃生起点) > 路径巡游 > 自由巡游。
-/// 设计思路：面对威胁时鱼沿预先绘制好的逃生路径撤离，撤离路径按威胁方向自动选择；
-/// 未配置逃生路径时回退为直接朝远离玩家方向逃跑；威胁解除后返回逃生起点，再继续巡游。
+/// 优先级：被吞噬眩晕 > 脱困 > 逃跑(A* 到远离玩家的安全点) >
+///         搜索(威胁记忆) > 漫游(A* 到食物点/安全点)。
+/// 移动系统：A* 寻路（NavGrid2D 水域局部网格）替代原 FishPath 路径系统。
+/// - 空气（区域外）极高代价：鱼不会游上岸
+/// - 玩家高代价：寻路自动绕开玩家附近，逃跑目标 = 离玩家最远的安全点
+/// - 安全点多点 + 择近迟滞：杜绝单点回撤造成的来回抖动
 /// 所有感知判断统一从 Blackboard 读取语义化认知状态。
 /// </summary>
 [RequireComponent(typeof(BubbleFishAI))]
 public class BubbleFishBT : MonoBehaviour
 {
-    [Header("逃生设置")]
-    [Tooltip("逃生路径列表（FishPath.Type = Escape）。留空时自动收集场景中所有 Type=Escape 的路径（预制体友好，无需手动拖引用）")]
-    [SerializeField] private FishPath[] _escapePaths;
+    [Header("安全点设置")]
+    [Tooltip("安全点数量（多点防抖，建议 3~5；仅在未配置手动安全点时生效）")]
+    [SerializeField] private int _safePointCount = 4;
 
-    [Tooltip("障碍物层：被这些层阻挡的逃生路径会在选路时被剔除（威胁方向 + 障碍物双重判断）。None=不检测")]
-    [SerializeField] private LayerMask _obstacleMask;
+    [Tooltip("安全点采样半径（米，以出生点为中心；仅在未配置手动安全点时生效）")]
+    [SerializeField] private float _safePointRadius = 15f;
 
-    [Tooltip("重新选路的间隔（秒），期间保持当前路径")]
-    [SerializeField] private float _redecideInterval = 1.5f;
+    [Tooltip("安全点间最小间距（米；仅在未配置手动安全点时生效）")]
+    [SerializeField] private float _safePointSpacing = 3f;
 
-    [Tooltip("重新决策时给非当前路径的偏好加分，越大越倾向换新路径")]
-    [SerializeField] private float _newPathBias = 0.15f;
+    [Tooltip("手动安全点（可选）：场景中放置空物体标记关键点，鱼在这些点之间轮换巡游。\n未配置（为空）时自动随机生成。手动点可精确控制鱼的'家'/巡游路线，需保证点在水域内")]
+    [SerializeField] private Transform[] _manualSafePoints;
 
-    [Header("回撤设置")]
-    [Tooltip("脱离危险后返回逃生起点的速度倍率")]
-    [SerializeField] private float _retreatSpeedMultiplier = 1f;
+    [Tooltip("巡游节奏：到达安全点后的停留时长（秒），结束后游向下一个点。设为 0 表示不停顿、连续巡游")]
+    [SerializeField] private float _wanderDwellTime = 0f;
 
-    [Tooltip("到达逃生起点（或途经点）的判定半径（米）")]
-    [SerializeField] private float _retreatArriveRadius = 0.4f;
+    [Tooltip("限定区域类型：只在指定区域内采样安全点")]
+    [SerializeField] private AnimalRegion.RegionType _regionType = AnimalRegion.RegionType.Water;
 
-    [Header("巡游设置")]
-    [Tooltip("自由巡游范围半径（米），超出后偏向出生点")]
-    [SerializeField] private float _wanderRange = 6f;
+    [Header("A* 寻路设置")]
+    [Tooltip("路径重算间隔（秒）。玩家移动导致路径过期时按此频率刷新")]
+    [SerializeField] private float _repathInterval = 0.8f;
 
-    [Tooltip("巡游模式：true=平滑巡游（路点/平滑转向/避让/节律），false=旧版随机换向（回退对比用）")]
-    [SerializeField] private bool _useSmoothWander = true;
+    [Tooltip("到达路径点的判定半径（米）")]
+    [SerializeField] private float _arriveRadius = 0.5f;
 
-    [Header("路径巡游")]
-    [Tooltip("绘制好的巡游路径（FishPath.Type = Normal）。为空时回退为自由巡游")]
-    [SerializeField] private FishPath _path;
+    [Tooltip("逃跑速度倍率（用鱼的逃生倍率）")]
+    [SerializeField] private float _escapeSpeedMultiplier = 1.5f;
+
+    [Header("代价设置")]
+    [Tooltip("区域外（空气）通行代价：鱼不会游出区域")]
+    [SerializeField] private float _airCost = 1000f;
+
+    [Tooltip("玩家高代价半径（米）：玩家附近格子代价提升，寻路自动绕开")]
+    [SerializeField] private float _playerPenaltyRadius = 3f;
+
+    [Tooltip("玩家高代价上限（格子上与玩家重合时的额外代价）")]
+    [SerializeField] private float _playerPenaltyCost = 200f;
+
+    [Header("逃跑设置")]
+    [Tooltip("逃跑目标轮换数：从离玩家最远的 N 个安全点中轮换选取，防止路径永远固定被玩家守点")]
+    [SerializeField] private int _escapePickCount = 2;
+
+    [Header("群体巡游 (Boids)")]
+    [Tooltip("启用 Boids 三力修正漫游方向（聚合/对齐/分离，需挂 FlockMember）。\n关闭时完全退化为纯 A* 漫游（回退开关）")]
+    [SerializeField] private bool _enableBoids = true;
+
+    [Tooltip("邻居查询半径（米）：只与同群（FlockId 相同）的同类结群")]
+    [SerializeField] private float _flockNeighborRadius = 5f;
+
+    [Tooltip("分离半径（米）：小于此距离的同类产生排斥（防扎堆）")]
+    [SerializeField] private float _flockSeparationRadius = 1.2f;
+
+    [Tooltip("分离力权重（三力中最高，防扎堆优先）")]
+    [SerializeField] private float _separationWeight = 0.8f;
+
+    [Tooltip("对齐力权重（朝群体平均游向修正）")]
+    [SerializeField] private float _alignmentWeight = 0.4f;
+
+    [Tooltip("聚合权重（朝群体质心修正；过强会群体收缩挤成一团，建议 ≤0.3）")]
+    [SerializeField] private float _cohesionWeight = 0.25f;
+
+    [Tooltip("修正强度上限（0~1：三力相对 A* 导航方向的最大混合比例，防三力盖过导航）")]
+    [SerializeField, Range(0f, 1f)] private float _flockMaxSteer = 0.6f;
 
     [Header("Debug")]
     [SerializeField] private bool _enableDebugLog;
 
-    /// <summary>运行时调试：当前被选中的逃生路径（只读，运行中查看）。</summary>
-    [Header("运行时调试")]
-    [SerializeField, ReadOnly] private FishPath _debugCurrentEscapePath;
-
     /// <summary>运行时调试：当前树所处分支（只读）。</summary>
+    [Header("运行时调试")]
     [SerializeField, ReadOnly] private string _debugBranch;
 
     private BubbleFishAI _fish;
@@ -56,34 +91,52 @@ public class BubbleFishBT : MonoBehaviour
     private string _lastBranch;
     private BTNode.State _lastResult;
 
-    // 逃生节点引用，用于运行时调试读取当前选中路径
-    private BTPathEscapeAction _escapeAction;
+    // 群体行为：恐惧传播 + 领头机制（跟随者朝领头逃向）
+    private FearSpreader _fearSpreader;
+
+    // 群体巡游（Boids）：成员标识 + 邻居查询缓冲（复用，非分配）
+    private FlockMember _flockMember;
+    private readonly List<FlockMember> _neighbors = new List<FlockMember>(16);
+
+    // 漫游轮换游历状态：到达当前安全点 → 停留 → 切下一个，循环巡游
+    private int _wanderIndex;
+    private float _wanderArriveUntil;   // 到达当前点后的停留截止时间
+    private float _foodArriveUntil;     // 到达食物点后的停留截止时间（避免卡死在食物点）
+
+    // 逃跑目标缓存（每 2s 重选一次，避免每帧换目标）+ 轮换索引（防路径永远固定）
+    private Vector2 _escapeTarget;
+    private float _escapeTargetTime;
+    private int _escapeIndex;
+    private const float EscapeTargetRefreshInterval = 2f;
 
     private void Awake()
     {
         _fish = GetComponent<BubbleFishAI>();
+        _fearSpreader = GetComponent<FearSpreader>();
+        _flockMember = GetComponent<FlockMember>();
 
-        ResolveEscapePaths();
-        _root = BuildTree();
-    }
+        // Boids 兜底：prefab 未挂 FlockMember 时运行时补挂（Awake 阶段添加，当帧完成群注册）
+        if (_flockMember == null && _enableBoids)
+            _flockMember = gameObject.AddComponent<FlockMember>();
 
-    /// <summary>
-    /// 逃生路径解析：数组留空时自动收集场景中所有 Type=Escape 的 FishPath。
-    /// 这样逃生路径做成独立预制体放进场景即可，每条鱼无需手动拖引用。
-    /// </summary>
-    private void ResolveEscapePaths()
-    {
-        if (_escapePaths != null && _escapePaths.Length > 0)
-            return;
-
-        var found = UnityEngine.Object.FindObjectsByType<FishPath>(FindObjectsSortMode.None);
-        System.Collections.Generic.List<FishPath> list = new System.Collections.Generic.List<FishPath>();
-        foreach (FishPath path in found)
+        Blackboard bb = _fish.Board;
+        if (_manualSafePoints != null && _manualSafePoints.Length > 0)
         {
-            if (path != null && path.Type == FishPath.PathType.Escape && path.Points != null && path.Points.Count >= 2)
-                list.Add(path);
+            // 手动安全点：直接采用场景标记点，精确控制鱼的巡游路线（不做随机/区域过滤，需人工保证点在水域内）
+            Vector2[] manual = new Vector2[_manualSafePoints.Length];
+            for (int i = 0; i < _manualSafePoints.Length; i++)
+                manual[i] = _manualSafePoints[i] != null
+                    ? (Vector2)_manualSafePoints[i].position
+                    : _fish.SpawnPosition;
+            bb.SafePoints = manual;
         }
-        _escapePaths = list.ToArray();
+        else
+        {
+            bb.SafePoints = SafePointGenerator.GenerateSafePoints(
+                _fish.SpawnPosition, _safePointCount, _safePointRadius, _regionType, _safePointSpacing);
+        }
+
+        _root = BuildTree();
     }
 
     /// <summary>
@@ -109,86 +162,199 @@ public class BubbleFishBT : MonoBehaviour
             WithDebug("Unstick/Action", new BTUnstickAction(_fish))
         ));
 
-        // 逃生：紧迫威胁且有逃生路径 → 按威胁方向选路并沿路径撤离
-        // 回撤目标：威胁解除后回到巡游路径第 0 点（从起点重新巡游）；无巡游路径时回退为逃生起点
-        _escapeAction = new BTPathEscapeAction(_fish, _escapePaths,
-            speedMultiplier: _fish.FleeSpeedMultiplier,
-            redecideInterval: _redecideInterval,
-            newPathBias: _newPathBias,
-            move: (direction, mult) => _fish.Swim(direction, mult),
-            animResolver: ResolvePathAnimation,
-            obstacleMask: _obstacleMask,
-            retreatTargetProvider: () =>
-            {
-                if (_path != null && _path.Points != null && _path.Points.Count > 0)
-                    return _path.Points[0];
-                return (Vector2)_fish.transform.position;
-            });
-
-        // 逃生：紧迫威胁 → 有逃生路径时按威胁方向选路并沿路径撤离；
-        // 无逃生路径时回退为 BTFleeAction 直接朝远离玩家方向逃跑（避免"没配路径就不逃"的缺口）
-        BTNode directFlee = WithDebug("Escape/Direct", new BTSequence(
-            WithDebug("Escape/Direct/Cond", new BTCondition(() => bb.IsThreatUrgent)),
-            WithDebug("Escape/Direct/Action", new BTFleeAction(_fish))
-        ));
-
-        BTNode escapeBranch = WithDebug("EscapePath", new BTSelector(
-            WithDebug("Escape/Path", new BTSequence(
-                WithDebug("Escape/Cond", new BTCondition(() => bb.IsThreatUrgent && HasEscapePaths)),
-                WithDebug("Escape/Action", _escapeAction))),
-            directFlee
-        ));
-
-        // 回撤：威胁已解除且存在未完成的回撤目标 → 回逃生起点（直线/折线）
-        BTNode retreatBranch = WithDebug("Retreat", new BTSequence(
-            WithDebug("Retreat/Cond", new BTCondition(() => !bb.IsThreatUrgent && bb.HasRetreatTarget)),
-            WithDebug("Retreat/Action", new BTReturnToPointAction(_fish,
-                speedMultiplier: _retreatSpeedMultiplier,
-                arriveRadius: _retreatArriveRadius,
+        // 逃跑：紧迫威胁 → A* 到离玩家最远的安全点（玩家高代价使路径自动绕开玩家）
+        BTNode escapeBranch = WithDebug("Escape", new BTSequence(
+            WithDebug("Escape/Cond", new BTCondition(() => bb.IsThreatUrgent)),
+            WithDebug("Escape/Action", new BTAStarMoveAction(_fish,
+                targetProvider: GetEscapeTarget,
+                costAt: CostAt,
+                speedMultiplier: _escapeSpeedMultiplier,
+                arriveRadius: _arriveRadius,
+                repathInterval: _repathInterval,
                 move: (direction, mult) => _fish.Swim(direction, mult),
-                animResolver: ResolvePathAnimation,
-                obstacleLayers: _obstacleMask))
+                animResolver: ResolvePathAnimation))
         ));
 
-        BTNode wanderBranch = WithDebug("Wander", new BTWanderAction(_fish, _wanderRange, _obstacleMask, _useSmoothWander));
+        // 搜索：威胁已解除但有威胁记忆 → 前往最后已知位置确认（"刚才有动静，去看看"的警惕行为）
+        BTNode searchBranch = WithDebug("Search", new BTSequence(
+            WithDebug("Search/Cond", new BTCondition(() => bb.ShouldSearch)),
+            WithDebug("Search/Action", new BTSearchAction(_fish,
+                arriveDistance: 1f,
+                speedMultiplier: 1.2f,
+                move: (direction, mult) =>
+                {
+                    _fish.PlayAnimation(AnimalAnimNames.SwimForward);
+                    _fish.Swim(direction, mult);
+                }))
+        ));
 
-        // 路径巡游：绘制好的路径优先，路径为空时回退为自由巡游
-        // 通过委托注入移动方式(Swim)与动画解析(段走向→动画名)，BTPathFollowAction 保持通用
-        BTNode pathBranch = WithDebug("Path", _path != null
-            ? new BTPathFollowAction(_fish, _path,
-                move: (direction, mult) => _fish.Swim(direction, mult),
-                animResolver: ResolvePathAnimation)
-            : wanderBranch);
+        // 漫游：无威胁 → A* 到食物点（若有）否则到择近安全点（带迟滞，多点防抖）
+        // 移动方向经 Boids 三力偏移修正（群体协同巡游），动画仍按导航方向解析（反应宏观动向）
+        BTNode wanderBranch = WithDebug("Wander", new BTAStarMoveAction(_fish,
+            targetProvider: GetWanderTarget,
+            costAt: CostAt,
+            speedMultiplier: 1f,
+            arriveRadius: _arriveRadius,
+            repathInterval: _repathInterval,
+            move: (direction, mult) => _fish.Swim(ApplyFlockSteering(direction), mult),
+            animResolver: ResolvePathAnimation));
 
-        return new BTSelector(stunnedBranch, unstickBranch, escapeBranch, retreatBranch, pathBranch);
+        return new BTSelector(stunnedBranch, unstickBranch, escapeBranch, searchBranch, wanderBranch);
     }
 
     /// <summary>
-    /// 是否存在至少一条有效逃生路径。
+    /// A* 额外代价：空气（区域外）高代价 + 玩家高代价。
+    /// 玩家高代价按距离线性衰减，使路径平滑绕开而非硬绕。
     /// </summary>
-    private bool HasEscapePaths
+    private float CostAt(Vector2 worldPos)
     {
-        get
+        float cost = 0f;
+
+        // 空气高代价：不在指定类型区域内
+        if (_regionType != AnimalRegion.RegionType.Generic && !IsInsideRegion(worldPos))
+            cost += _airCost;
+
+        // 玩家高代价：玩家可见且在该格附近 → 提升代价，路径绕开
+        Blackboard bb = _fish.Board;
+        if (bb.IsPlayerVisible)
         {
-            if (_escapePaths == null || _escapePaths.Length == 0)
-                return false;
-            foreach (FishPath path in _escapePaths)
-            {
-                if (path != null && path.Points != null && path.Points.Count >= 2)
-                    return true;
-            }
-            return false;
+            Vector2 playerPos = bb.PlayerPosition;
+            float d = Vector2.Distance(worldPos, playerPos);
+            if (d < _playerPenaltyRadius)
+                cost += _playerPenaltyCost * (1f - d / _playerPenaltyRadius);
         }
+
+        return cost;
+    }
+
+    /// <summary>世界坐标是否落在指定类型的区域内部（统一走区域注册表查询）。</summary>
+    private bool IsInsideRegion(Vector2 worldPos)
+    {
+        return AnimalRegionRegistry.Contains(worldPos, _regionType);
     }
 
     /// <summary>
-    /// 依据路径段走向解析动画状态名：垂直为主→上浮/下沉，否则→前行。
+    /// 逃跑目标：跟随者（群内有威胁更高的领头）→ 朝领头游动，群体逃窜方向一致；
+    /// 领头 / 无群 → 在"离玩家最远的 N 个安全点"中轮换选取（每 EscapeTargetRefreshInterval 秒重选），
+    /// 避免路径永远固定被玩家守点。
+    /// </summary>
+    private Vector2 GetEscapeTarget()
+    {
+        // 群体恐慌：跟随领头逃向（领头由 FearSpreader 按群内威胁最高者判定）。
+        // 目标实时跟随领头位置，寻路节点按 repathInterval 自动刷新路径。
+        if (_fearSpreader != null && _fearSpreader.HasLeader)
+            return _fearSpreader.Leader.position;
+
+        if (Time.time < _escapeTargetTime)
+            return _escapeTarget;
+
+        _escapeTargetTime = Time.time + EscapeTargetRefreshInterval;
+
+        Blackboard bb = _fish.Board;
+        Vector2[] pts = bb.SafePoints;
+        if (pts == null || pts.Length == 0)
+            return _fish.SpawnPosition;
+
+        Vector2 playerPos = bb.IsPlayerVisible
+            ? bb.PlayerPosition
+            : _fish.SpawnPosition;
+
+        // 按离玩家距离降序排列索引，取前 _escapePickCount 个轮换选择（防路径固定被守点）
+        List<int> ordered = new List<int>(pts.Length);
+        for (int i = 0; i < pts.Length; i++)
+            ordered.Add(i);
+        ordered.Sort((a, b) =>
+            Vector2.Distance(pts[b], playerPos).CompareTo(Vector2.Distance(pts[a], playerPos)));
+
+        int pickCount = Mathf.Clamp(_escapePickCount, 1, pts.Length);
+        _escapeIndex = (_escapeIndex + 1) % pickCount;
+        _escapeTarget = pts[ordered[_escapeIndex]];
+        return _escapeTarget;
+    }
+
+    /// <summary>
+    /// 漫游目标：轮换游历安全点（防抖核心）。
+    /// - 有食物 → 去食物点，到达后停留 _wanderDwellTime 再切回安全点巡游（防卡死在食物点）
+    /// - 无食物 → 按顺序游历安全点：到达当前点 → 停留 _wanderDwellTime → 切下一个，循环
+    /// 不使用 SelectSafePoint 的择近迟滞：那是为逃跑设计的语义，漫游需要"到点换点"。
+    /// </summary>
+    private Vector2 GetWanderTarget()
+    {
+        Blackboard bb = _fish.Board;
+        Vector2 position = (Vector2)_fish.transform.position;
+
+        // 食物优先：未到达 → 继续去；已到达 → 停留后回退安全点巡游
+        if (bb.IsFoodDetected && bb.NearestFood != null)
+        {
+            Vector2 food = bb.NearestFood.position;
+            if (Vector2.Distance(position, food) > _arriveRadius)
+                return food; // 还没到，继续游向食物
+
+            // 已到达食物点：首次到达启动停留计时（==0f 表示未计时）
+            if (_foodArriveUntil <= 0f)
+                _foodArriveUntil = Time.time + _wanderDwellTime;
+            if (Time.time < _foodArriveUntil)
+                return food; // 停留中：鱼在食物点停留觅食
+
+            // 停留结束 → 清计时，切回安全点轮换（不重置索引，从下一个点继续）
+            _foodArriveUntil = 0f;
+            _wanderIndex = (_wanderIndex + 1) % Mathf.Max(1, bb.SafePoints?.Length ?? 1);
+        }
+
+        Vector2[] pts = bb.SafePoints;
+        if (pts == null || pts.Length == 0)
+            return _fish.SpawnPosition;
+
+        Vector2 current = pts[_wanderIndex % pts.Length];
+
+        // 已到达当前安全点 → 停留 _wanderDwellTime 再切下一个（循环巡游）
+        if (Vector2.Distance(position, current) <= _arriveRadius)
+        {
+            // 首次到达启动停留计时（==0f 表示未计时，不能靠 Time.time 比较，否则停留结束后会被无限重置）
+            if (_wanderArriveUntil <= 0f)
+                _wanderArriveUntil = Time.time + _wanderDwellTime;
+            if (Time.time < _wanderArriveUntil)
+                return current; // 停留中：目标保持当前点，鱼停在此处
+
+            // 停留结束 → 清计时，切下一个点
+            _wanderArriveUntil = 0f;
+            _wanderIndex = (_wanderIndex + 1) % pts.Length;
+            current = pts[_wanderIndex % pts.Length];
+        }
+        else
+        {
+            // 还没到达：重置停留计时（避免游动途中残留旧计时导致到点立即切走）
+            _wanderArriveUntil = 0f;
+        }
+
+        return current;
+    }
+
+    /// <summary>
+    /// Boids 三力修正：仅作用于漫游分支，聚合/对齐/分离叠加在 A* 导航方向上（只做偏移修正，
+    /// 目标导航仍由 A* 负责）。未挂 FlockMember、功能关闭或无邻居时原样返回，完全退化为纯 A* 漫游。
+    /// </summary>
+    private Vector2 ApplyFlockSteering(Vector2 direction)
+    {
+        if (!_enableBoids || _flockMember == null)
+            return direction;
+
+        if (FlockManager.GetNeighbors(_flockMember, _flockNeighborRadius, _neighbors) == 0)
+            return direction;
+
+        return BoidsSteering.Apply(direction, _flockMember.transform.position, _flockMember.Velocity,
+            _neighbors, _flockSeparationRadius, _separationWeight, _alignmentWeight,
+            _cohesionWeight, _flockMaxSteer);
+    }
+
+    /// <summary>
+    /// 依据移动方向解析动画状态名：垂直为主→上浮/下沉，否则→前行。
     /// </summary>
     private string ResolvePathAnimation(Vector2 segmentDirection)
     {
         if (Mathf.Abs(segmentDirection.y) > Mathf.Abs(segmentDirection.x))
-            return segmentDirection.y > 0f ? "SwimUp" : "SwimDown";
-        return "SwimForward";
+            return segmentDirection.y > 0f ? AnimalAnimNames.SwimUp : AnimalAnimNames.SwimDown;
+        return AnimalAnimNames.SwimForward;
     }
 
     private void Update()
@@ -201,8 +367,6 @@ public class BubbleFishBT : MonoBehaviour
 
         BTNode.State result = _root.Tick();
 
-        // 刷新运行时调试字段（Inspector 中只读查看）
-        _debugCurrentEscapePath = _escapeAction != null ? _escapeAction.CurrentPath : null;
         _debugBranch = GetBranchName();
 
         if (_enableDebugLog)
@@ -218,10 +382,8 @@ public class BubbleFishBT : MonoBehaviour
 
         if (bb.IsStunned) return "Stunned";
         if (_fish.IsStuck) return "Unstick";
-        if (bb.IsThreatUrgent && HasEscapePaths) return "EscapePath";
-        if (bb.IsThreatUrgent) return "EscapeDirect";
-        if (!bb.IsThreatUrgent && bb.HasRetreatTarget) return "Retreat";
-        if (_path != null) return "Path";
+        if (bb.IsThreatUrgent) return "Escape";
+        if (bb.ShouldSearch) return "Search";
         return "Wander";
     }
 
@@ -234,7 +396,10 @@ public class BubbleFishBT : MonoBehaviour
         if (branch == _lastBranch && result == _lastResult)
             return;
 
-        Debug.Log($"{gameObject.name} BT: [{branch}] 距玩家[{bb.PlayerDistance:F1}m] 威胁值[{bb.ThreatLevel:F0}]");
+        // 含威胁记忆溯源：玩家不可见却处于 Escape/Search 时，多半是恐惧记忆（FearSpreader 注入或感知残留）所致
+        Debug.Log($"{gameObject.name} BT: [{branch}] 距玩家[{bb.PlayerDistance:F1}m] 威胁[{bb.ThreatLevel:F0}] " +
+                  $"玩家可见[{bb.IsPlayerVisible}] 记忆位置[{bb.LastKnownPlayerPos}] " +
+                  $"领头[{(_fearSpreader != null && _fearSpreader.HasLeader ? _fearSpreader.Leader.name : "无")}]");
         _lastBranch = branch;
         _lastResult = result;
     }

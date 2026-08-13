@@ -34,6 +34,10 @@ public class Blackboard
     /// <summary>动物自身当前位置（由 EnvironmentMonitor 每帧写入，用于近似距离计算）。</summary>
     public Vector2 AnimalPosition;
 
+    /// <summary>玩家当前世界位置（由方向 × 距离推导，仅 IsPlayerVisible 时有意义）。
+    /// 供代价判定/逃生目标等需要玩家坐标的场景使用，避免各处重复推导。</summary>
+    public Vector2 PlayerPosition => AnimalPosition + PlayerDirection * PlayerDistance;
+
     /// <summary>威胁记忆是否仍有效（未超过记忆保留时长）。</summary>
     public bool HasThreatMemory => Time.time - LastSeenPlayerTime <= MemoryDuration;
 
@@ -45,6 +49,11 @@ public class Blackboard
 
     /// <summary>威胁解除半径：玩家离开此距离才视为安全（解除阈值，> FleeRadius，避免边界抖动）。</summary>
     public float SafeRadius = 8f;
+
+    /// <summary>威胁消退阈值：玩家仍可见但威胁值低于该值视为已安全（静止伪装/远离），否则保持警戒。
+    /// 阈值取 60：玩家静止伪装时威胁以 ~10/s 下降到该值以下，约 6s 后鱼恢复巡游；
+    /// 玩家一旦移动威胁即 >60，鱼持续警戒，避免"玩家守在回撤点还硬要回去"的来回荡。</summary>
+    public float CalmThreatThreshold = 60f;
 
     // ---- 食物感知（由 EnvironmentMonitor 写入）----
     /// <summary>当前是否检测到食物。</summary>
@@ -83,12 +92,23 @@ public class Blackboard
     /// <summary>当前是否处于眩晕中（僵直，不感知、不行动）。</summary>
     public bool IsStunned => Time.time < StunUntilTime;
 
+    /// <summary>是否处于连跳组间的喘息停顿（跳一组后的短暂休息，播放 Rest 动画）。
+    /// 与 IsStunned 互斥：喘息是觅食节奏的一部分，眩晕是吞噬/受击僵直。</summary>
+    public bool IsPanting;
+
     // ---- 回撤状态（由逃生节点写入，回撤节点读取）----
     /// <summary>逃生起点：脱离危险后需要返回的位置（由逃生节点进入时记录）。</summary>
     public Vector2 RetreatTarget;
 
     /// <summary>当前是否存在未完成的回撤目标。</summary>
     public bool HasRetreatTarget;
+
+    // ---- 安全点（由 SafePointGenerator 生成，寻路回家/漫游使用）----
+    /// <summary>安全点列表（多个，避免单点导致来回抖动）。</summary>
+    public Vector2[] SafePoints;
+
+    /// <summary>当前选中的安全点索引（带迟滞选择，避免频繁切换）。</summary>
+    public int SafePointIndex;
 
     // ---- 便捷语义属性（决策层常用组合判断）----
     // 迟滞状态：当前是否处于威胁中（避免 IsThreatUrgent 在 FleeRadius 边界反复跳变）
@@ -151,6 +171,11 @@ public class Blackboard
         }
         else if (PlayerDistance >= SafeRadius)
         {
+            // 视觉条件：玩家仍可见且威胁值未消退（玩家在移动/未伪装）时保持警戒，
+            // 避免鱼"当着玩家面"解除威胁进入巡游（B3）。玩家已不可见或威胁值已消退才允许解除。
+            if (IsPlayerVisible && ThreatLevel > CalmThreatThreshold)
+                return;
+
             // 解除前检查最小持续时长：进入时间过短则仍保持威胁，防止临界区单帧抖动
             if (Time.time - _threatEnterTime >= ThreatMinHoldDuration)
                 SetThreatUrgent(false);
@@ -182,12 +207,24 @@ public class Blackboard
         IsPlayerVisible = false;
     }
 
+    /// <summary>
+    /// 写入短时威胁记忆（供群体恐惧传播等外部认知注入使用）。
+    /// 同时更新位置与时间戳，保证 HasThreatMemory 生效且 LastKnownPlayerPos
+    /// 不会被感知层（EnvironmentMonitor）当作无记忆而清空。
+    /// </summary>
+    public void RememberThreat(Vector2 position, float timestamp)
+    {
+        LastKnownPlayerPos = position;
+        LastSeenPlayerTime = timestamp;
+    }
+
     /// <summary>重置所有认知状态（用于 AI 重置或出生）。</summary>
     public void Clear()
     {
         ClearThreat();
         IsPlayerSameForm = false;
         StunUntilTime = float.NegativeInfinity;
+        IsPanting = false;
         PlayerDistance = 0f;
         PlayerDirection = Vector2.zero;
         IsFoodDetected = false;
@@ -201,6 +238,8 @@ public class Blackboard
         CurrentBehavior = "";
         RetreatTarget = Vector2.zero;
         HasRetreatTarget = false;
+        SafePoints = null;
+        SafePointIndex = 0;
         _isThreatUrgent = false;
         _threatEnterTime = float.NegativeInfinity;
     }

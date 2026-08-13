@@ -986,6 +986,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Frog
       objectReference: {fileID: 0}
+    - target: {fileID: 3274312556539779992, guid: fc35f5ca3a0f05949a6f31719cf5a085, type: 3}
+      propertyPath: _jumpsPerBurst
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1659,6 +1663,22 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 60438271284560235, guid: ec5b0cd22b5e14a4a93087cffb339f76, type: 3}
+      propertyPath: _ascendSpeedRatio
+      value: 0.805
+      objectReference: {fileID: 0}
+    - target: {fileID: 60438271284560235, guid: ec5b0cd22b5e14a4a93087cffb339f76, type: 3}
+      propertyPath: _playerLayer.m_Bits
+      value: 64
+      objectReference: {fileID: 0}
+    - target: {fileID: 60438271284560235, guid: ec5b0cd22b5e14a4a93087cffb339f76, type: 3}
+      propertyPath: _verticalSpeedRatio
+      value: 0.981
+      objectReference: {fileID: 0}
+    - target: {fileID: 4876984171877391428, guid: ec5b0cd22b5e14a4a93087cffb339f76, type: 3}
+      propertyPath: _groundLayer.m_Bits
+      value: 8
+      objectReference: {fileID: 0}
     - target: {fileID: 6228823700303011281, guid: ec5b0cd22b5e14a4a93087cffb339f76, type: 3}
       propertyPath: m_Name
       value: BubbleFish
