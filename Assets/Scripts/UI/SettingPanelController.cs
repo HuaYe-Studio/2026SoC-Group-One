@@ -65,7 +65,7 @@ public class SettingPanelController : MonoBehaviour
 
     public void ShowSettingPanel()
     {
-        UIEventCenter.TriggerMainMenuSettingPanelOpened();//触发主菜单设置面板打开事件
+        UIEventCenter.TriggerPanelOpened();//触发主菜单设置面板打开事件
 
         Time.timeScale = 0f;
         _panelCanvasGroup.DOFade(1f, 0.2f).SetUpdate(true);
@@ -79,7 +79,7 @@ public class SettingPanelController : MonoBehaviour
         _panelCanvasGroup.blocksRaycasts = false;
         _panelCanvasGroup.interactable = false;
         Time.timeScale = 1f;
-        UIEventCenter.TriggerMainMenuSettingPanelClosed();//触发主菜单设置面板关闭事件
+        UIEventCenter.TriggerPanelClosed();//触发主菜单设置面板关闭事件
     }
 
     private void SetResolution(int index)
