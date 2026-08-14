@@ -13,6 +13,7 @@ public class BTBurstHopAction : BTNode
 {
     private readonly FrogAI _frog;
     private readonly System.Func<float> _directionProvider;
+    private readonly System.Func<float, float> _directionSteer; // 可选：起跳方向修正委托（同类分离等），null 不修正
     private readonly float _baseSpeedMultiplier;
     private readonly int _jumpsPerBurst;
     private readonly float _heightDecay;      // 每次跳跃高度衰减系数（<1 = 越跳越矮）
@@ -39,13 +40,16 @@ public class BTBurstHopAction : BTNode
     /// <param name="intervalDecay">间隔衰减系数 0~1，默认 0.7（每跳加快 30%）</param>
     /// <param name="baseInterval">落地后到下一次起跳的基础间隔（秒）</param>
     /// <param name="timeout">整组超时（秒），防止卡死</param>
+    /// <param name="directionSteer">可选：起跳方向修正委托（如同类分离），入参导航方向、返回修正后方向；null 不修正</param>
     public BTBurstHopAction(FrogAI frog, System.Func<float> directionProvider,
         float baseSpeedMultiplier = 1f, int jumpsPerBurst = 3,
         float heightDecay = 0.8f, float intervalDecay = 0.7f,
-        float baseInterval = 0.15f, float timeout = 5f)
+        float baseInterval = 0.15f, float timeout = 5f,
+        System.Func<float, float> directionSteer = null)
     {
         _frog = frog;
         _directionProvider = directionProvider;
+        _directionSteer = directionSteer;
         _baseSpeedMultiplier = baseSpeedMultiplier;
         _jumpsPerBurst = Mathf.Max(1, jumpsPerBurst);
         _heightDecay = Mathf.Clamp01(heightDecay);
@@ -103,6 +107,9 @@ public class BTBurstHopAction : BTNode
             // 高度递减：第 n 跳高度 = 基础 × decay^n
             float heightMultiplier = Mathf.Pow(_heightDecay, _jumpsDone);
             float direction = _directionProvider?.Invoke() ?? 1f;
+            // 可选起跳方向修正（同类分离）：叠加在导航方向上，避免扎堆
+            if (_directionSteer != null)
+                direction = _directionSteer(direction);
             _frog.PerformHop(direction, _baseSpeedMultiplier * heightMultiplier);
             _hasLeftGround = true; // 标记本次已起跳，等离地再落地才算完成
         }

@@ -53,6 +53,9 @@ public class BubbleFishBT : MonoBehaviour
     [Tooltip("玩家高代价上限（格子上与玩家重合时的额外代价）")]
     [SerializeField] private float _playerPenaltyCost = 200f;
 
+    [Tooltip("领地外通行代价：鱼倾向待在共享领地内；须低于玩家代价，玩家紧迫威胁时仍会游出领地逃跑")]
+    [SerializeField] private float _territoryOutsideCost = 50f;
+
     [Header("逃跑设置")]
     [Tooltip("逃跑目标轮换数：从离玩家最远的 N 个安全点中轮换选取，防止路径永远固定被玩家守点")]
     [SerializeField] private int _escapePickCount = 2;
@@ -94,6 +97,10 @@ public class BubbleFishBT : MonoBehaviour
     // 群体行为：恐惧传播 + 领头机制（跟随者朝领头逃向）
     private FearSpreader _fearSpreader;
 
+    // 领地：鱼群共享领地（以 FlockId 为 key），安全点在领地分配后生成
+    private string _territoryKey;
+    private bool _safePointsReady;
+
     // 群体巡游（Boids）：成员标识 + 邻居查询缓冲（复用，非分配）
     private FlockMember _flockMember;
     private readonly List<FlockMember> _neighbors = new List<FlockMember>(16);
@@ -119,6 +126,10 @@ public class BubbleFishBT : MonoBehaviour
         if (_flockMember == null && _enableBoids)
             _flockMember = gameObject.AddComponent<FlockMember>();
 
+        // 注册共享领地：同群鱼共用一个领地（以 FlockId 为 key）
+        _territoryKey = _flockMember != null ? _flockMember.FlockId : gameObject.tag;
+        TerritoryManager.Register(_territoryKey, _fish.SpawnPosition, _regionType, isShared: true);
+
         Blackboard bb = _fish.Board;
         if (_manualSafePoints != null && _manualSafePoints.Length > 0)
         {
@@ -129,12 +140,9 @@ public class BubbleFishBT : MonoBehaviour
                     ? (Vector2)_manualSafePoints[i].position
                     : _fish.SpawnPosition;
             bb.SafePoints = manual;
+            _safePointsReady = true;
         }
-        else
-        {
-            bb.SafePoints = SafePointGenerator.GenerateSafePoints(
-                _fish.SpawnPosition, _safePointCount, _safePointRadius, _regionType, _safePointSpacing);
-        }
+        // 自动安全点延后到领地统一分配完成后再生成（见 Update 首帧），以领地中心替代出生点
 
         _root = BuildTree();
     }
@@ -203,8 +211,9 @@ public class BubbleFishBT : MonoBehaviour
     }
 
     /// <summary>
-    /// A* 额外代价：空气（区域外）高代价 + 玩家高代价。
-    /// 玩家高代价按距离线性衰减，使路径平滑绕开而非硬绕。
+    /// A* 额外代价：空气（区域外）高代价 + 领地外代价 + 玩家高代价。
+    /// 代价层级：空气(1000) > 玩家(200) > 领地外(50) > 正常(0)，
+    /// 领地外代价低于玩家代价，保证玩家紧迫威胁时鱼仍会游出领地逃跑。
     /// </summary>
     private float CostAt(Vector2 worldPos)
     {
@@ -213,6 +222,11 @@ public class BubbleFishBT : MonoBehaviour
         // 空气高代价：不在指定类型区域内
         if (_regionType != AnimalRegion.RegionType.Generic && !IsInsideRegion(worldPos))
             cost += _airCost;
+
+        // 领地外代价：低于玩家代价，鱼倾向待在共享领地内，但不被领地困死
+        Territory territory = TerritoryManager.Get(_territoryKey);
+        if (territory != null && !territory.Contains(worldPos))
+            cost += _territoryOutsideCost;
 
         // 玩家高代价：玩家可见且在该格附近 → 提升代价，路径绕开
         Blackboard bb = _fish.Board;
@@ -365,12 +379,37 @@ public class BubbleFishBT : MonoBehaviour
             _root = BuildTree();
         }
 
+        // 首帧：所有动物 Awake 完成后统一分配领地，再用领地中心生成安全点（替代出生点）
+        if (!_safePointsReady)
+        {
+            TerritoryManager.EnsureAssigned();
+            GenerateSafePointsFromTerritory();
+        }
+
+        // 低频威胁源动态化：玩家明显移动后微调领地中心（内部节流，几乎零开销）
+        TerritoryManager.RefreshForThreat();
+
         BTNode.State result = _root.Tick();
 
         _debugBranch = GetBranchName();
 
         if (_enableDebugLog)
             LogStateChange(result);
+    }
+
+    /// <summary>
+    /// 用共享领地中心生成安全点（领地分配完成后调用）；领地未分配时回退到出生点。
+    /// </summary>
+    private void GenerateSafePointsFromTerritory()
+    {
+        Blackboard bb = _fish.Board;
+        Territory territory = TerritoryManager.Get(_territoryKey);
+        Vector2 center = territory != null ? territory.Center : _fish.SpawnPosition;
+        float radius = territory != null ? territory.Radius : _safePointRadius;
+
+        bb.SafePoints = SafePointGenerator.GenerateSafePoints(
+            center, _safePointCount, radius, _regionType, _safePointSpacing);
+        _safePointsReady = true;
     }
 
     /// <summary>

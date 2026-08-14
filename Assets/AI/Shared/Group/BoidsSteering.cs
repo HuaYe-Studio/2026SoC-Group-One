@@ -75,4 +75,19 @@ public static class BoidsSteering
         Vector2 result = baseDirection + steer;
         return result.sqrMagnitude > 0.0001f ? result.normalized : baseDirection;
     }
+
+    /// <summary>
+    /// 地面动物（羊/蜘蛛等水平移动）的便捷版：把标量水平方向（±1 或连续值）包成二维向量
+    /// 走三力修正，返回修正后的水平分量。漫游仅水平移动，垂直分量丢弃。
+    /// </summary>
+    /// <param name="direction">导航水平方向（-1~1，连续）</param>
+    /// <returns>修正后的水平方向（-1~1，连续）</returns>
+    public static float ApplyHorizontal(float direction, Vector2 selfPos, Vector2 selfVel,
+        List<FlockMember> neighbors, float separationRadius,
+        float separationWeight, float alignmentWeight, float cohesionWeight, float maxSteer)
+    {
+        Vector2 result = Apply(new Vector2(direction, 0f), selfPos, selfVel, neighbors,
+            separationRadius, separationWeight, alignmentWeight, cohesionWeight, maxSteer);
+        return result.x;
+    }
 }
