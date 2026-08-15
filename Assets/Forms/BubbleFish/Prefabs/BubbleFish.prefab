@@ -18,6 +18,7 @@ GameObject:
   - component: {fileID: 3675521295355706683}
   - component: {fileID: 4876984171877391428}
   - component: {fileID: 6072381548197520463}
+  - component: {fileID: 961517969732701079}
   m_Layer: 7
   m_Name: BubbleFish
   m_TagString: BubbleFish
@@ -105,7 +106,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   grantedForm: 2
-  stunDurationAfterSpit: 2.5
+  priority: 0
+  destroyAfterDevour: 0
 --- !u!61 &4285546815232426157
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -273,6 +275,8 @@ MonoBehaviour:
   _safePointCount: 4
   _safePointRadius: 8
   _safePointSpacing: 3
+  _manualSafePoints: []
+  _wanderDwellTime: 0
   _regionType: 0
   _repathInterval: 0.8
   _arriveRadius: 0.5
@@ -280,6 +284,14 @@ MonoBehaviour:
   _airCost: 1000
   _playerPenaltyRadius: 3
   _playerPenaltyCost: 200
+  _escapePickCount: 2
+  _enableBoids: 1
+  _flockNeighborRadius: 5
+  _flockSeparationRadius: 1.2
+  _separationWeight: 0.8
+  _alignmentWeight: 0.4
+  _cohesionWeight: 0.25
+  _flockMaxSteer: 0.6
   _enableDebugLog: 0
   _debugBranch: 
 --- !u!114 &4876984171877391428
@@ -344,4 +356,27 @@ MonoBehaviour:
   _spreadCooldown: 1.5
   _maxHops: 2
   _spreadOnAttacked: 1
+  _crossSpeciesTags: []
+  _crossSpeciesFactor: 0.5
   _leaderCheckInterval: 0.5
+--- !u!95 &961517969732701079
+Animator:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6228823700303011281}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 5cf2f64defd006b4f9058eba05503160, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
