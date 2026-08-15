@@ -2,5 +2,6 @@ public enum FormType
 {
     Slime,
     Frog,
-    BubbleFish
+    BubbleFish,
+    Sheep
 }
