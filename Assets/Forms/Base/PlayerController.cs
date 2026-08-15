@@ -8,6 +8,27 @@ public class PlayerController : MonoBehaviour
 
     private readonly Dictionary<FormType, int> _formTypeToIndex = new Dictionary<FormType, int>();
     private readonly HashSet<FormType> _unlockedForms = new HashSet<FormType>();
+    private readonly HashSet<WaterZone> _waterZones = new HashSet<WaterZone>();
+
+    public bool IsInWater => _waterZones.Count > 0;
+    public bool IsSubmerged
+    {
+        get
+        {
+            foreach (WaterZone zone in _waterZones)
+                if (zone != null && zone.IsDeep)
+                    return true;
+            return false;
+        }
+    }
+
+    public void EnterWater(WaterZone zone) => _waterZones.Add(zone);
+    public void ExitWater(WaterZone zone) => _waterZones.Remove(zone);
+
+    private readonly HashSet<IceSurface> _iceZones = new HashSet<IceSurface>();
+    public bool IsOnIce => _iceZones.Count > 0;
+    public void EnterIce(IceSurface zone) => _iceZones.Add(zone);
+    public void ExitIce(IceSurface zone) => _iceZones.Remove(zone);
 
     public BaseForm ActiveForm => (allForms != null && activeFormIndex < allForms.Length)
         ? allForms[activeFormIndex]

@@ -17,6 +17,11 @@ public class PlayerHP : MonoBehaviour
     public bool IsInvincible => Time.time < _invincibilityEndTime;
     public bool IsDead => _isDead;
 
+    public void SetInvincible(float duration)
+    {
+        _invincibilityEndTime = Time.time + duration;
+    }
+
     private void Awake()
     {
         _currentHP = maxHP;
