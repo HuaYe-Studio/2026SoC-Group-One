@@ -1,17 +1,20 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 
 public class DisappearingPlatform : MonoBehaviour
 {
-
+    [Header("时间设置")]
+    [Tooltip("接触后多久消失（秒）")]
     public float delayBeforeDisappear = 0.5f;
 
+    [Tooltip("消失后多久重新出现（秒）")]
     public float delayBeforeReappear = 0.5f;
-    
+
+    [Header("组件引用")]
     public SpriteRenderer spriteRenderer;
     public Collider2D platformCollider; 
 
-    private bool isTriggered = false; //
+    private bool isTriggered = false; // 防止在倒计时期间被重复触发
 
     private void Start()
     {

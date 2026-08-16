@@ -13,7 +13,9 @@ GameObject:
   - component: {fileID: 7303180092620206180}
   - component: {fileID: 6308014947372226517}
   - component: {fileID: 2253652548588937461}
-  m_Layer: 0
+  - component: {fileID: 3093123411936236456}
+  - component: {fileID: 7360948955740394244}
+  m_Layer: 3
   m_Name: Platform
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -144,9 +146,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 45177475c4fc3894499a3a143ba267c2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  PosStart: {fileID: 8487064560450790428}
-  PosEnd: {fileID: 3869265413434195914}
+  PosA: {fileID: 8487064560450790428}
+  PosB: {fileID: 3869265413434195914}
+  PosStart: {x: 0, y: 0}
+  PosEnd: {x: 0, y: 0}
   movespeed: 2
+  pausetime: 0
 --- !u!61 &2253652548588937461
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -192,6 +197,46 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 0.97708786, y: 0.041605473}
   m_EdgeRadius: 0
+--- !u!114 &3093123411936236456
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 434299640873019375}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 709501dc38ea7c04e9ae09402d32375d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  isconnectable: 1
+--- !u!50 &7360948955740394244
+Rigidbody2D:
+  serializedVersion: 4
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 434299640873019375}
+  m_BodyType: 0
+  m_Simulated: 1
+  m_UseFullKinematicContacts: 0
+  m_UseAutoMass: 0
+  m_Mass: 1
+  m_LinearDrag: 0
+  m_AngularDrag: 0.05
+  m_GravityScale: 0
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_Interpolate: 0
+  m_SleepingMode: 1
+  m_CollisionDetection: 0
+  m_Constraints: 6
 --- !u!1 &2967957748851757613
 GameObject:
   m_ObjectHideFlags: 0
@@ -201,7 +246,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3869265413434195914}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: End
   m_TagString: Untagged
   m_Icon: {fileID: 5132851093641282708, guid: 0000000000000000d000000000000000, type: 0}
@@ -232,7 +277,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8739218918603711872}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: PF_Mech_MovingPlatform
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -266,7 +311,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8487064560450790428}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Start
   m_TagString: Untagged
   m_Icon: {fileID: 5721338939258241955, guid: 0000000000000000d000000000000000, type: 0}
