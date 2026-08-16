@@ -126,9 +126,14 @@ public class BubbleFishBT : MonoBehaviour
         if (_flockMember == null && _enableBoids)
             _flockMember = gameObject.AddComponent<FlockMember>();
 
-        // 注册共享领地：同群鱼共用一个领地（以 FlockId 为 key）
+        // 个体差异：确保存在 AnimalStats（随机基础数值 + 强度分），未挂则运行时补挂
+        AnimalStats stats = GetComponent<AnimalStats>();
+        if (stats == null)
+            stats = gameObject.AddComponent<AnimalStats>();
+
+        // 注册共享领地：同群鱼共用一个领地（以 FlockId 为 key），共享半径固定（strength 仅作 API 一致性传入）
         _territoryKey = _flockMember != null ? _flockMember.FlockId : gameObject.tag;
-        TerritoryManager.Register(_territoryKey, _fish.SpawnPosition, _regionType, isShared: true);
+        TerritoryManager.Register(_territoryKey, _fish.SpawnPosition, _regionType, isShared: true, strength: stats.Strength);
 
         Blackboard bb = _fish.Board;
         if (_manualSafePoints != null && _manualSafePoints.Length > 0)
@@ -385,9 +390,6 @@ public class BubbleFishBT : MonoBehaviour
             TerritoryManager.EnsureAssigned();
             GenerateSafePointsFromTerritory();
         }
-
-        // 低频威胁源动态化：玩家明显移动后微调领地中心（内部节流，几乎零开销）
-        TerritoryManager.RefreshForThreat();
 
         BTNode.State result = _root.Tick();
 

@@ -54,6 +54,16 @@ public class FrogBT : MonoBehaviour
     [Tooltip("修正强度上限（0~1：分离相对导航方向的最大混合比例）")]
     [SerializeField, Range(0f, 1f)] private float _flockMaxSteer = 0.7f;
 
+    [Header("Forage 障碍绕行")]
+    [Tooltip("起跳前朝目标方向探测前方障碍的层（地面/尖刺等）。0=不探测（退化为无绕行）")]
+    [SerializeField] private LayerMask _forageObstacleMask;
+
+    [Tooltip("前方障碍探测距离（米）：朝领地方向此距离内有障碍就换方向跳，避免撞墙反复卡死")]
+    [SerializeField] private float _forageProbeDistance = 2.5f;
+
+    [Tooltip("朝领地中心跳跃的偏向概率（0~1）。0.5=一半机会朝领地，其余自由随机；越大越恋家")]
+    [SerializeField, Range(0f, 1f)] private float _territoryBiasChance = 0.5f;
+
     [Header("Debug")]
     [SerializeField] private bool _enableDebugLog;
 
@@ -83,9 +93,14 @@ public class FrogBT : MonoBehaviour
         if (_flockMember == null && _enableSeparation)
             _flockMember = gameObject.AddComponent<FlockMember>();
 
-        // 注册个体领地：每只青蛙独立领地（以实例 ID 为 key）
+        // 个体差异：确保存在 AnimalStats（随机基础数值 + 强度分），未挂则运行时补挂
+        AnimalStats stats = GetComponent<AnimalStats>();
+        if (stats == null)
+            stats = gameObject.AddComponent<AnimalStats>();
+
+        // 注册个体领地：每只青蛙独立领地（以实例 ID 为 key），半径随强度分映射
         _territoryKey = gameObject.GetInstanceID().ToString();
-        TerritoryManager.Register(_territoryKey, _frog.SpawnPosition, AnimalRegion.RegionType.Generic, isShared: false);
+        TerritoryManager.Register(_territoryKey, _frog.SpawnPosition, AnimalRegion.RegionType.Generic, isShared: false, strength: stats.Strength);
 
         _root = BuildTree();
     }
@@ -153,13 +168,39 @@ public class FrogBT : MonoBehaviour
     }
 
     /// <summary>
-    /// 觅食跳跃方向：70% 概率朝领地中心（未分配时回退出生点），30% 纯随机。
+    /// 觅食跳跃方向：概率朝领地中心（未分配时回退出生点），其余自由随机。
+    /// 障碍绕行：朝领地方向被障碍/尖刺阻挡时换方向跳（2D 横板绕行=先横向离开障碍，
+    /// 而非翻越），避免反复撞墙触发防卡死。两方向都堵时纯随机。
     /// </summary>
     private float GetForageDirection()
     {
         Vector2 toCenter = GetTerritoryCenter() - (Vector2)_frog.transform.position;
         float biasDirection = Mathf.Sign(toCenter.x);
-        return Random.value < 0.7f ? biasDirection : (Random.value < 0.5f ? 1f : -1f);
+
+        // 只在天平偏领地时才探测障碍；纯随机方向不探测（自由觅食不受限）
+        if (Random.value < _territoryBiasChance)
+        {
+            if (!IsDirectionBlocked(biasDirection))
+                return biasDirection;
+
+            // 领地方向被挡 → 换反方向绕行；反方向也被挡 → 随机
+            return IsDirectionBlocked(-biasDirection)
+                ? (Random.value < 0.5f ? 1f : -1f)
+                : -biasDirection;
+        }
+
+        return Random.value < 0.5f ? 1f : -1f;
+    }
+
+    /// <summary>朝指定水平方向探测前方是否有障碍（地面/尖刺等，水平 Raycast，略抬高避免地面误判）。</summary>
+    private bool IsDirectionBlocked(float dirX)
+    {
+        if (_forageObstacleMask.value == 0)
+            return false;
+
+        Vector2 origin = (Vector2)_frog.transform.position + Vector2.up * 0.3f;
+        RaycastHit2D hit = Physics2D.Raycast(origin, new Vector2(dirX, 0f), _forageProbeDistance, _forageObstacleMask);
+        return hit.collider != null && !hit.collider.isTrigger;
     }
 
     /// <summary>觅食中心：优先用个体领地中心，未分配时回退出生点。</summary>
@@ -184,9 +225,6 @@ public class FrogBT : MonoBehaviour
             TerritoryManager.EnsureAssigned();
             _territoryReady = true;
         }
-
-        // 低频威胁源动态化：玩家明显移动后微调领地中心（内部节流，几乎零开销）
-        TerritoryManager.RefreshForThreat();
 
         BTNode.State result = _root.Tick();
 

@@ -5,14 +5,12 @@ using UnityEngine.SceneManagement;
 /// <summary>
 /// [群体] 领地注册表（静态）：负责领地请求的注册、统一分配与查询。
 /// 分配算法（贪心 + 距离场近似）：
-///   在 NavGrid2D 可通行格上，为每个请求选"得分最高"的格子作为领地中心，
-///   得分 = 到威胁源（玩家）的距离 + 到已分配领地中心的最小距离 × 权重。
-///   即"远离威胁 + 远离其他领地"的最可通行区域，天然实现均分。
-/// 防重叠（硬约束）：候选格与已分配领地中心的间距必须 ≥ (半径和 × 安全系数)，
-///   否则直接排除；全部被排除时回退到软约束候选（取分数最高格，尽量远离）。
-/// 威胁源动态化（低频、不冒犯）：玩家位移超过阈值时，以"当前领地中心"为基准
-///   重新分配，领地只会在原位置附近微调，不频繁抢位/漂移；由 RefreshForThreat
-///   节流驱动（各 BT Update 调用，内部几乎零开销）。
+///   在 NavGrid2D 可通行格上，为每个请求选"得分最高"的格子作为领地中心。
+///   得分 = 到已分配领地中心的距离惩罚（小于安全间距则强惩罚），只考虑同类间分散。
+///   领地只与出生点/同类分布有关，不受玩家等可移动物体影响。
+/// 防重叠（梯度惩罚）：与其他领地的水平间距越近惩罚越大，分配时尽量分散；
+///   若实在拥挤则取"离其他领地最远"的格，仍最大化间距、尽量不重叠。
+/// 形状：水平椭圆（X 半径 > Y 半径），更贴合 2D 横板长条平台。
 /// 场景切换：Register 检测到场景变化时自动 Reset，避免旧领地数据残留导致
 ///   重新进入场景后 key 去重跳过注册。
 /// 时序：动物在 Awake 注册请求；所有 Awake 跑完后（Unity 保证早于首个 Update），
@@ -26,6 +24,7 @@ public static class TerritoryManager
         public Vector2 SpawnPos;
         public AnimalRegion.RegionType RegionType;
         public bool IsShared;
+        public float Strength; // 个体强度分 0~1：决定个体领地半径
     }
 
     private static readonly List<Request> _pending = new List<Request>();
@@ -33,17 +32,19 @@ public static class TerritoryManager
     private static readonly List<Vector2> _assignedCenters = new List<Vector2>();
 
     private static string _sceneKey;           // 当前场景名：检测场景切换以清理旧数据
-    private static Vector2? _lastThreatPos;    // 上次分配时记录的威胁源（玩家）位置
-    private static float _lastThreatCheckTime; // 上次威胁源检查时间（节流）
 
     // ---- 分配参数（默认值，可由具体 BT 覆盖）----
-    private static float _individualRadius = 6f;   // 个体领地半径
-    private static float _sharedRadius = 15f;      // 共享群领地半径
-    private static float _searchRadius = 20f;      // 基准点周围的领地中心搜索半径
-    private static float _occupiedWeight = 1f;     // 已占用距离权重（相对威胁距离）
-    private static float _minSeparationFactor = 1.1f;    // 硬约束安全系数：中心距 ≥ (半径和 × 此系数)
-    private static float _threatReassignDistance = 10f;  // 玩家位移超过该值（米）才触发重分配（不冒犯）
-    private static float _threatRefreshInterval = 1.5f;  // 威胁源检查节流（秒）
+    // 个体椭圆半径：X 沿地形（宽），Y 沿高度（窄，避免覆盖平台上方/下方）
+    private static float _individualRadiusXMin = 3.5f;  // 个体领地下半宽最小（最弱个体）
+    private static float _individualRadiusXMax = 7f;    // 个体领地下半宽最大（最强个体）
+    private static float _individualRadiusYMin = 1.5f;  // 个体领地高度最小（最弱个体）
+    private static float _individualRadiusYMax = 3f;    // 个体领地高度最大（最强个体）
+    private static float _sharedRadiusX = 15f;          // 共享群领地半宽（沿地形）
+    private static float _sharedRadiusY = 4f;           // 共享群领地高度（沿垂直）
+    private static float _searchRadius = 8f;           // 基准点周围的领地中心搜索半径（贴近出生点，避免领地过远够不到）
+    private static float _occupiedWeight = 1f;     // 已占用距离权重（同类间分散程度）
+    private static float _minSeparationFactor = 1.1f;    // 安全间距系数：水平中心距 ≥ (半径X和 × 此系数) 视为不冲突
+    private static float _conflictPenalty = 10f;   // 冲突惩罚系数：越近惩罚越大，保证尽量分散
 
     /// <summary>
     /// 注册一个领地请求。同 OwnerKey 去重（个体/共享群的多个成员共享同一领地）。
@@ -52,8 +53,9 @@ public static class TerritoryManager
     /// <param name="spawnPos">出生点（领地中心搜索的基准）</param>
     /// <param name="regionType">区域类型约束（Generic=不限定）</param>
     /// <param name="isShared">是否共享领地（鱼群等）；共享半径更大</param>
+    /// <param name="strength">个体强度分 0~1（默认 1）：个体领地半径在 [min,max] 间按强度映射；共享领地忽略</param>
     public static void Register(string ownerKey, Vector2 spawnPos,
-        AnimalRegion.RegionType regionType, bool isShared)
+        AnimalRegion.RegionType regionType, bool isShared, float strength = 1f)
     {
         if (string.IsNullOrEmpty(ownerKey)) return;
 
@@ -68,13 +70,14 @@ public static class TerritoryManager
             OwnerKey = ownerKey,
             SpawnPos = spawnPos,
             RegionType = regionType,
-            IsShared = isShared
+            IsShared = isShared,
+            Strength = Mathf.Clamp01(strength)
         });
     }
 
     /// <summary>
     /// 统一分配所有待分配的领地。无待分配或网格不可用时直接返回（不报错，由调用方兜底）。
-    /// 请求列表保留（供动态重分配复用），调用方以首帧标志保证只执行一次。
+    /// 请求列表保留（供场景重分配复用），调用方以首帧标志保证只执行一次。
     /// </summary>
     public static void EnsureAssigned()
     {
@@ -84,34 +87,7 @@ public static class TerritoryManager
         if (grid == null) return;
         grid.EnsureBaked();
 
-        _lastThreatPos = FindThreat();
-        ReassignAll(grid, _lastThreatPos);
-    }
-
-    /// <summary>
-    /// 低频威胁源动态化：节流检查玩家位置，位移超过阈值时以当前领地中心为基准重新分配。
-    /// 设计为"不冒犯"：只在新威胁出现且玩家明显移动后才触发；重分配基准=当前中心，
-    /// 领地只在原位置附近微调，不会频繁抢位或漂移。无玩家/无网格/无请求时直接返回。
-    /// </summary>
-    public static void RefreshForThreat()
-    {
-        if (Time.time < _lastThreatCheckTime) return;
-        _lastThreatCheckTime = Time.time + _threatRefreshInterval;
-
-        if (_pending.Count == 0) return;
-
-        Vector2? threatPos = FindThreat();
-        if (!threatPos.HasValue) return;
-        if (_lastThreatPos.HasValue &&
-            Vector2.Distance(threatPos.Value, _lastThreatPos.Value) < _threatReassignDistance)
-            return;
-
-        NavGrid2D grid = NavGrid2D.Instance;
-        if (grid == null) return;
-        grid.EnsureBaked();
-
-        _lastThreatPos = threatPos;
-        ReassignAll(grid, threatPos.Value);
+        ReassignAll(grid);
     }
 
     /// <summary>获取已分配的领地；未分配返回 null（调用方应回退到出生点）。</summary>
@@ -140,8 +116,6 @@ public static class TerritoryManager
         _pending.Clear();
         _assigned.Clear();
         _assignedCenters.Clear();
-        _lastThreatPos = null;
-        _lastThreatCheckTime = 0f;
     }
 
     /// <summary>
@@ -156,45 +130,47 @@ public static class TerritoryManager
     }
 
     /// <summary>
-    /// 逐个（重新）分配所有请求。
-    /// 首次分配基准 = 出生点；动态重分配基准 = 当前领地中心（尽量不漂移，实现"不冒犯"）。
+    /// 逐个分配所有请求。基准 = 出生点（领地与出生点/同类分布相关，不受玩家影响）。
+    /// 注意：本轮已分配的领地会立即进入 _assigned，供后续请求"看到"并避开，
+    ///   否则所有请求都会基于空列表打分、落到同一个高分格（重合 bug 的根因）。
     /// </summary>
-    private static void ReassignAll(NavGrid2D grid, Vector2? threatPos)
+    private static void ReassignAll(NavGrid2D grid)
     {
-        Dictionary<string, Territory> next = new Dictionary<string, Territory>();
-        List<Vector2> centers = new List<Vector2>();
+        // 清空旧分配：本轮边分配边写入，让后续请求能看到前面已分配的领地
+        _assigned.Clear();
+        _assignedCenters.Clear();
 
         foreach (Request req in _pending)
         {
-            Vector2 basePos = _assigned.TryGetValue(req.OwnerKey, out Territory old)
-                ? old.Center   // 动态重分配：以当前领地中心为基准
-                : req.SpawnPos; // 首次分配：以出生点为基准
-            Territory t = Assign(grid, req, basePos, threatPos);
-            next[req.OwnerKey] = t;
-            centers.Add(t.Center);
+            Territory t = Assign(grid, req, req.SpawnPos);
+            _assigned[req.OwnerKey] = t;      // 立即可见，后续请求据此避开
+            _assignedCenters.Add(t.Center);
         }
-
-        _assigned.Clear();
-        foreach (KeyValuePair<string, Territory> kv in next)
-            _assigned[kv.Key] = kv.Value;
-        _assignedCenters.Clear();
-        _assignedCenters.AddRange(centers);
     }
 
     /// <summary>
-    /// 为单个请求贪心选领地中心：遍历网格可通行格，取"威胁距离 + 已占用距离加权"最高者。
-    /// 硬约束：与已分配领地中心距必须 ≥ (半径和 × 安全系数)，否则排除；
-    ///   全部被排除时回退软约束候选（分数最高格，最大化间距）。
-    /// 无可用格/无威胁源时兜底返回基准点。
+    /// 为单个请求贪心选领地中心：遍历网格可通行格，取"与其他领地的水平间距惩罚"最小者。
+    /// 惩罚是梯度（不是硬排除）：间距 < 安全间距时按"重叠量"强惩罚，间距 ≥ 安全间距不惩罚；
+    ///   从而保证每个请求都尽量分散，即使拥挤也取"离其他领地最远"的格。
+    /// 无可用格时兜底返回基准点。
     /// </summary>
-    private static Territory Assign(NavGrid2D grid, Request req, Vector2 basePos, Vector2? threatPos)
+    private static Territory Assign(NavGrid2D grid, Request req, Vector2 basePos)
     {
-        float radius = req.IsShared ? _sharedRadius : _individualRadius;
+        // 椭圆半径随强度分映射（X 宽、Y 窄）；共享群固定
+        float radiusX, radiusY;
+        if (req.IsShared)
+        {
+            radiusX = _sharedRadiusX;
+            radiusY = _sharedRadiusY;
+        }
+        else
+        {
+            radiusX = Mathf.Lerp(_individualRadiusXMin, _individualRadiusXMax, req.Strength);
+            radiusY = Mathf.Lerp(_individualRadiusYMin, _individualRadiusYMax, req.Strength);
+        }
 
-        Vector2 best = basePos;                // 硬约束下最佳候选
-        Vector2 fallback = basePos;            // 软约束兜底候选
+        Vector2 best = basePos;                // 惩罚最小（最分散）的候选
         float bestScore = float.NegativeInfinity;
-        float fallbackScore = float.NegativeInfinity;
 
         for (int x = 0; x < grid.Width; x++)
         {
@@ -210,40 +186,32 @@ public static class TerritoryManager
                     !AnimalRegionRegistry.Contains(world, req.RegionType))
                     continue;
 
-                // 软约束分数：远离威胁源 + 远离其他领地（不含自己）
-                float score = 0f;
-                if (threatPos.HasValue)
-                    score += Vector2.Distance(world, threatPos.Value);
-
-                float minOccupied = float.MaxValue;
+                // 分数 = 与最近其他领地的水平间距惩罚（梯度，不是硬排除）
+                // 间距 < 安全间距时按重叠量强惩罚；间距 ≥ 安全间距不惩罚（0 分）。
+                float minDistX = float.MaxValue;   // 与最近其他领地的水平间距
+                float minNeededX = 0f;             // 对应的所需安全间距
                 foreach (Territory other in _assigned.Values)
                 {
                     if (other.OwnerKey == req.OwnerKey) continue;
-                    float d = Vector2.Distance(world, other.Center);
-                    if (d < minOccupied) minOccupied = d;
-                }
-                if (minOccupied < float.MaxValue)
-                    score += minOccupied * _occupiedWeight;
-
-                if (score > fallbackScore)
-                {
-                    fallbackScore = score;
-                    fallback = world;
-                }
-
-                // 硬约束：与已分配领地（不含自己）的中心距必须 ≥ (半径和 × 安全系数)
-                bool conflict = false;
-                foreach (Territory other in _assigned.Values)
-                {
-                    if (other.OwnerKey == req.OwnerKey) continue;
-                    float minDist = (radius + other.Radius) * _minSeparationFactor;
-                    if (Vector2.Distance(world, other.Center) < minDist)
+                    float dx = Mathf.Abs(world.x - other.Center.x);
+                    if (dx < minDistX)
                     {
-                        conflict = true;
-                        break;
+                        minDistX = dx;
+                        minNeededX = (radiusX + other.RadiusX) * _minSeparationFactor;
                     }
                 }
-                if (conflict) continue;
+
+                float score;
+                if (minDistX < float.MaxValue && minDistX < minNeededX)
+                {
+                    // 冲突：水平间距不足，按重叠量强惩罚（越近分越低）
+                    score = (minDistX - minNeededX) * _conflictPenalty;
+                }
+                else
+                {
+                    // 无冲突：间距充足，不惩罚（同分下优先取离其他领地更远的格）
+                    score = minDistX < float.MaxValue ? minDistX * _occupiedWeight : 0f;
+                }
 
                 if (score > bestScore)
                 {
@@ -253,15 +221,6 @@ public static class TerritoryManager
             }
         }
 
-        // 硬约束下无可用格 → 回退软约束候选（最大化间距，尽量不重叠）
-        Vector2 center = bestScore > float.NegativeInfinity ? best : fallback;
-        return new Territory { OwnerKey = req.OwnerKey, Center = center, Radius = radius, IsShared = req.IsShared };
-    }
-
-    /// <summary>查找威胁源（玩家）位置；未找到返回 null。</summary>
-    private static Vector2? FindThreat()
-    {
-        GameObject player = GameObject.FindGameObjectWithTag("Player");
-        return player != null ? (Vector2?)player.transform.position : null;
+        return new Territory { OwnerKey = req.OwnerKey, Center = best, RadiusX = radiusX, RadiusY = radiusY, IsShared = req.IsShared };
     }
 }

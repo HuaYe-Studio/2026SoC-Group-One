@@ -4,6 +4,9 @@ using UnityEngine;
 /// <summary>
 /// A* 寻路网格：场景挂一个，Start 时按所有 AnimalRegion 的包围盒烘焙网格，
 /// 并用 Physics2D 采样物理障碍（Tilemap 地面等）生成 blocked 数组。
+/// 危险物（_hazardTags 中配置的 Tag，如 Spike）所在格也会被标记为不可通行，
+/// 使领地分配/A* 寻路自动避开，新增危险物只需在 Inspector 配置 Tag。
+/// 配置 _groundLayers 后还会做悬空检测：无地面支撑的格子视为不可通行。
 /// 网格只存"是否物理可通行"；区域外代价 / 玩家高代价等运行时动态代价
 /// 由调用方在 FindPath 时通过 costAt 委托传入，网格保持通用。
 /// 可供鱼（水域）、蜘蛛（蜘蛛网）等共用同一个网格实例。
@@ -17,6 +20,18 @@ public class NavGrid2D : MonoBehaviour
 
     [Tooltip("物理障碍层：这些层上的碰撞体所在格标记为不可通行（Tilemap 地面/岩石等）")]
     [SerializeField] private LayerMask _obstacleLayers;
+
+    [Tooltip("危险物 Tag 列表：命中这些 Tag 的碰撞体所在格一律不可通行（无论层配置）。\n如尖刺 Spike，可配置扩展后续危险物，不写死在代码")]
+    [SerializeField] private string[] _hazardTags = { "Spike" };
+
+    [Tooltip("危险物扫描层：默认 All=全层扫描，配合 Tag 过滤（烘焙期一次扫描，开销可忽略）")]
+    [SerializeField] private LayerMask _hazardLayers = ~0;
+
+    [Tooltip("地面支撑层：用于悬空检测。配置后，格中心下方无地面支撑（Raycast 未命中）的格子标记为不可通行，\n防止领地/A* 落在悬空格（如平台边缘外的空气区）")]
+    [SerializeField] private LayerMask _groundLayers;
+
+    [Tooltip("是否启用悬空检测（需 _groundLayers 非空才生效）")]
+    [SerializeField] private bool _enableGroundSupportCheck = true;
 
     [Tooltip("格中心到障碍物的间隙：采样盒 = 格大小 × 此系数，略小于格避免贴边格误判")]
     [SerializeField] private float _clearanceFactor = 0.8f;
@@ -87,6 +102,32 @@ public class NavGrid2D : MonoBehaviour
                 {
                     Collider2D hit = Physics2D.OverlapBox(center, sampleSize, 0f, _obstacleLayers);
                     _blocked[x, y] = hit != null && !hit.isTrigger;
+                }
+
+                // 危险物识别：命中 _hazardTags 中任意 Tag 的碰撞体所在格一律不可通行
+                // （不写死具体危险物，新增危险物只需在 Inspector 配置 Tag）
+                if (!_blocked[x, y] && _hazardTags.Length > 0)
+                {
+                    Collider2D hazardHit = Physics2D.OverlapBox(center, sampleSize, 0f, _hazardLayers);
+                    if (hazardHit != null)
+                    {
+                        for (int t = 0; t < _hazardTags.Length; t++)
+                        {
+                            if (hazardHit.CompareTag(_hazardTags[t]))
+                            {
+                                _blocked[x, y] = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // 悬空检测：格中心下方无地面支撑则视为不可通行（防止领地/寻路落在悬空格）
+                if (!_blocked[x, y] && _enableGroundSupportCheck && _groundLayers.value != 0)
+                {
+                    RaycastHit2D groundHit = Physics2D.Raycast(center, Vector2.down, _cellSize * 2f, _groundLayers);
+                    if (groundHit.collider == null || groundHit.collider.isTrigger)
+                        _blocked[x, y] = true;
                 }
             }
         }

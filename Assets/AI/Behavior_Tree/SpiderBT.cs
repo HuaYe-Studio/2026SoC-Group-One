@@ -71,9 +71,14 @@ public class SpiderBT : MonoBehaviour
         if (_flockMember == null && _enableBoids)
             _flockMember = gameObject.AddComponent<FlockMember>();
 
-        // 注册个体领地：每只蜘蛛独立领地（限定在蜘蛛网区域内）
+        // 个体差异：确保存在 AnimalStats（随机基础数值 + 强度分），未挂则运行时补挂
+        AnimalStats stats = GetComponent<AnimalStats>();
+        if (stats == null)
+            stats = gameObject.AddComponent<AnimalStats>();
+
+        // 注册个体领地：每只蜘蛛独立领地（限定在蜘蛛网区域内），半径随强度分映射
         _territoryKey = gameObject.GetInstanceID().ToString();
-        TerritoryManager.Register(_territoryKey, _spider.SpawnPosition, AnimalRegion.RegionType.SpiderWeb, isShared: false);
+        TerritoryManager.Register(_territoryKey, _spider.SpawnPosition, AnimalRegion.RegionType.SpiderWeb, isShared: false, strength: stats.Strength);
 
         _root = BuildTree();
     }
@@ -147,9 +152,6 @@ public class SpiderBT : MonoBehaviour
             TerritoryManager.EnsureAssigned();
             _territoryReady = true;
         }
-
-        // 低频威胁源动态化：玩家明显移动后微调领地中心（内部节流，几乎零开销）
-        TerritoryManager.RefreshForThreat();
 
         BTNode.State result = _root.Tick();
 
