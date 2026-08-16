@@ -18,36 +18,41 @@ public class SelectableOption : MonoBehaviour, IPointerEnterHandler, IPointerExi
     [SerializeField] private GameObject _right;
     [SerializeField] private float _scaleAmount;
     [SerializeField] private GameObject _tips;
+    [SerializeField] private bool _isWithPanel;
     private Vector3 _originalScale;
     private RectTransform _optionRectTransform;
     private RectTransform _tipsRectTransform;
+    private CanvasGroup _canvasGroup;
 
     void Awake()
     {
         _originalScale = transform.localScale;
         _optionRectTransform = GetComponent<RectTransform>();
+        _canvasGroup = GetComponent<CanvasGroup>();
         if (_tips != null)
         {
             _tipsRectTransform = _tips.GetComponent<RectTransform>();
         }
     }
 
-    // Start is called before the first frame update
-    void Start()
+    void OnEnable()
     {
-
+        if (_isWithPanel)
+        {
+            UIEventCenter.OnPanelOpened += OnPanelOpend;
+            UIEventCenter.OnPanelClosed += OnPanelClosed;
+        }
     }
 
-    // Update is called once per frame
-    void Update()
+    void OnDisable()
     {
-
+        if (_isWithPanel)
+        {
+            UIEventCenter.OnPanelOpened -= OnPanelOpend;
+            UIEventCenter.OnPanelClosed -= OnPanelClosed;
+        }
     }
 
-    void OnRectTransformDimensionsChange()
-    {
-
-    }
     //实现接口成员
     public void OnPointerEnter(PointerEventData e) => Selected();
     public void OnSelect(BaseEventData e) => Selected();
@@ -67,17 +72,17 @@ public class SelectableOption : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
             //适配tips位置，避免超出屏幕范围
             //x轴方向UI布局还有点想法，暂时不做适配.
-            if( _tipsRectTransform.position.y + _tipsRectTransform.rect.height/2f * _tipsRectTransform.lossyScale.y > Screen.height)
+            if (_tipsRectTransform.position.y + _tipsRectTransform.rect.height / 2f * _tipsRectTransform.lossyScale.y > Screen.height)
             {
                 Debug.Log("UI:TipPanel位置重新适配");
-                _tipsRectTransform.position = new Vector2(_tipsRectTransform.position.x, Screen.height - _tipsRectTransform.rect.height/2f * _tipsRectTransform.lossyScale.y);
+                _tipsRectTransform.position = new Vector2(_tipsRectTransform.position.x, Screen.height - _tipsRectTransform.rect.height / 2f * _tipsRectTransform.lossyScale.y);
             }
-            else if( _tipsRectTransform.position.y - _tipsRectTransform.rect.height/2f * _tipsRectTransform.lossyScale.y < 0)
+            else if (_tipsRectTransform.position.y - _tipsRectTransform.rect.height / 2f * _tipsRectTransform.lossyScale.y < 0)
             {
                 Debug.Log("UI:TipPanel位置重新适配");
-                _tipsRectTransform.position = new Vector2(_tipsRectTransform.position.x, _tipsRectTransform.rect.height/2f * _tipsRectTransform.lossyScale.y);
+                _tipsRectTransform.position = new Vector2(_tipsRectTransform.position.x, _tipsRectTransform.rect.height / 2f * _tipsRectTransform.lossyScale.y);
             }
-            
+
         }
     }
 
@@ -91,5 +96,19 @@ public class SelectableOption : MonoBehaviour, IPointerEnterHandler, IPointerExi
         {
             _tips.SetActive(false);
         }
+    }
+
+    private void OnPanelOpend()
+    {
+        _canvasGroup.DOFade(0f, 0.2f).SetUpdate(true);
+        _canvasGroup.blocksRaycasts = false;
+        _canvasGroup.interactable = false;
+    }
+
+    private void OnPanelClosed()
+    {
+        _canvasGroup.DOFade(1f, 0.2f).SetUpdate(true);
+        _canvasGroup.blocksRaycasts = true;
+        _canvasGroup.interactable = true;
     }
 }

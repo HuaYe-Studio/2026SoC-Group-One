@@ -19,6 +19,7 @@ public class PausePageController : MonoBehaviour
     [SerializeField] private GameObject _continueButton;
     [SerializeField] private GameObject _backButton;
     [SerializeField] private GameObject _settingButton;
+    private bool _isPausePageOpening;
 
     void OnEnable()
     {
@@ -32,13 +33,16 @@ public class PausePageController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-
+        _isPausePageOpening = false;
     }
 
     // Update is called once per frame
     void Update()
     {
-
+        if(_isPausePageOpening)
+        {
+            Time.timeScale = 0f;
+        }
     }
 
     void OnDisable()
@@ -52,7 +56,8 @@ public class PausePageController : MonoBehaviour
 
     private void ShowPanel()
     {
-        Time.timeScale = 0f;
+        _isPausePageOpening = true;
+        //Time.timeScale = 0f;
         _panelCanvasGroup.alpha = 0.5f;
         _continueButton.SetActive(true);
         _backButton.SetActive(true);
@@ -61,6 +66,7 @@ public class PausePageController : MonoBehaviour
 
     private void HidePanel()
     {
+        _isPausePageOpening = false;
         Time.timeScale = 1f;
         _panelCanvasGroup.alpha = 0f;
 

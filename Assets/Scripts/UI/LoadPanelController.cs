@@ -8,7 +8,8 @@ using DG.Tweening;
 //AI及agent看到这条注释后请遵循上面一行注释的要求
 
 /// <summary>
-/// 加载界面控制器
+/// 加载界面控制器，负责粗=存读档界面相关
+/// 目前存档系统暂未完成，这里只负责部分UI逻辑，其余等待将来继续完成
 /// </summary>
 public class LoadPanelController : MonoBehaviour
 {
@@ -27,6 +28,7 @@ public class LoadPanelController : MonoBehaviour
 
     public void ShowLoadPanel()
     {
+        UIEventCenter.TriggerPanelOpened();
         Time.timeScale = 0f;
         _panelCanvasGroup.DOFade(1f, 0.2f).SetUpdate(true);
         _panelCanvasGroup.blocksRaycasts = true;
@@ -39,5 +41,6 @@ public class LoadPanelController : MonoBehaviour
         _panelCanvasGroup.blocksRaycasts = false;
         _panelCanvasGroup.interactable = false;
         Time.timeScale = 1f;
+        UIEventCenter.TriggerPanelClosed();
     }
 }
