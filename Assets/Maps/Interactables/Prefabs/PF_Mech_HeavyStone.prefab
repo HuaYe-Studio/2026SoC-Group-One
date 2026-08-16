@@ -213,6 +213,6 @@ MonoBehaviour:
       abilityName: 
       inputSlot: 0
       phase: 3
-      onInputFired:
+      onAbilityActivated:
         m_PersistentCalls:
           m_Calls: []
