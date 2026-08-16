@@ -72,6 +72,21 @@ public class PlayerHP : MonoBehaviour
         MockEventCenter.TriggerPlayerHeal(_currentHP, maxHP);
     }
 
+    public void Respawn()
+    {
+        _isDead = false;
+        _currentHP = maxHP;
+        _invincibilityEndTime = 0f;
+        if (_flashCoroutine != null)
+        {
+            StopCoroutine(_flashCoroutine);
+            _flashCoroutine = null;
+        }
+        if (PlayerInputReader.HasInstance)
+            PlayerInputReader.Instance.enabled = true;
+        MockEventCenter.TriggerCheckPlayerHP(_currentHP, maxHP);
+    }
+
     private void Die()
     {
         _isDead = true;

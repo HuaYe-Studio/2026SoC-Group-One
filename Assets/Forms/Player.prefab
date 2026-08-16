@@ -329,7 +329,7 @@ MonoBehaviour:
   - abilityName: Expand Hold
     inputSlot: 2
     phase: 0
-    onInputFired:
+    onAbilityActivated:
       m_PersistentCalls:
         m_Calls:
         - m_Target: {fileID: 4341644968850883059}
@@ -347,7 +347,7 @@ MonoBehaviour:
   - abilityName: Expand Release
     inputSlot: 2
     phase: 2
-    onInputFired:
+    onAbilityActivated:
       m_PersistentCalls:
         m_Calls:
         - m_Target: {fileID: 4341644968850883059}
@@ -365,7 +365,7 @@ MonoBehaviour:
   - abilityName: Dive Hold
     inputSlot: 3
     phase: 0
-    onInputFired:
+    onAbilityActivated:
       m_PersistentCalls:
         m_Calls:
         - m_Target: {fileID: 4341644968850883059}
@@ -383,7 +383,7 @@ MonoBehaviour:
   - abilityName: Dive Release
     inputSlot: 3
     phase: 2
-    onInputFired:
+    onAbilityActivated:
       m_PersistentCalls:
         m_Calls:
         - m_Target: {fileID: 4341644968850883059}
@@ -801,7 +801,7 @@ MonoBehaviour:
   - abilityName: Jump Press
     inputSlot: 1
     phase: 0
-    onInputFired:
+    onAbilityActivated:
       m_PersistentCalls:
         m_Calls:
         - m_Target: {fileID: 8842012382244513926}
@@ -819,7 +819,7 @@ MonoBehaviour:
   - abilityName: Jump Release
     inputSlot: 1
     phase: 2
-    onInputFired:
+    onAbilityActivated:
       m_PersistentCalls:
         m_Calls:
         - m_Target: {fileID: 8842012382244513926}
@@ -887,6 +887,7 @@ GameObject:
   - component: {fileID: 1506354432520958816}
   - component: {fileID: 8084950948594842238}
   - component: {fileID: 4925435840266706490}
+  - component: {fileID: 714463921836420346}
   m_Layer: 6
   m_Name: Player
   m_TagString: Player
@@ -987,3 +988,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxStamina: 100
   recoverPerSecond: 30
+--- !u!114 &714463921836420346
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6837292219011752717}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b4089d5287e14a46bfa8479452749d8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  elementDefinitions:
+  - type: 0
+    binding:
+      abilityName: 
+      inputSlot: 0
+      phase: 0
+      onAbilityActivated:
+        m_PersistentCalls:
+          m_Calls: []
