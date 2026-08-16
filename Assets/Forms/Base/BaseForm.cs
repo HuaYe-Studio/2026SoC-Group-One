@@ -41,6 +41,7 @@ public abstract class BaseForm : MonoBehaviour
     protected Animator animator;
     protected PlayerController controller;
     protected PlayerStamina stamina;
+    protected PlayerHP hp;
 
     [Header("Ability Input")]
     [SerializeField] private List<AbilityInputBinding> abilityBindings = new();
@@ -78,6 +79,7 @@ public abstract class BaseForm : MonoBehaviour
         spriteRenderer = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
         stamina = ctrl.GetComponent<PlayerStamina>();
+        hp = ctrl.GetComponent<PlayerHP>();
     }
 
     protected virtual bool CanMove() =>
@@ -252,7 +254,7 @@ public abstract class BaseForm : MonoBehaviour
 
         foreach (var binding in abilityBindings)
         {
-            System.Action handler = () => binding.onInputFired.Invoke();
+            System.Action handler = () => binding.onAbilityActivated.Invoke();
             _bindingHandlers[binding] = handler;
             SubscribeToSlot(binding.inputSlot, binding.phase, handler);
         }
@@ -395,11 +397,11 @@ public abstract class BaseForm : MonoBehaviour
 
     public void AddAbilityBinding(AbilityInputBinding binding)
     {
-        if (binding == null) return;
+        if (binding == null || abilityBindings.Contains(binding)) return;
         abilityBindings.Add(binding);
         if (PlayerInputReader.HasInstance)
         {
-            System.Action handler = () => binding.onInputFired.Invoke();
+            System.Action handler = () => binding.onAbilityActivated.Invoke();
             _bindingHandlers[binding] = handler;
             SubscribeToSlot(binding.inputSlot, binding.phase, handler);
         }

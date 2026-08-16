@@ -10,7 +10,6 @@ GameObject:
   m_Component:
   - component: {fileID: 5335937308866993425}
   - component: {fileID: 6532058560732875182}
-  - component: {fileID: 3950375090566951721}
   - component: {fileID: 7801959032206774648}
   m_Layer: 0
   m_Name: PF_Mech_DisappearingPlatform
@@ -86,22 +85,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!114 &3950375090566951721
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2047741038217859831}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: edd0013cc147e9948879d999f4ea1015, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  delayBeforeDisappear: 0.5
-  delayBeforeReappear: 0.5
-  spriteRenderer: {fileID: 0}
-  platformCollider: {fileID: 0}
 --- !u!61 &7801959032206774648
 BoxCollider2D:
   m_ObjectHideFlags: 0
