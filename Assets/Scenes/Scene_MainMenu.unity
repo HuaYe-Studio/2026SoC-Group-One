@@ -1198,7 +1198,7 @@ MonoBehaviour:
   _loadButton: {fileID: 1417985287}
   _settingButton: {fileID: 121753074}
   _exitButton: {fileID: 525785227}
-  _startSceneName: SampleScene
+  _startSceneName: WetLand_Main
 --- !u!4 &2071453014
 Transform:
   m_ObjectHideFlags: 0

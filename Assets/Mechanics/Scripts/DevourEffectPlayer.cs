@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using DG.Tweening;
+using Cinemachine;
 
 public class DevourEffectPlayer : MonoBehaviour
 {
@@ -17,18 +18,22 @@ public class DevourEffectPlayer : MonoBehaviour
     [SerializeField] private float shakeDuration = 0.3f;
 
     private Camera _mainCam;
+    private CinemachineBrain _brain;
     private float _originalOrthoSize;
     private Vector3 _originalPosition;
 
     private void Awake()
     {
         _mainCam = GetComponent<Camera>();
+        _brain = _mainCam != null ? _mainCam.GetComponent<CinemachineBrain>() : null;
         _originalOrthoSize = _mainCam.orthographicSize;
         _originalPosition = transform.position;
     }
 
     public IEnumerator PlayZoomIn(Vector3 targetPosition)
     {
+        if (_brain != null) _brain.enabled = false;
+
         Vector3 targetCamPos = new Vector3(targetPosition.x, targetPosition.y, transform.position.z);
 
         transform.DOMove(targetCamPos, zoomInDuration)
@@ -92,6 +97,8 @@ public class DevourEffectPlayer : MonoBehaviour
         }
 
         yield return new WaitForSecondsRealtime(zoomOutDuration);
+
+        if (_brain != null) _brain.enabled = true;
     }
 
     public void ResetAll()
@@ -103,5 +110,6 @@ public class DevourEffectPlayer : MonoBehaviour
             _mainCam.orthographicSize = _originalOrthoSize;
         }
         transform.position = _originalPosition;
+        if (_brain != null) _brain.enabled = true;
     }
 }
