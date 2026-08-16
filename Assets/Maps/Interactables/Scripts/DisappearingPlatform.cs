@@ -1,20 +1,20 @@
-using System.Collections;
+锘縰sing System.Collections;
 using UnityEngine;
 
 public class DisappearingPlatform : MonoBehaviour
 {
-    [Header("时间设置")]
-    [Tooltip("接触后多久消失（秒）")]
+    [Header("鏃堕棿璁剧疆")]
+    [Tooltip("鎺ヨЕ鍚庡涔呮秷澶憋紙绉掞級")]
     public float delayBeforeDisappear = 0.5f;
 
-    [Tooltip("消失后多久重新出现（秒）")]
+    [Tooltip("娑堝け鍚庡涔呴噸鏂板嚭鐜帮紙绉掞級")]
     public float delayBeforeReappear = 0.5f;
 
-    [Header("组件引用")]
+    [Header("缁勪欢寮曠敤")]
     public SpriteRenderer spriteRenderer;
     public Collider2D platformCollider; 
 
-    private bool isTriggered = false; // 防止在倒计时期间被重复触发
+    private bool isTriggered = false; // 闃叉鍦ㄥ�掕鏃舵湡闂磋閲嶅瑙﹀彂
 
     private void Start()
     {
