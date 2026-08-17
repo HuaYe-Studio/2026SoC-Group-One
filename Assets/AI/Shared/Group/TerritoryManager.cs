@@ -41,10 +41,10 @@ public static class TerritoryManager
     private static float _individualRadiusYMax = 3f;    // 个体领地高度最大（最强个体）
     private static float _sharedRadiusX = 15f;          // 共享群领地半宽（沿地形）
     private static float _sharedRadiusY = 4f;           // 共享群领地高度（沿垂直）
-    private static float _searchRadius = 8f;           // 基准点周围的领地中心搜索半径（贴近出生点，避免领地过远够不到）
+    private static float _searchRadius = 12f;          // 基准点周围的领地中心搜索半径（12m：既不过远也够分散）
     private static float _occupiedWeight = 1f;     // 已占用距离权重（同类间分散程度）
     private static float _minSeparationFactor = 1.1f;    // 安全间距系数：水平中心距 ≥ (半径X和 × 此系数) 视为不冲突
-    private static float _conflictPenalty = 10f;   // 冲突惩罚系数：越近惩罚越大，保证尽量分散
+    private static float _conflictPenalty = 30f;   // 冲突惩罚系数：越近惩罚越大，保证尽量分散（30=宁可远挤也不重叠）
 
     /// <summary>
     /// 注册一个领地请求。同 OwnerKey 去重（个体/共享群的多个成员共享同一领地）。
@@ -172,6 +172,11 @@ public static class TerritoryManager
         Vector2 best = basePos;                // 惩罚最小（最分散）的候选
         float bestScore = float.NegativeInfinity;
 
+        // 个体差异化偏移：基于实例 ID 的哈希，给每个请求一个固定的水平偏移，
+        // 让同分候选格产生"个体倾向"，避免两只青蛙分到同一个高分格导致行为完全一致
+        int instanceHash = req.OwnerKey.GetHashCode();
+        float instanceBiasX = ((instanceHash % 100) / 100f - 0.5f) * _individualRadiusXMax * 0.3f; // ±30% 半径偏移
+
         for (int x = 0; x < grid.Width; x++)
         {
             for (int y = 0; y < grid.Height; y++)
@@ -212,6 +217,9 @@ public static class TerritoryManager
                     // 无冲突：间距充足，不惩罚（同分下优先取离其他领地更远的格）
                     score = minDistX < float.MaxValue ? minDistX * _occupiedWeight : 0f;
                 }
+
+                // 个体差异化微调：让同分候选格产生"个体倾向"，避免行为完全一致
+                score += Mathf.Abs(world.x - basePos.x - instanceBiasX) * 0.1f; // 惩罚偏离个体偏好位置的格
 
                 if (score > bestScore)
                 {

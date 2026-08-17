@@ -61,6 +61,12 @@ public class FrogBT : MonoBehaviour
     [Tooltip("前方障碍探测距离（米）：朝领地方向此距离内有障碍就换方向跳，避免撞墙反复卡死")]
     [SerializeField] private float _forageProbeDistance = 2.5f;
 
+    [Tooltip("探测盒高度（米）：覆盖青蛙体型，防止尖刺太小被 Raycast 穿透漏检")]
+    [SerializeField] private float _forageProbeHeight = 1.0f;
+
+    [Tooltip("危险物 Tag 列表（如尖刺 Spike）：即使不在障碍层上，探测到也一律绕行")]
+    [SerializeField] private string[] _hazardTags = { "Spike" };
+
     [Tooltip("朝领地中心跳跃的偏向概率（0~1）。0.5=一半机会朝领地，其余自由随机；越大越恋家")]
     [SerializeField, Range(0f, 1f)] private float _territoryBiasChance = 0.5f;
 
@@ -168,39 +174,56 @@ public class FrogBT : MonoBehaviour
     }
 
     /// <summary>
-    /// 觅食跳跃方向：概率朝领地中心（未分配时回退出生点），其余自由随机。
-    /// 障碍绕行：朝领地方向被障碍/尖刺阻挡时换方向跳（2D 横板绕行=先横向离开障碍，
-    /// 而非翻越），避免反复撞墙触发防卡死。两方向都堵时纯随机。
+    /// 觅食跳跃方向：50% 概率朝领地大致方向，50% 随机。
+    /// 领地只提供"方向偏好"，不是"必须到达的目标"——不检测障碍、不强行绕行，
+    /// 避免"路径被挡还硬跳"导致的卡死。青蛙是机会主义觅食者，领地只是参考。
     /// </summary>
     private float GetForageDirection()
     {
         Vector2 toCenter = GetTerritoryCenter() - (Vector2)_frog.transform.position;
         float biasDirection = Mathf.Sign(toCenter.x);
 
-        // 只在天平偏领地时才探测障碍；纯随机方向不探测（自由觅食不受限）
-        if (Random.value < _territoryBiasChance)
-        {
-            if (!IsDirectionBlocked(biasDirection))
-                return biasDirection;
-
-            // 领地方向被挡 → 换反方向绕行；反方向也被挡 → 随机
-            return IsDirectionBlocked(-biasDirection)
-                ? (Random.value < 0.5f ? 1f : -1f)
-                : -biasDirection;
-        }
-
-        return Random.value < 0.5f ? 1f : -1f;
+        // 50% 概率朝领地大致方向，50% 随机——领地只是"参考"，不是"目标"
+        return Random.value < _territoryBiasChance ? biasDirection : (Random.value < 0.5f ? 1f : -1f);
     }
 
-    /// <summary>朝指定水平方向探测前方是否有障碍（地面/尖刺等，水平 Raycast，略抬高避免地面误判）。</summary>
+    /// <summary>
+    /// 朝指定水平方向探测前方是否有障碍（地面/尖刺等）。用 OverlapBox（非 Raycast）覆盖体型，
+    /// 尖刺即使不在障碍层、即使个体较小也能命中（Tag 检测）。略抬高避免地面误判。
+    /// 注意：当前仅用于调试/扩展，GetForageDirection 已简化为"不检测障碍"。
+    /// </summary>
     private bool IsDirectionBlocked(float dirX)
     {
-        if (_forageObstacleMask.value == 0)
+        if (_forageObstacleMask.value == 0 && _hazardTags.Length == 0)
             return false;
 
         Vector2 origin = (Vector2)_frog.transform.position + Vector2.up * 0.3f;
-        RaycastHit2D hit = Physics2D.Raycast(origin, new Vector2(dirX, 0f), _forageProbeDistance, _forageObstacleMask);
-        return hit.collider != null && !hit.collider.isTrigger;
+        Vector2 center = origin + new Vector2(dirX, 0f) * (_forageProbeDistance * 0.5f);
+        Vector2 size = new Vector2(_forageProbeDistance, _forageProbeHeight);
+
+        // 1. 障碍层检测（地面/平台等）
+        if (_forageObstacleMask.value != 0)
+        {
+            Collider2D hit = Physics2D.OverlapBox(center, size, 0f, _forageObstacleMask);
+            if (hit != null && !hit.isTrigger)
+                return true;
+        }
+
+        // 2. 危险物检测（尖刺等）：Tag 匹配即绕行，不受层配置限制
+        if (_hazardTags.Length > 0)
+        {
+            Collider2D hit = Physics2D.OverlapBox(center, size, 0f);
+            if (hit != null && !hit.isTrigger)
+            {
+                for (int i = 0; i < _hazardTags.Length; i++)
+                {
+                    if (hit.CompareTag(_hazardTags[i]))
+                        return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /// <summary>觅食中心：优先用个体领地中心，未分配时回退出生点。</summary>
