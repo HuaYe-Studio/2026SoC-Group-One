@@ -1,140 +1,84 @@
-using UnityEngine;
+﻿using UnityEngine;
 
-public class SlidingDoor : MonoBehaviour, IMovable
+public class SlidingDoor : MonoBehaviour
 {
     [Header("Door Settings")]
-    [SerializeField] private Transform _closedPoint;
-    [SerializeField] private Transform _openPoint;
-    [SerializeField] private float _slideSpeed = 5f;
-    [SerializeField] private bool _startOpen = false;
+    [SerializeField] private Transform closedPoint;
+    [SerializeField] private Transform openPoint;
+    [SerializeField] private float slideSpeed = 5f;
+    [SerializeField] private bool startOpen = false;
 
-    [Header("Movable Settings")]
-    [SerializeField] private bool _canMove = true;
-    [SerializeField] private bool _freezeX = false;
-    [SerializeField] private bool _freezeY = false;
+    [Header("Terminal")]
+    [SerializeField] private Terminal terminal;
+    [SerializeField] private bool autoFindTerminal = true;
 
-    [Header("Terminal Binding")]
-    [SerializeField] private Terminal _terminal;
-    [SerializeField] private bool _autoFindTerminal = true;
-
-    private Vector2 _closedPos;
-    private Vector2 _openPos;
-    private float _progress;
-    private bool _isOpen;
-
-    public bool IsOpen => _isOpen;
-    public bool CanMove => _canMove;
+    private Rigidbody2D rb;
+    private Vector2 closedPos;
+    private Vector2 openPos;
+    private bool isOpen;
 
     private void Start()
     {
-        if (_autoFindTerminal && _terminal == null)
+        rb = GetComponent<Rigidbody2D>();
+        if (rb == null)
+            rb = gameObject.AddComponent<Rigidbody2D>();
+
+        rb.gravityScale = 0f;
+        rb.constraints = RigidbodyConstraints2D.FreezeRotation;
+
+        if (autoFindTerminal && terminal == null)
+            terminal = GetComponent<Terminal>();
+
+        closedPos = closedPoint != null ? (Vector2)closedPoint.position : (Vector2)transform.position;
+        openPos = openPoint != null ? (Vector2)openPoint.position : closedPos + Vector2.right * 3f;
+
+        transform.position = startOpen ? openPos : closedPos;
+        isOpen = startOpen;
+
+        if (terminal != null)
         {
-            _terminal = GetComponent<Terminal>();
-        }
-
-        _closedPos = _closedPoint != null
-            ? (Vector2)_closedPoint.position
-            : (Vector2)transform.position;
-
-        _openPos = _openPoint != null
-            ? (Vector2)_openPoint.position
-            : _closedPos + Vector2.right * 3f;
-
-        _progress = _startOpen ? 1f : 0f;
-        transform.position = _startOpen ? _openPos : _closedPos;
-        _isOpen = _startOpen;
-
-        if (_terminal != null)
-        {
-            _terminal.OnStateChanged.AddListener(OnTerminalStateChanged);
-            OnTerminalStateChanged(_terminal.IsActive);
-        }
-    }
-
-    private void Update()
-    {
-        if (_canMove)
-        {
-            float targetProgress = _isOpen ? 1f : 0f;
-            _progress = Mathf.MoveTowards(_progress, targetProgress, _slideSpeed * Time.deltaTime);
-            transform.position = Vector2.Lerp(_closedPos, _openPos, _progress);
+            terminal.OnStateChanged.AddListener(OnTerminalChanged);
+            OnTerminalChanged(terminal.IsActive);
         }
     }
 
-    private void OnTerminalStateChanged(bool state)
+    private void FixedUpdate()
     {
-        _isOpen = state;
-    }
+        Vector2 targetPos = isOpen ? openPos : closedPos;
+        float distance = Vector2.Distance(transform.position, targetPos);
 
-    public void SetTerminal(Terminal terminal)
-    {
-        if (_terminal != null)
+        if (distance < 0.01f)
         {
-            _terminal.OnStateChanged.RemoveListener(OnTerminalStateChanged);
+            rb.velocity = Vector2.zero;
+            transform.position = targetPos;
         }
-
-        _terminal = terminal;
-
-        if (_terminal != null)
+        else
         {
-            _terminal.OnStateChanged.AddListener(OnTerminalStateChanged);
-            OnTerminalStateChanged(_terminal.IsActive);
+            Vector2 direction = (targetPos - (Vector2)transform.position).normalized;
+            rb.velocity = direction * slideSpeed;
         }
     }
 
-    public void OpenDoor()
+    private void OnTerminalChanged(bool state)
     {
-        if (_isOpen) return;
-        _isOpen = true;
+        isOpen = state;
     }
 
-    public void CloseDoor()
+    public void SetTerminal(Terminal newTerminal)
     {
-        if (!_isOpen) return;
-        _isOpen = false;
-    }
+        if (terminal != null)
+            terminal.OnStateChanged.RemoveListener(OnTerminalChanged);
 
-    public void ToggleDoor()
-    {
-        _isOpen = !_isOpen;
-    }
+        terminal = newTerminal;
 
-    public void SetDoorState(bool open)
-    {
-        if (_isOpen == open) return;
-        _isOpen = open;
-    }
-
-    public void SetCanMove(bool canMove) => _canMove = canMove;
-
-    public void Move(Vector2 delta)
-    {
-        if (!_canMove) return;
-
-        if (_freezeX) delta.x = 0;
-        if (_freezeY) delta.y = 0;
-
-        if (delta.magnitude <= 0.001f) return;
-
-        transform.position += (Vector3)delta;
-        _closedPos += delta;
-        _openPos += delta;
-    }
-
-    public Vector2 GetPosition() => transform.position;
-
-    private void OnDestroy()
-    {
-        if (_terminal != null)
+        if (terminal != null)
         {
-            _terminal.OnStateChanged.RemoveListener(OnTerminalStateChanged);
+            terminal.OnStateChanged.AddListener(OnTerminalChanged);
+            OnTerminalChanged(terminal.IsActive);
         }
     }
-}
 
-public interface IMovable
-{
-    bool CanMove { get; }
-    void Move(Vector2 delta);
-    Vector2 GetPosition();
+    public void ForceOpen() => isOpen = true;
+    public void ForceClose() => isOpen = false;
+    public void Toggle() => isOpen = !isOpen;
 }
