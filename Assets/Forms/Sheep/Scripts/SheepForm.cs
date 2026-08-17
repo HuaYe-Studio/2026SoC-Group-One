@@ -29,6 +29,13 @@ public class SheepForm : BaseForm
         groundLayer = LayerMask.GetMask("Ground");
     }
 
+    public override void Die()
+    {
+        _isCharging = false;
+        _isSliding = false;
+        base.Die();
+    }
+
     private void OnEnable()
     {
         if (PlayerInputReader.HasInstance)
@@ -101,6 +108,8 @@ public class SheepForm : BaseForm
 
     protected override void FixedUpdate()
     {
+        if (currentState == ActionState.Dead) return;
+
         base.FixedUpdate();
 
         if (_isCharging)

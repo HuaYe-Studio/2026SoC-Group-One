@@ -64,6 +64,12 @@ public class FrogForm : BaseForm
         _chargeModeEnabled = false;
     }
 
+    public override void Die()
+    {
+        _chargeStartTime = -1f;
+        base.Die();
+    }
+
     private InputAction _toggleChargeAction;
 
     private void OnEnable()
@@ -248,6 +254,8 @@ public class FrogForm : BaseForm
 
     protected override void FixedUpdate()
     {
+        if (currentState == ActionState.Dead) return;
+
         base.FixedUpdate();
 
         var (wallLeft, wallRight) = DetectWalls(wallCheckDistance, wallCheckInset, wallRayCount, wallLayer);

@@ -11,7 +11,7 @@ public class DisappearingPlatform : MonoBehaviour
     public SpriteRenderer spriteRenderer;
     public Collider2D platformCollider; 
 
-    private bool isTriggered = false; //
+    private bool _isTriggered;
 
     private void Start()
     {
@@ -21,7 +21,7 @@ public class DisappearingPlatform : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if (!isTriggered && collision.gameObject.layer == LayerMask.NameToLayer("Player"))
+        if (!_isTriggered && collision.gameObject.layer == LayerMask.NameToLayer("Player"))
         {
             StartCoroutine(DisappearAndReappearRoutine());
         }
@@ -29,7 +29,7 @@ public class DisappearingPlatform : MonoBehaviour
 
     private IEnumerator DisappearAndReappearRoutine()
     {
-        isTriggered = true;
+        _isTriggered = true;
 
         yield return new WaitForSeconds(delayBeforeDisappear);
 
@@ -39,7 +39,7 @@ public class DisappearingPlatform : MonoBehaviour
 
         SetPlatformState(true);
 
-        isTriggered = false; 
+        _isTriggered = false; 
     }
 
     private void SetPlatformState(bool active)
