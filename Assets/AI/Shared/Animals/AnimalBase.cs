@@ -55,6 +55,12 @@ public class AnimalBase : MonoBehaviour
     public SpriteRenderer SpriteRenderer => _spriteRenderer;
     public Vector2 SpawnPosition => _spawnPosition;
 
+    /// <summary>应用速度倍率（个体差异系统）：基准速度 × 倍率。</summary>
+    public void ApplySpeedMultiplier(float multiplier)
+    {
+        _moveSpeed = Mathf.Max(0.05f, _moveSpeed * multiplier);
+    }
+
     /// <summary>
     /// 是否处于卡死状态：最近下达过移动指令，但采样间隔内几乎没位移。
     /// 由 Update 中的卡死检测自动更新，供行为树触发脱困行为。

@@ -66,6 +66,10 @@ public class EnvironmentMonitor : MonoBehaviour
     public float FoodRadius => _foodRadius;
     public float FellowRadius => _fellowRadius;
 
+    // GC 优化：NonAlloc 预分配缓冲（复用，避免每帧扫描分配数组）
+    private readonly Collider2D[] _scanBuffer = new Collider2D[32];
+    private readonly Collider2D[] _foodBuffer = new Collider2D[16];
+
     // 同类信息（保留原列表，暂未接入黑板）
     public System.Collections.Generic.List<Transform> NearbyFellows { get; private set; }
         = new System.Collections.Generic.List<Transform>();
@@ -149,14 +153,15 @@ public class EnvironmentMonitor : MonoBehaviour
         UpdatePlayerFormAwareness();
 
         float detectRadius = Mathf.Max(_visionRadius, _hearingRadius);
-        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, detectRadius, _threatLayer);
+        int hitCount = Physics2D.OverlapCircleNonAlloc(transform.position, detectRadius, _scanBuffer, _threatLayer);
 
         float nearestDist = float.MaxValue;
         Transform nearest = null;
         Rigidbody2D nearestRb = null;
 
-        foreach (Collider2D hit in hits)
+        for (int i = 0; i < hitCount; i++)
         {
+            Collider2D hit = _scanBuffer[i];
             float dist = Vector2.Distance(transform.position, hit.transform.position);
             if (dist >= nearestDist) continue;
 
@@ -260,14 +265,15 @@ public class EnvironmentMonitor : MonoBehaviour
 
     private void DetectFood()
     {
-        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, _foodRadius, _foodLayer);
+        int hitCount = Physics2D.OverlapCircleNonAlloc(transform.position, _foodRadius, _foodBuffer, _foodLayer);
 
         float nearestDist = float.MaxValue;
         _bb.IsFoodDetected = false;
         _bb.NearestFood = null;
 
-        foreach (Collider2D hit in hits)
+        for (int i = 0; i < hitCount; i++)
         {
+            Collider2D hit = _foodBuffer[i];
             float dist = Vector2.Distance(transform.position, hit.transform.position);
             if (dist < nearestDist)
             {
@@ -307,9 +313,10 @@ public class EnvironmentMonitor : MonoBehaviour
     {
         NearbyFellows.Clear();
 
-        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, _fellowRadius, _fellowLayer);
-        foreach (Collider2D hit in hits)
+        int hitCount = Physics2D.OverlapCircleNonAlloc(transform.position, _fellowRadius, _scanBuffer, _fellowLayer);
+        for (int i = 0; i < hitCount; i++)
         {
+            Collider2D hit = _scanBuffer[i];
             if (hit.transform != transform)
                 NearbyFellows.Add(hit.transform);
         }

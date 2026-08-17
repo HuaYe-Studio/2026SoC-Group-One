@@ -13,9 +13,12 @@ public class BTPantAction : BTNode
     private readonly float _durationMin;
     private readonly float _durationMax;
 
-    private bool _isPanting;
-    private float _pantEndTime;
+    private bool _isPanting;    // 是否处于喘息中（首帧初始化，防止重复计时）
+    private float _pantEndTime; // 喘息结束时间点（Time.time）
 
+    /// <param name="animal">动物实例（读取 IsGrounded 与 Board.IsPanting）</param>
+    /// <param name="durationMin">喘息最短时长（秒）</param>
+    /// <param name="durationMax">喘息最长时长（秒）</param>
     public BTPantAction(AnimalBase animal, float durationMin = 0.8f, float durationMax = 1.5f)
     {
         _animal = animal;
@@ -23,6 +26,10 @@ public class BTPantAction : BTNode
         _durationMax = durationMax;
     }
 
+    /// <summary>
+    /// 喘息过程：首帧必须已着地才开始计时（空中进入保持等待，防止刚起跳就误入喘息），
+    /// 着地后停动、播 Rest 动画并写 IsPanting，停顿 [durationMin, durationMax] 秒后返回 Success。
+    /// </summary>
     public override State Tick()
     {
         // 首帧进入：必须先落地才开始喘息计时，空中保持等待
@@ -38,6 +45,7 @@ public class BTPantAction : BTNode
             _isPanting = true;
         }
 
+        // 停顿结束 → 复位并完成本次喘息
         if (Time.time >= _pantEndTime)
         {
             Reset();
@@ -47,6 +55,7 @@ public class BTPantAction : BTNode
         return State.Running;
     }
 
+    /// <summary>结束喘息：复位 IsPanting 标记与内部状态（喘息完成或行为树打断时调用）。</summary>
     public override void Reset()
     {
         if (_animal != null && _animal.Board != null)
