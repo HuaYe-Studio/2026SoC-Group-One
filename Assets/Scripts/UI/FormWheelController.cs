@@ -28,6 +28,7 @@ public class FormWheelController : MonoBehaviour
     private List<GameObject> _rankedOptions = new List<GameObject>();
     public static List<FormType> unlockedFormTypes = new List<FormType>();
     private Dictionary<FormType, GameObject> _formTypeToWheelOption = new Dictionary<FormType, GameObject>();
+    private Dictionary<Transform, Tween> _optionScaleTweens = new Dictionary<Transform, Tween>();
     private PlayerController _playerController;
     private bool _isWheelOpen;
     float _angle = 0f;
@@ -145,11 +146,13 @@ public class FormWheelController : MonoBehaviour
     {
         _isWheelOpen = false;
 
-        // 停止所有移动动画
+        // 停止所有移动动画并清理缩放残留
         for (int i = 0; i < _rankedOptions.Count; i++)
         {
             _rankedOptions[i].transform.DOKill();
+            _rankedOptions[i].transform.localScale = Vector3.one;
         }
+        _optionScaleTweens.Clear();
 
         // 执行选中逻辑
         if (_currentSelection > 0 && _currentSelection < _rankedOptions.Count)
@@ -241,26 +244,52 @@ public class FormWheelController : MonoBehaviour
 
         }
 
-        // 更新 UI 缩放和边框位置
-        if (_currentSelection >= 0 && _previousSelection >= 0 &&
-            _currentSelection < _rankedOptions.Count && _previousSelection < _rankedOptions.Count)
+        // 更新 UI 缩放和文字；仅当候选索引变化时更新，避免每帧重复创建Tween
+        if (_currentSelection != _previousSelection)
         {
-            // 放大当前选中，恢复上一个
-            _rankedOptions[_currentSelection].transform.DOScale(Vector3.one * _scaleFactor, 0.05f).SetUpdate(true);
-            _rankedOptions[_previousSelection].transform.DOScale(Vector3.one, 0.05f).SetUpdate(true);
+            // 恢复上一个选中项
+            if (_previousSelection >= 0 && _previousSelection < _rankedOptions.Count)
+            {
+                Transform previousTransform = _rankedOptions[_previousSelection].transform;
+                KillOptionScaleTween(previousTransform);
+                _optionScaleTweens[previousTransform] = previousTransform.DOScale(Vector3.one, 0.05f).SetUpdate(true);
+            }
+
+            // 放大当前选中项
+            if (_currentSelection >= 0 && _currentSelection < _rankedOptions.Count)
+            {
+                Transform currentTransform = _rankedOptions[_currentSelection].transform;
+                KillOptionScaleTween(currentTransform);
+                _optionScaleTweens[currentTransform] = currentTransform.DOScale(Vector3.one * _scaleFactor, 0.05f).SetUpdate(true);
+
+                // 更新文字
+                if (_currentSelection > 0)
+                    _selectedOptionText.text = unlockedFormTypes[_currentSelection - 1].ToString();
+                else
+                    _selectedOptionText.text = "Cancel";
+            }
+        }
+
+        // 每帧同步边框位置和箭头方向；不依赖索引是否变化
+        if (_currentSelection >= 0 && _currentSelection < _rankedOptions.Count)
+        {
             _borader.transform.position = _rankedOptions[_currentSelection].transform.position;
 
             if (_isKeyBoard)
             {
                 _arrow.transform.rotation = Quaternion.Euler(0, 0, -_angle);
             }
-
-            // 更新文字
-            if (_currentSelection > 0)
-                _selectedOptionText.text = unlockedFormTypes[_currentSelection - 1].ToString();
-            else
-                _selectedOptionText.text = "Cancel";
         }
+    }
+
+    // 仅终止某个选项的缩放Tween，不影响同一Transform上的移动Tween
+    private void KillOptionScaleTween(Transform target)
+    {
+        if (_optionScaleTweens.TryGetValue(target, out Tween scaleTween) && scaleTween != null && scaleTween.IsActive())
+        {
+            scaleTween.Kill();
+        }
+        _optionScaleTweens.Remove(target);
     }
 
     // ---------- 事件监听：解锁新形态 ----------
