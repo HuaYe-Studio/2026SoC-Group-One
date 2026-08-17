@@ -22,15 +22,11 @@ public class PlayerStamina : MonoBehaviour
     {
         if (_current <= 0f) return false;
         _current = Mathf.Max(0f, _current - amount);
-        MockEventCenter.TriggerStaminaChanged(_current, maxStamina);
         return true;
     }
 
     public void Restore(float amount)
     {
-        float prev = _current;
         _current = Mathf.Min(maxStamina, _current + amount);
-        if (Mathf.Abs(_current - prev) > 0.01f)
-            MockEventCenter.TriggerStaminaChanged(_current, maxStamina);
     }
 }

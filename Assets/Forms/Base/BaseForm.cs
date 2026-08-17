@@ -8,7 +8,8 @@ public enum ActionState
     Jumping,
     Falling,
     WallCling,
-    SpecialAction
+    SpecialAction,
+    Dead
 }
 
 public abstract class BaseForm : MonoBehaviour
@@ -41,6 +42,7 @@ public abstract class BaseForm : MonoBehaviour
     protected Animator animator;
     protected PlayerController controller;
     protected PlayerStamina stamina;
+    protected PlayerHP hp;
 
     [Header("Ability Input")]
     [SerializeField] private List<AbilityInputBinding> abilityBindings = new();
@@ -54,6 +56,8 @@ public abstract class BaseForm : MonoBehaviour
     private Color _originalTint;
     private GameObject _overlaySpriteObject;
     private AbilityInputBinding _grantedAbilityInstance;
+
+    private static readonly int DeathHash = Animator.StringToHash("Death");
 
     protected ActionState currentState = ActionState.Idle;
     protected float ignoreGroundUntil;
@@ -78,6 +82,7 @@ public abstract class BaseForm : MonoBehaviour
         spriteRenderer = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
         stamina = ctrl.GetComponent<PlayerStamina>();
+        hp = ctrl.GetComponent<PlayerHP>();
     }
 
     protected virtual bool CanMove() =>
@@ -98,12 +103,6 @@ public abstract class BaseForm : MonoBehaviour
         currentState = state;
     }
 
-    public void SetAnimatorBool(string paramName, bool value)
-    {
-        if (animator != null)
-            animator.SetBool(paramName, value);
-    }
-
     public void SetAnimatorBool(int hash, bool value)
     {
         if (animator != null)
@@ -112,7 +111,7 @@ public abstract class BaseForm : MonoBehaviour
 
     public void ProcessInput(float horizontal)
     {
-        if (currentState == ActionState.SpecialAction) return;
+        if (currentState == ActionState.SpecialAction || currentState == ActionState.Dead) return;
 
         DoMovement(horizontal);
         UpdateFacing(horizontal);
@@ -143,6 +142,8 @@ public abstract class BaseForm : MonoBehaviour
 
     protected virtual void FixedUpdate()
     {
+        if (currentState == ActionState.Dead) return;
+
         PerformGroundCheck();
         UpdateAirState();
         HandleLanding();
@@ -243,6 +244,34 @@ public abstract class BaseForm : MonoBehaviour
         UnregisterAbilityBindings();
     }
 
+    public virtual void Die()
+    {
+        currentState = ActionState.Dead;
+        if (rb != null)
+        {
+            rb.velocity = Vector2.zero;
+            rb.gravityScale = 0f;
+        }
+        if (animator != null)
+            animator.SetBool(DeathHash, true);
+    }
+
+    public virtual void Revive()
+    {
+        currentState = ActionState.Idle;
+        // All forms share the root Rigidbody2D; only the active form may reset it.
+        if (controller != null && controller.ActiveForm == this)
+        {
+            if (rb != null)
+            {
+                rb.velocity = Vector2.zero;
+                rb.gravityScale = gravityScale;
+            }
+        }
+        if (animator != null)
+            animator.SetBool(DeathHash, false);
+    }
+
     private void RegisterAbilityBindings()
     {
         if (!PlayerInputReader.HasInstance) return;
@@ -252,7 +281,7 @@ public abstract class BaseForm : MonoBehaviour
 
         foreach (var binding in abilityBindings)
         {
-            System.Action handler = () => binding.onInputFired.Invoke();
+            System.Action handler = () => binding.onAbilityActivated.Invoke();
             _bindingHandlers[binding] = handler;
             SubscribeToSlot(binding.inputSlot, binding.phase, handler);
         }
@@ -321,6 +350,10 @@ public abstract class BaseForm : MonoBehaviour
                     case InputPhase.Triggered: if (add) reader.OnAnimalWheel += handler; else reader.OnAnimalWheel -= handler; break;
                     default: if (add) Debug.LogWarning($"AbilitySystem: Invalid phase [{phase}] for AnimalWheel."); break;
                 }
+                break;
+            case InputActionSlot.SpitFire:
+                if (phase == InputPhase.Triggered) { if (add) reader.OnSpitFire += handler; else reader.OnSpitFire -= handler; }
+                else if (add) Debug.LogWarning($"AbilitySystem: Invalid phase [{phase}] for SpitFire, only Triggered is supported.");
                 break;
         }
     }
@@ -395,17 +428,17 @@ public abstract class BaseForm : MonoBehaviour
 
     public void AddAbilityBinding(AbilityInputBinding binding)
     {
-        if (binding == null) return;
+        if (binding == null || abilityBindings.Contains(binding)) return;
         abilityBindings.Add(binding);
         if (PlayerInputReader.HasInstance)
         {
-            System.Action handler = () => binding.onInputFired.Invoke();
+            System.Action handler = () => binding.onAbilityActivated.Invoke();
             _bindingHandlers[binding] = handler;
             SubscribeToSlot(binding.inputSlot, binding.phase, handler);
         }
     }
 
-    public void RemoveAbilityBinding(AbilityInputBinding binding)
+    private void RemoveAbilityBinding(AbilityInputBinding binding)
     {
         if (binding == null) return;
         abilityBindings.Remove(binding);

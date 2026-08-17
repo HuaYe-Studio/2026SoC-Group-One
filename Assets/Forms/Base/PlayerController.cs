@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using AbilitySystem;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
@@ -85,11 +86,24 @@ public class PlayerController : MonoBehaviour
     private void OnEnable()
     {
         MockEventCenter.OnFormUnlocked += AddNewForm;
+        MockEventCenter.OnPlayerDeath += OnPlayerDeathHandler;
+        MockEventCenter.OnPlayerRespawn += OnPlayerRespawnHandler;
     }
 
     private void OnDisable()
     {
         MockEventCenter.OnFormUnlocked -= AddNewForm;
+        MockEventCenter.OnPlayerDeath -= OnPlayerDeathHandler;
+        MockEventCenter.OnPlayerRespawn -= OnPlayerRespawnHandler;
+    }
+
+    private void OnPlayerDeathHandler() => ActiveForm?.Die();
+
+    private void OnPlayerRespawnHandler()
+    {
+        if (allForms == null) return;
+        foreach (BaseForm form in allForms)
+            if (form != null) form.Revive();
     }
 
     private void AddNewForm(FormType formType)
@@ -109,6 +123,29 @@ public class PlayerController : MonoBehaviour
     {
         if (_formTypeToIndex.TryGetValue(formType, out int index))
             SwitchToForm(index);
+    }
+
+    public FormType GetCurrentForm() =>
+        ActiveForm != null ? ActiveForm.FormType : FormType.Slime;
+
+    public List<FormType> GetUnlockedForms() => new List<FormType>(_unlockedForms);
+
+    public void RestoreForms(FormType current, List<FormType> unlocked)
+    {
+        _unlockedForms.Clear();
+        _unlockedForms.Add(FormType.Slime);
+        if (unlocked != null)
+            foreach (var f in unlocked)
+                _unlockedForms.Add(f);
+        _unlockedForms.Add(current);
+        SwitchToFormByType(current);
+    }
+
+    public BaseForm GetForm(FormType type)
+    {
+        if (_formTypeToIndex.TryGetValue(type, out int index) && allForms != null && index < allForms.Length)
+            return allForms[index];
+        return null;
     }
 
     private void Update()

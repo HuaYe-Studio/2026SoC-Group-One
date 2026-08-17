@@ -49,6 +49,7 @@ public class SlimeForm : BaseForm
 
     private static readonly int SpeedHash = Animator.StringToHash("Speed");
     private static readonly int IsWallClingHash = Animator.StringToHash("IsWallCling");
+    private static readonly int SpitFireHash = Animator.StringToHash("SpitFire");
 
     public override void Initialize(PlayerController ctrl)
     {
@@ -109,8 +110,25 @@ public class SlimeForm : BaseForm
         }
     }
 
+    public override void Die()
+    {
+        if (currentState == ActionState.WallCling)
+            ExitWallCling();
+        base.Die();
+    }
+
+    public void SpitFire()
+    {
+        if (animator != null)
+            animator.SetTrigger(SpitFireHash);
+        // TODO: implement fire projectile spawn / collision / damage later
+        Debug.Log("SpitFire ability triggered");
+    }
+
     protected override void FixedUpdate()
     {
+        if (currentState == ActionState.Dead) return;
+
         var (wallLeft, wallRight) = DetectWalls(wallCheckDistance, wallCheckInset, wallRayCount, wallLayer);
         float horizontal = HorizontalInput;
 

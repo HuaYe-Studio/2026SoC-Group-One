@@ -174,7 +174,7 @@ MonoBehaviour:
   groundCheckVerticalOffset: 0.02
   groundLayer:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 8
   abilityBindings: []
   chargeSpeed: 12
   chargeDuration: 0.5
@@ -324,12 +324,12 @@ MonoBehaviour:
   groundCheckVerticalOffset: 0.02
   groundLayer:
     serializedVersion: 2
-    m_Bits: 1
+    m_Bits: 8
   abilityBindings:
   - abilityName: Expand Hold
     inputSlot: 2
     phase: 0
-    onInputFired:
+    onAbilityActivated:
       m_PersistentCalls:
         m_Calls:
         - m_Target: {fileID: 4341644968850883059}
@@ -347,7 +347,7 @@ MonoBehaviour:
   - abilityName: Expand Release
     inputSlot: 2
     phase: 2
-    onInputFired:
+    onAbilityActivated:
       m_PersistentCalls:
         m_Calls:
         - m_Target: {fileID: 4341644968850883059}
@@ -365,7 +365,7 @@ MonoBehaviour:
   - abilityName: Dive Hold
     inputSlot: 3
     phase: 0
-    onInputFired:
+    onAbilityActivated:
       m_PersistentCalls:
         m_Calls:
         - m_Target: {fileID: 4341644968850883059}
@@ -383,7 +383,7 @@ MonoBehaviour:
   - abilityName: Dive Release
     inputSlot: 3
     phase: 2
-    onInputFired:
+    onAbilityActivated:
       m_PersistentCalls:
         m_Calls:
         - m_Target: {fileID: 4341644968850883059}
@@ -579,7 +579,25 @@ MonoBehaviour:
   groundLayer:
     serializedVersion: 2
     m_Bits: 8
-  abilityBindings: []
+  abilityBindings:
+  - abilityName: Spit Fire
+    inputSlot: 5
+    phase: 3
+    onAbilityActivated:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 7125327682567490769}
+          m_TargetAssemblyTypeName: SlimeForm, Assembly-CSharp
+          m_MethodName: SpitFire
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument:
+            m_BoolArgument: 0
+          m_CallState: 2
   acceleration: 0.5
   deceleration: 0.5
   devourHandler: {fileID: 2091084545104360566}
@@ -801,7 +819,7 @@ MonoBehaviour:
   - abilityName: Jump Press
     inputSlot: 1
     phase: 0
-    onInputFired:
+    onAbilityActivated:
       m_PersistentCalls:
         m_Calls:
         - m_Target: {fileID: 8842012382244513926}
@@ -819,7 +837,7 @@ MonoBehaviour:
   - abilityName: Jump Release
     inputSlot: 1
     phase: 2
-    onInputFired:
+    onAbilityActivated:
       m_PersistentCalls:
         m_Calls:
         - m_Target: {fileID: 8842012382244513926}
@@ -883,10 +901,11 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2838083659676168268}
-  - component: {fileID: 8139496476503272819}
   - component: {fileID: 1506354432520958816}
+  - component: {fileID: 8139496476503272819}
   - component: {fileID: 8084950948594842238}
   - component: {fileID: 4925435840266706490}
+  - component: {fileID: 714463921836420346}
   m_Layer: 6
   m_Name: Player
   m_TagString: Player
@@ -913,24 +932,6 @@ Transform:
   - {fileID: 290356464195351002}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8139496476503272819
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6837292219011752717}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7bcebb77a7d445e47a01b3b43bd3d983, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  allForms:
-  - {fileID: 7125327682567490769}
-  - {fileID: 8842012382244513926}
-  - {fileID: 4341644968850883059}
-  - {fileID: 2768510424582700458}
-  activeFormIndex: 0
 --- !u!50 &1506354432520958816
 Rigidbody2D:
   serializedVersion: 4
@@ -958,6 +959,24 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 4
+--- !u!114 &8139496476503272819
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6837292219011752717}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7bcebb77a7d445e47a01b3b43bd3d983, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  allForms:
+  - {fileID: 7125327682567490769}
+  - {fileID: 8842012382244513926}
+  - {fileID: 4341644968850883059}
+  - {fileID: 2768510424582700458}
+  activeFormIndex: 0
 --- !u!114 &8084950948594842238
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -987,3 +1006,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxStamina: 100
   recoverPerSecond: 30
+--- !u!114 &714463921836420346
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6837292219011752717}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b4089d5287e14a46bfa8479452749d8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  elementDefinitions:
+  - type: 0
+    binding:
+      abilityName: 
+      inputSlot: 0
+      phase: 0
+      onAbilityActivated:
+        m_PersistentCalls:
+          m_Calls: []
