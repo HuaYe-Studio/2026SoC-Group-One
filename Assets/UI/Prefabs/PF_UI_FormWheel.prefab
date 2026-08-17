@@ -556,24 +556,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0f4d448b76ba8ad45a06a10035422f11, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _wheelPanel: {fileID: 8557841280180362902}
-  _wheelPanelRadius: 2
-  _wheelOptions:
-  - {fileID: 5189542200012390930}
-  - {fileID: 185629653360774728}
-  - {fileID: 8509898657091611060}
-  - {fileID: 2883504687983509}
-  - {fileID: 2680962593666894288}
-  - {fileID: 5213298420746379024}
-  - {fileID: 8073869256531966038}
-  - {fileID: 2526487477668863328}
-  - {fileID: 4932386944794602959}
-  _borader: {fileID: 8689373012168157458}
-  _duration: 0.2
-  _scaleFactor: 1.6
-  _selectedOptionText: {fileID: 3970280872399873308}
   _isKeyBoard: 0
-  _arrow: {fileID: 6883443519248066541}
 --- !u!114 &2989935047161419185
 MonoBehaviour:
   m_ObjectHideFlags: 0

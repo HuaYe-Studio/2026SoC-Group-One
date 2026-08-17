@@ -13,15 +13,7 @@ using Unity.VisualScripting;
 /// </summary>
 public class FormWheelController : MonoBehaviour
 {
-    [SerializeField] private GameObject _wheelPanel;                // 轮盘面板的引用
-    [SerializeField] private float _wheelPanelRadius = 1f;          // 轮盘面板的以屏幕中心为圆心的半径比例
-    [SerializeField] private GameObject[] _wheelOptions;            // 轮盘面板的选项数组[按FormType顺序排列,但第0个为取消区域]
-    [SerializeField] private GameObject _borader;                   // 选项的边框
-    [SerializeField] private float _duration = 0.2f;                // 动效的持续时间
-    [SerializeField] private float _scaleFactor = 1.6f;             // 选中选项的缩放因子
-    [SerializeField] private TMPro.TMP_Text _selectedOptionText;    // 显示选中选项的文本
     [SerializeField] private bool _isKeyBoard;//是否切换到键盘输入，这里以后还要和全局设置做适配
-    [SerializeField] private GameObject _arrow;
     private int _currentSelection, _previousSelection = -1;
     private Vector2 _screenCenter;//屏幕中心坐标
     public static List<FormType> unlockedFormTypes = new List<FormType>();
