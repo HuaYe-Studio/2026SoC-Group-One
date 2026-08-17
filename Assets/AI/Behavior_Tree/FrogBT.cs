@@ -3,7 +3,7 @@ using UnityEngine;
 
 /// <summary>
 /// [BT] 青蛙行为树：挂载并启用后驱动青蛙AI。
-/// 优先级从高到低：逃跑 > 搜索（威胁记忆）> 捕食 > 觅食循环（连跳一组 → 喘息）。
+/// 优先级从高到低：受伤反馈 > BOSS逃跑 > 逃跑（玩家）> 搜索（威胁记忆）> 捕食 > 觅食循环（连跳一组 → 喘息）。
 /// 连跳组：组内每次跳跃高度递减、间隔缩短，模仿真实青蛙急促连跳；
 /// 喘息：一组跳完的短暂停顿（Rest 动画），与吞噬眩晕(IsStunned)互斥。
 /// 捕食/逃跑保持独立节奏：捕食单次扑跳，逃跑按紧迫度升级，不参与连跳组。
@@ -86,6 +86,7 @@ public class FrogBT : MonoBehaviour
     private FrogAI _frog;
     private BTNode _root;
     private BTFleeAction _fleeAction; // 持有引用以便调试时读取内部状态
+    private BTBossFleeAction _bossFleeAction; // BOSS 逃跑（优先级高于逃离玩家）
     private AnimalHurtFeedback _hurtFeedback; // 受伤反馈组件（受伤时弹跳+位移）
 
     // 群体分离（Boids）：成员标识 + 邻居查询缓冲（复用，非分配）
@@ -153,6 +154,13 @@ public class FrogBT : MonoBehaviour
             new BTCondition(() => _hurtFeedback.IsHurting),
             new BTHurtFeedbackAction(_frog, _hurtFeedback));
 
+        // 分支2.5：检测到 BOSS（紧迫威胁）→ 逃离 BOSS。
+        // 优先级高于"逃离玩家"（四档仲裁：场景伤害 > BOSS > 玩家），置于玩家逃跑分支之前。
+        _bossFleeAction = new BTBossFleeAction(_frog);
+        BTNode bossEscapeBranch = new BTSequence(
+            new BTCondition(IsBossThreatUrgent),
+            _bossFleeAction);
+
         // 分支3：玩家可见且威胁足够高 → 逃跑
         _fleeAction = new BTFleeAction(_frog);
         BTNode fleeBranch = new BTSequence(
@@ -180,7 +188,14 @@ public class FrogBT : MonoBehaviour
                 speedScale: GetHazardSpeedScale),
             new BTPantAction(_frog, _pantDurationMin, _pantDurationMax));
 
-        return new BTSelector(stunnedBranch, unstickBranch, hurtBranch, fleeBranch, searchBranch, pounceBranch, forageBranch);
+        return new BTSelector(stunnedBranch, unstickBranch, hurtBranch, bossEscapeBranch, fleeBranch, searchBranch, pounceBranch, forageBranch);
+    }
+
+    /// <summary>BOSS 是否构成紧迫威胁（刷新迟滞仲裁后判定）。</summary>
+    private bool IsBossThreatUrgent()
+    {
+        _frog.Board.RefreshBossUrgent();
+        return _frog.Board.IsBossUrgent;
     }
 
     /// <summary>

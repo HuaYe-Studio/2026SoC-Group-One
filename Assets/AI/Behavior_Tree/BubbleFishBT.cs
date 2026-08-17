@@ -53,6 +53,12 @@ public class BubbleFishBT : MonoBehaviour
     [Tooltip("玩家高代价上限（格子上与玩家重合时的额外代价）")]
     [SerializeField] private float _playerPenaltyCost = 200f;
 
+    [Tooltip("BOSS 高代价半径（米）：BOSS 附近格子代价提升，逃跑路径自动绕开（优先于玩家惩罚）")]
+    [SerializeField] private float _bossPenaltyRadius = 6f;
+
+    [Tooltip("BOSS 高代价上限（格子上与 BOSS 重合时的额外代价，应 > 玩家惩罚，体现 BOSS 威胁更高）")]
+    [SerializeField] private float _bossPenaltyCost = 320f;
+
     [Tooltip("领地外通行代价：鱼倾向待在共享领地内；须低于玩家代价，玩家紧迫威胁时仍会游出领地逃跑")]
     [SerializeField] private float _territoryOutsideCost = 50f;
 
@@ -116,6 +122,10 @@ public class BubbleFishBT : MonoBehaviour
     private float _escapeTargetTime;
     private int _escapeIndex;
     private const float EscapeTargetRefreshInterval = 2f;
+
+    // BOSS 逃跑目标缓存（复用同一刷新节流，独立于玩家逃跑目标）
+    private Vector2 _bossEscapeTarget;
+    private float _bossEscapeTargetTime;
 
     private void Awake()
     {
@@ -193,6 +203,20 @@ public class BubbleFishBT : MonoBehaviour
             WithDebug("Hurt/Action", new BTHurtFeedbackAction(_fish, _hurtFeedback))
         ));
 
+        // BOSS 逃跑：检测到 BOSS（紧迫威胁）→ A* 到离 BOSS 最远的安全点。
+        // 优先级高于"逃离玩家"（四档仲裁：场景伤害 > BOSS > 玩家），故置于玩家逃跑分支之前。
+        BTNode bossEscapeBranch = WithDebug("BossEscape", new BTSequence(
+            WithDebug("BossEscape/Cond", new BTCondition(IsBossThreatUrgent)),
+            WithDebug("BossEscape/Action", new BTAStarMoveAction(_fish,
+                targetProvider: GetBossEscapeTarget,
+                costAt: CostAt,
+                speedMultiplier: _escapeSpeedMultiplier,
+                arriveRadius: _arriveRadius,
+                repathInterval: _repathInterval,
+                move: (direction, mult) => _fish.Swim(direction, mult),
+                animResolver: ResolvePathAnimation))
+        ));
+
         // 逃跑：紧迫威胁 → A* 到离玩家最远的安全点（玩家高代价使路径自动绕开玩家）
         BTNode escapeBranch = WithDebug("Escape", new BTSequence(
             WithDebug("Escape/Cond", new BTCondition(() => bb.IsThreatUrgent)),
@@ -230,7 +254,7 @@ public class BubbleFishBT : MonoBehaviour
             move: (direction, mult) => _fish.Swim(ApplyFlockSteering(direction), mult),
             animResolver: ResolvePathAnimation));
 
-        return new BTSelector(stunnedBranch, unstickBranch, hurtBranch, escapeBranch, searchBranch, wanderBranch);
+        return new BTSelector(stunnedBranch, unstickBranch, hurtBranch, bossEscapeBranch, escapeBranch, searchBranch, wanderBranch);
     }
 
     /// <summary>
@@ -259,6 +283,15 @@ public class BubbleFishBT : MonoBehaviour
             float d = Vector2.Distance(worldPos, playerPos);
             if (d < _playerPenaltyRadius)
                 cost += _playerPenaltyCost * (1f - d / _playerPenaltyRadius);
+        }
+
+        // BOSS 高代价：BOSS 已检测到且在该格附近 → 代价高于玩家惩罚（威胁优先级：BOSS 本体 > 玩家）
+        if (bb.IsBossDetected)
+        {
+            Vector2 bossPos = (Vector2)_fish.transform.position + bb.BossDirection * bb.BossDistance;
+            float d = Vector2.Distance(worldPos, bossPos);
+            if (d < _bossPenaltyRadius)
+                cost += _bossPenaltyCost * (1f - d / _bossPenaltyRadius);
         }
 
         return cost;
@@ -307,6 +340,46 @@ public class BubbleFishBT : MonoBehaviour
         _escapeIndex = (_escapeIndex + 1) % pickCount;
         _escapeTarget = pts[ordered[_escapeIndex]];
         return _escapeTarget;
+    }
+
+    /// <summary>
+    /// BOSS 逃跑目标：在"离 BOSS 最远的 N 个安全点"中轮换选取（与玩家逃跑同套逻辑，基准改为 BOSS 位置），
+    /// 每 EscapeTargetRefreshInterval 秒重选，避免路径固定被 BOSS 堵死。
+    /// </summary>
+    private Vector2 GetBossEscapeTarget()
+    {
+        if (Time.time < _bossEscapeTargetTime)
+            return _bossEscapeTarget;
+
+        _bossEscapeTargetTime = Time.time + EscapeTargetRefreshInterval;
+
+        Blackboard bb = _fish.Board;
+        Vector2[] pts = bb.SafePoints;
+        if (pts == null || pts.Length == 0)
+            return _fish.SpawnPosition;
+
+        // BOSS 世界位置由感知数据推导（位置 + 方向 × 距离）
+        Vector2 bossPos = bb.IsBossDetected
+            ? (Vector2)_fish.transform.position + bb.BossDirection * bb.BossDistance
+            : _fish.SpawnPosition;
+
+        // 按离 BOSS 距离降序排列索引，取前 _escapePickCount 个轮换选择
+        List<int> ordered = new List<int>(pts.Length);
+        for (int i = 0; i < pts.Length; i++)
+            ordered.Add(i);
+        ordered.Sort((a, b) =>
+            Vector2.Distance(pts[b], bossPos).CompareTo(Vector2.Distance(pts[a], bossPos)));
+
+        int pickCount = Mathf.Clamp(_escapePickCount, 1, pts.Length);
+        _bossEscapeTarget = pts[ordered[_escapeIndex % pickCount]];
+        return _bossEscapeTarget;
+    }
+
+    /// <summary>BOSS 是否构成紧迫威胁（刷新迟滞仲裁后判定）。</summary>
+    private bool IsBossThreatUrgent()
+    {
+        _fish.Board.RefreshBossUrgent();
+        return _fish.Board.IsBossUrgent;
     }
 
     /// <summary>
@@ -441,6 +514,8 @@ public class BubbleFishBT : MonoBehaviour
 
         if (bb.IsStunned) return "Stunned";
         if (_fish.IsStuck) return "Unstick";
+        if (_hurtFeedback.IsHurting) return "Hurt";
+        if (IsBossThreatUrgent()) return "BossEscape";
         if (bb.IsThreatUrgent) return "Escape";
         if (bb.ShouldSearch) return "Search";
         return "Wander";
