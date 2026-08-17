@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using DG.Tweening;
 using Unity.VisualScripting;
 
 //有什么需要UI适配的地方请和緽澄（葛亮亮）联系，尽量不要擅自修改UI模块代码
@@ -25,10 +24,8 @@ public class FormWheelController : MonoBehaviour
     [SerializeField] private GameObject _arrow;
     private int _currentSelection, _previousSelection = -1;
     private Vector2 _screenCenter;//屏幕中心坐标
-    private List<GameObject> _rankedOptions = new List<GameObject>();
     public static List<FormType> unlockedFormTypes = new List<FormType>();
-    private Dictionary<FormType, GameObject> _formTypeToWheelOption = new Dictionary<FormType, GameObject>();
-    private Dictionary<Transform, Tween> _optionScaleTweens = new Dictionary<Transform, Tween>();
+    private FormWheelView _formWheelView;
     private PlayerController _playerController;
     private bool _isWheelOpen;
     float _angle = 0f;
@@ -36,32 +33,22 @@ public class FormWheelController : MonoBehaviour
     // ---------- Unity 生命周期 ----------
     void Awake()
     {
-        // 按 FormType 枚举顺序构建映射：索引0=取消，索引1起对应 (int)FormType + 1
-        foreach (FormType ft in System.Enum.GetValues(typeof(FormType)))
-        {
-            int idx = (int)ft + 1;
-            if (idx < _wheelOptions.Length)
-                _formTypeToWheelOption[ft] = _wheelOptions[idx];
-        }
+        _formWheelView = GetComponent<FormWheelView>();
 
         // 初始化已解锁形态列表和排序后的选项数组
         // 此处需要和存档模块联动，以读取目前已解锁动物列表，暂时简略处理
         Debug.Log("UI:存档系统暂时未接入，暂时使用默认解锁形态列表");
-        _rankedOptions.Add(_wheelOptions[0]); // 取消区域，序号0
 
         if (unlockedFormTypes.Count == 0)
         {
-            if (_formTypeToWheelOption.TryGetValue(FormType.Slime, out var slimeOption))
-            {
-                unlockedFormTypes.Add(FormType.Slime);
-                _rankedOptions.Add(slimeOption);
-            }
+            unlockedFormTypes.Add(FormType.Slime);
         }
-
     }
 
     void Start()
     {
+        _formWheelView.RebuildOptions(unlockedFormTypes);
+
         _screenCenter = new Vector2(Screen.width / 2f, Screen.height / 2f);
         _playerController = FindObjectOfType<PlayerController>();
     }
@@ -107,57 +94,29 @@ public class FormWheelController : MonoBehaviour
         {
             Cursor.lockState = CursorLockMode.None;//解锁鼠标
             Cursor.visible = true;//鼠标可视
-            _arrow.SetActive(false);
-        }
-        else
-        {
-            _arrow.SetActive(true);
         }
 
         _screenCenter = new Vector2(Screen.width / 2f, Screen.height / 2f);//更新屏幕中心的位置
         _currentSelection = -1;
         _previousSelection = -1;
         _isWheelOpen = true;
-        _wheelPanel.SetActive(true);
-        float radius = _wheelPanelRadius * (150f / 1440f) * Screen.height;//计算轮盘半径
-        float anglePerOption = 360f / _wheelOptions.Length;
         Time.timeScale = 0f; // 暂停游戏
 
-        // 展开动画：每个选项从中心移动到目标位置
-        for (int i = 0; i < _rankedOptions.Count; i++)
-        {
-            float angle = anglePerOption * i * Mathf.Deg2Rad;
-            Vector2 targetPosition = _screenCenter + new Vector2(Mathf.Sin(angle), Mathf.Cos(angle)) * radius;//获得选项的目标位置，这里的（x，y）三角函数坐标没问题
-
-            _rankedOptions[i].SetActive(true);
-            _rankedOptions[i].transform.position = _screenCenter;
-            _rankedOptions[i].transform
-                .DOMove(targetPosition, _duration)
-                .SetEase(Ease.OutBack)
-                .SetUpdate(true); // 忽略 Time.timeScale
-        }
-
-        _borader.SetActive(true);
-        _borader.transform.position = _screenCenter;
-        _borader.transform.localScale = Vector2.one * _scaleFactor;
+        _formWheelView.ShowWheelPanel(_isKeyBoard);
     }
 
     private void HideWheelPanel()
     {
         _isWheelOpen = false;
 
-        // 停止所有移动动画并清理缩放残留
-        for (int i = 0; i < _rankedOptions.Count; i++)
-        {
-            _rankedOptions[i].transform.DOKill();
-            _rankedOptions[i].transform.localScale = Vector3.one;
-        }
-        _optionScaleTweens.Clear();
+        // 取得本次选择结果
+        bool hasSelectedForm = _formWheelView.TryGetFormByIndex(_currentSelection, out FormType selectedForm);
+
+        _formWheelView.HideWheelPanel();
 
         // 执行选中逻辑
-        if (_currentSelection > 0 && _currentSelection < _rankedOptions.Count)
+        if (hasSelectedForm)
         {
-            FormType selectedForm = unlockedFormTypes[_currentSelection - 1];
             Debug.Log($"UI: Selected Form: {selectedForm}");
             _playerController.SwitchToFormByType(selectedForm);
         }
@@ -166,13 +125,6 @@ public class FormWheelController : MonoBehaviour
             Debug.Log("UI: Cancel selection");
         }
 
-        // 重置选项位置到中心（隐藏）
-        for (int i = 0; i < _rankedOptions.Count; i++)
-        {
-            _rankedOptions[i].transform.position = _screenCenter;
-        }
-
-        _wheelPanel.SetActive(false);
         Time.timeScale = 1f; // 恢复游戏
 
         if (!_isKeyBoard)
@@ -185,7 +137,8 @@ public class FormWheelController : MonoBehaviour
     private void WheelSelect()
     {
         _previousSelection = _currentSelection;
-        int totalCount = _wheelOptions.Length;
+        int totalCount = _formWheelView.GetTotalSlotCount();
+        int visibleOptionCount = _formWheelView.GetVisibleOptionCount();
         float optionAngle = 360f / totalCount;
 
         int tempCount;
@@ -204,10 +157,10 @@ public class FormWheelController : MonoBehaviour
             if (tempCount >= totalCount) tempCount = 0;
 
             //选项夹紧逻辑
-            if (tempCount >= _rankedOptions.Count)
+            if (tempCount >= visibleOptionCount)
             {
-                _currentSelection = (totalCount - tempCount > tempCount - _rankedOptions.Count + 1)
-                    ? _rankedOptions.Count - 1
+                _currentSelection = (totalCount - tempCount > tempCount - visibleOptionCount + 1)
+                    ? visibleOptionCount - 1
                     : 0;
             }
             else
@@ -229,13 +182,13 @@ public class FormWheelController : MonoBehaviour
             _angle = _angle % 360f;
             if (_angle < 0)
             {
-                _angle = (_rankedOptions.Count - 1) * optionAngle;
+                _angle = (visibleOptionCount - 1) * optionAngle;
             }
 
             tempCount = Mathf.RoundToInt(_angle / optionAngle);
             if (tempCount >= totalCount) tempCount = 0;
 
-            if (tempCount >= _rankedOptions.Count)
+            if (tempCount >= visibleOptionCount)
             {
                 tempCount = 0;
                 _angle = 0;
@@ -244,68 +197,23 @@ public class FormWheelController : MonoBehaviour
 
         }
 
-        // 更新 UI 缩放和文字；仅当候选索引变化时更新，避免每帧重复创建Tween
-        if (_currentSelection != _previousSelection)
-        {
-            // 恢复上一个选中项
-            if (_previousSelection >= 0 && _previousSelection < _rankedOptions.Count)
-            {
-                Transform previousTransform = _rankedOptions[_previousSelection].transform;
-                KillOptionScaleTween(previousTransform);
-                _optionScaleTweens[previousTransform] = previousTransform.DOScale(Vector3.one, 0.05f).SetUpdate(true);
-            }
-
-            // 放大当前选中项
-            if (_currentSelection >= 0 && _currentSelection < _rankedOptions.Count)
-            {
-                Transform currentTransform = _rankedOptions[_currentSelection].transform;
-                KillOptionScaleTween(currentTransform);
-                _optionScaleTweens[currentTransform] = currentTransform.DOScale(Vector3.one * _scaleFactor, 0.05f).SetUpdate(true);
-
-                // 更新文字
-                if (_currentSelection > 0)
-                    _selectedOptionText.text = unlockedFormTypes[_currentSelection - 1].ToString();
-                else
-                    _selectedOptionText.text = "Cancel";
-            }
-        }
-
-        // 每帧同步边框位置和箭头方向；不依赖索引是否变化
-        if (_currentSelection >= 0 && _currentSelection < _rankedOptions.Count)
-        {
-            _borader.transform.position = _rankedOptions[_currentSelection].transform.position;
-
-            if (_isKeyBoard)
-            {
-                _arrow.transform.rotation = Quaternion.Euler(0, 0, -_angle);
-            }
-        }
-    }
-
-    // 仅终止某个选项的缩放Tween，不影响同一Transform上的移动Tween
-    private void KillOptionScaleTween(Transform target)
-    {
-        if (_optionScaleTweens.TryGetValue(target, out Tween scaleTween) && scaleTween != null && scaleTween.IsActive())
-        {
-            scaleTween.Kill();
-        }
-        _optionScaleTweens.Remove(target);
+        _formWheelView.UpdateSelectionVisual(_previousSelection, _currentSelection, _angle, _isKeyBoard);
     }
 
     // ---------- 事件监听：解锁新形态 ----------
     private void AddUnlockedForm(FormType form)
     {
-        if (!unlockedFormTypes.Contains(form) && _formTypeToWheelOption.TryGetValue(form, out var option))
+        if (!unlockedFormTypes.Contains(form))
         {
             unlockedFormTypes.Add(form);
-            _rankedOptions.Add(option);
+            _formWheelView.AddUnlockedForm(form);
         }
     }
 
     //清空相关数组，一遍下次存档读取覆盖
     private void ReSetWheelOptions(string fromSceneName, string toScene)
     {
-        _rankedOptions.Clear();
+        _formWheelView.ClearOptions();
         unlockedFormTypes.Clear();
     }
 }
