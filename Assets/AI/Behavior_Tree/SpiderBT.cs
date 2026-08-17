@@ -49,6 +49,7 @@ public class SpiderBT : MonoBehaviour
 
     private SpiderAI _spider;
     private BTNode _root;
+    private AnimalHurtFeedback _hurtFeedback; // 受伤反馈组件（受伤时弹跳+位移）
 
     // 群体巡游（Boids）：成员标识 + 邻居查询缓冲（复用，非分配）
     private FlockMember _flockMember;
@@ -76,6 +77,17 @@ public class SpiderBT : MonoBehaviour
         if (stats == null)
             stats = gameObject.AddComponent<AnimalStats>();
 
+        // 受伤反馈：确保存在 AnimalHurtFeedback（受伤时弹跳+位移+无敌），未挂则运行时补挂
+        _hurtFeedback = GetComponent<AnimalHurtFeedback>();
+        if (_hurtFeedback == null)
+            _hurtFeedback = gameObject.AddComponent<AnimalHurtFeedback>();
+
+        // MC 式软推开：同类重叠时沿最短穿透轴物理推开；蜘蛛 8 向爬墙 → 2D 全向
+        AnimalSoftPush softPush = GetComponent<AnimalSoftPush>();
+        if (softPush == null)
+            softPush = gameObject.AddComponent<AnimalSoftPush>();
+        softPush.Dimension = AnimalSoftPush.PushDimension.Omnidirectional;
+
         // 注册个体领地：每只蜘蛛独立领地（限定在蜘蛛网区域内），半径随强度分映射
         _territoryKey = gameObject.GetInstanceID().ToString();
         TerritoryManager.Register(_territoryKey, _spider.SpawnPosition, AnimalRegion.RegionType.SpiderWeb, isShared: false, strength: stats.Strength);
@@ -97,7 +109,12 @@ public class SpiderBT : MonoBehaviour
             new BTCondition(() => _spider.IsStuck),
             new BTUnstickAction(_spider));
 
-        // 分支2：玩家可见且非同形态 → 追捕（敌对：不依赖威胁值；玩家同为蜘蛛形态时友好，不追捕）
+        // 分支2：受伤反馈 → 弹跳 + 位移（眩晕/脱困之后、追捕之前，受伤瞬间抢占）
+        BTNode hurtBranch = new BTSequence(
+            new BTCondition(() => _hurtFeedback.IsHurting),
+            new BTHurtFeedbackAction(_spider, _hurtFeedback));
+
+        // 分支3：玩家可见且非同形态 → 追捕（敌对：不依赖威胁值；玩家同为蜘蛛形态时友好，不追捕）
         BTNode chaseBranch = new BTSequence(
             new BTCondition(() => bb.IsPlayerVisible && !bb.IsPlayerSameForm),
             new BTChasePlayerAction(_spider, _chaseSpeedMultiplier));
@@ -110,7 +127,7 @@ public class SpiderBT : MonoBehaviour
         // 分支4：默认自由巡游，方向经 Boids 三力修正、中心为个体领地
         BTNode wanderBranch = new BTWanderAction(_spider, _wanderRange, default, ApplyFlockSteering, GetTerritoryCenter);
 
-        return new BTSelector(stunnedBranch, unstickBranch, chaseBranch, searchBranch, wanderBranch);
+        return new BTSelector(stunnedBranch, unstickBranch, hurtBranch, chaseBranch, searchBranch, wanderBranch);
     }
 
     /// <summary>巡游中心：优先用个体领地中心，未分配时回退出生点。</summary>

@@ -41,6 +41,15 @@ public class EnvironmentMonitor : MonoBehaviour
     [SerializeField] private float _wallCheckDistance = 1f;
     [SerializeField] private LayerMask _groundLayer;
 
+    [Tooltip("危险物 Tag 列表（如尖刺 Spike）：前方此距离内命中即视为前方危险，逃跑时绕行。不写死，可在 Inspector 按 Tag 扩展")]
+    [SerializeField] private string[] _hazardTags = { "Spike" };
+
+    [Tooltip("危险物探测距离（米）：朝前方此距离内的危险物视为'前方有危险'")]
+    [SerializeField] private float _hazardCheckDistance = 1.5f;
+
+    [Tooltip("危险物探测盒高度（米）：覆盖体型，防止尖刺太小被 Raycast 穿透漏检")]
+    [SerializeField] private float _hazardCheckHeight = 1.0f;
+
     [Header("Fellow Detection")]
     [SerializeField] private float _fellowRadius = 5f;
     [SerializeField] private LayerMask _fellowLayer;
@@ -302,11 +311,43 @@ public class EnvironmentMonitor : MonoBehaviour
         _bb.IsGroundedAhead = groundHit.collider != null;
         _bb.IsGapAhead = !_bb.IsGroundedAhead;
 
-        // 前方墙壁检测
+        // 前方墙壁检测：除玩家层与自身(Animal)层外，任何非触发器固体都视为墙，
+        // 覆盖"默认层且无 Tag 的墙"等漏配，避免动物反复撞墙。
+        // 仍排除玩家层，避免羊冲撞玩家时被误判为"撞墙提前刹车"。
+        int wallMask = _threatLayer.value != 0
+            ? ~(_threatLayer.value | (1 << gameObject.layer))
+            : ~(1 << gameObject.layer);
         Vector2 wallOrigin = (Vector2)transform.position + Vector2.up * 0.3f;
-        RaycastHit2D wallHit = Physics2D.Raycast(wallOrigin, forward,
-            _wallCheckDistance, _groundLayer);
+        RaycastHit2D wallHit = Physics2D.Raycast(wallOrigin, forward, _wallCheckDistance, wallMask);
         _bb.IsWallAhead = wallHit.collider != null;
+
+        // 前方危险物检测（尖刺等）：OverlapBox 覆盖体型，按 Tag 匹配，供逃跑节点绕行
+        _bb.IsHazardAhead = DetectHazardAhead(forward);
+    }
+
+    /// <summary>
+    /// 朝前方探测危险物（尖刺等）。用 OverlapBox（非 Raycast）覆盖体型，按 Tag 匹配，
+    /// 避免尖刺太小被单射线漏检。空 Tag 列表时直接返回 false（退化关闭）。
+    /// </summary>
+    private bool DetectHazardAhead(Vector2 forward)
+    {
+        if (_hazardTags == null || _hazardTags.Length == 0)
+            return false;
+
+        Vector2 origin = (Vector2)transform.position + Vector2.up * 0.3f;
+        Vector2 center = origin + forward * (_hazardCheckDistance * 0.5f);
+        Vector2 size = new Vector2(_hazardCheckDistance, _hazardCheckHeight);
+
+        Collider2D hit = Physics2D.OverlapBox(center, size, 0f);
+        if (hit == null || hit.isTrigger)
+            return false;
+
+        for (int i = 0; i < _hazardTags.Length; i++)
+        {
+            if (hit.CompareTag(_hazardTags[i]))
+                return true;
+        }
+        return false;
     }
 
     private void DetectFellows()

@@ -93,6 +93,7 @@ public class BubbleFishBT : MonoBehaviour
     private BTNode _root;
     private string _lastBranch;
     private BTNode.State _lastResult;
+    private AnimalHurtFeedback _hurtFeedback; // 受伤反馈组件（受伤时弹跳+位移）
 
     // 群体行为：恐惧传播 + 领头机制（跟随者朝领头逃向）
     private FearSpreader _fearSpreader;
@@ -130,6 +131,17 @@ public class BubbleFishBT : MonoBehaviour
         AnimalStats stats = GetComponent<AnimalStats>();
         if (stats == null)
             stats = gameObject.AddComponent<AnimalStats>();
+
+        // 受伤反馈：确保存在 AnimalHurtFeedback（受伤时弹跳+位移+无敌），未挂则运行时补挂
+        _hurtFeedback = GetComponent<AnimalHurtFeedback>();
+        if (_hurtFeedback == null)
+            _hurtFeedback = gameObject.AddComponent<AnimalHurtFeedback>();
+
+        // MC 式软推开：同类重叠时沿最短穿透轴物理推开；鱼全向游泳 → 2D 全向
+        AnimalSoftPush softPush = GetComponent<AnimalSoftPush>();
+        if (softPush == null)
+            softPush = gameObject.AddComponent<AnimalSoftPush>();
+        softPush.Dimension = AnimalSoftPush.PushDimension.Omnidirectional;
 
         // 注册共享领地：同群鱼共用一个领地（以 FlockId 为 key），共享半径固定（strength 仅作 API 一致性传入）
         _territoryKey = _flockMember != null ? _flockMember.FlockId : gameObject.tag;
@@ -175,6 +187,12 @@ public class BubbleFishBT : MonoBehaviour
             WithDebug("Unstick/Action", new BTUnstickAction(_fish))
         ));
 
+        // 受伤反馈：弹跳 + 位移（眩晕/脱困之后、逃跑之前，受伤瞬间抢占；鱼永不着地，靠超时完成）
+        BTNode hurtBranch = WithDebug("Hurt", new BTSequence(
+            WithDebug("Hurt/Cond", new BTCondition(() => _hurtFeedback.IsHurting)),
+            WithDebug("Hurt/Action", new BTHurtFeedbackAction(_fish, _hurtFeedback))
+        ));
+
         // 逃跑：紧迫威胁 → A* 到离玩家最远的安全点（玩家高代价使路径自动绕开玩家）
         BTNode escapeBranch = WithDebug("Escape", new BTSequence(
             WithDebug("Escape/Cond", new BTCondition(() => bb.IsThreatUrgent)),
@@ -212,7 +230,7 @@ public class BubbleFishBT : MonoBehaviour
             move: (direction, mult) => _fish.Swim(ApplyFlockSteering(direction), mult),
             animResolver: ResolvePathAnimation));
 
-        return new BTSelector(stunnedBranch, unstickBranch, escapeBranch, searchBranch, wanderBranch);
+        return new BTSelector(stunnedBranch, unstickBranch, hurtBranch, escapeBranch, searchBranch, wanderBranch);
     }
 
     /// <summary>

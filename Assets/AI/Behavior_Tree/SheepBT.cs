@@ -47,6 +47,7 @@ public class SheepBT : MonoBehaviour
     private SheepAI _sheep;
     private RevengeBehavior _revenge;
     private BTNode _root;
+    private AnimalHurtFeedback _hurtFeedback; // 受伤反馈组件（受伤时弹跳+位移）
 
     // 群体巡游（Boids）：成员标识 + 邻居查询缓冲（复用，非分配）
     private FlockMember _flockMember;
@@ -75,6 +76,15 @@ public class SheepBT : MonoBehaviour
         if (stats == null)
             stats = gameObject.AddComponent<AnimalStats>();
 
+        // 受伤反馈：确保存在 AnimalHurtFeedback（受伤时弹跳+位移+无敌），未挂则运行时补挂
+        _hurtFeedback = GetComponent<AnimalHurtFeedback>();
+        if (_hurtFeedback == null)
+            _hurtFeedback = gameObject.AddComponent<AnimalHurtFeedback>();
+
+        // MC 式软推开：同类重叠时沿最短穿透轴物理推开（仅水平，横板标准），未挂则运行时补挂
+        if (GetComponent<AnimalSoftPush>() == null)
+            gameObject.AddComponent<AnimalSoftPush>();
+
         // 注册个体领地：每只羊独立领地（以实例 ID 为 key），半径随强度分映射
         _territoryKey = gameObject.GetInstanceID().ToString();
         TerritoryManager.Register(_territoryKey, _sheep.SpawnPosition, AnimalRegion.RegionType.Generic, isShared: false, strength: stats.Strength);
@@ -96,7 +106,12 @@ public class SheepBT : MonoBehaviour
             new BTCondition(() => _sheep.IsStuck),
             new BTUnstickAction(_sheep));
 
-        // 分支2：复仇状态且复仇目标存活 → 追猎 + 冲撞攻击（目标抽象：攻击者，不限玩家）
+        // 分支2：受伤反馈 → 弹跳 + 位移（眩晕/脱困之后、复仇之前，受伤瞬间抢占）
+        BTNode hurtBranch = new BTSequence(
+            new BTCondition(() => _hurtFeedback.IsHurting),
+            new BTHurtFeedbackAction(_sheep, _hurtFeedback));
+
+        // 分支3：复仇状态且复仇目标存活 → 追猎 + 冲撞攻击（目标抽象：攻击者，不限玩家）
         BTNode revengeBranch = new BTSequence(
             new BTCondition(() => _revenge.IsRevenge && _revenge.RevengeTarget != null),
             new BTChargeAction(_sheep,
@@ -106,7 +121,7 @@ public class SheepBT : MonoBehaviour
         // 分支3：默认自由巡游（中立：不逃跑、不搜索），方向经 Boids 三力修正、中心为个体领地
         BTNode wanderBranch = new BTWanderAction(_sheep, _wanderRange, default, ApplyFlockSteering, GetTerritoryCenter);
 
-        return new BTSelector(stunnedBranch, unstickBranch, revengeBranch, wanderBranch);
+        return new BTSelector(stunnedBranch, unstickBranch, hurtBranch, revengeBranch, wanderBranch);
     }
 
     /// <summary>巡游中心：优先用个体领地中心，未分配时回退出生点。</summary>

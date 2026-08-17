@@ -78,6 +78,9 @@ public class Blackboard
     /// <summary>前方是否有沟壑（无地面）。</summary>
     public bool IsGapAhead;
 
+    /// <summary>前方是否有危险物（尖刺等，由 EnvironmentMonitor 按 Tag 检测）。</summary>
+    public bool IsHazardAhead;
+
     // ---- 内部需求（由 NeedsSystem 写入，预留）----
     /// <summary>饥饿度（0-100），驱动觅食行为。</summary>
     public float HungerLevel;
@@ -95,6 +98,37 @@ public class Blackboard
     /// <summary>是否处于连跳组间的喘息停顿（跳一组后的短暂休息，播放 Rest 动画）。
     /// 与 IsStunned 互斥：喘息是觅食节奏的一部分，眩晕是吞噬/受击僵直。</summary>
     public bool IsPanting;
+
+    // ---- 无敌状态（由 AnimalHurtFeedback 写入，受伤反馈期间生效）----
+    /// <summary>无敌截止时间点（Time.time）。受伤瞬间由 AnimalHurtFeedback 设置，期间重复触碰伤害源不触发。</summary>
+    public float InvincibleUntilTime = float.NegativeInfinity;
+
+    /// <summary>当前是否处于无敌中（与 IsStunned 语义不同：无敌期间动物仍可行动，只是免疫伤害）。</summary>
+    public bool IsInvincible => Time.time < InvincibleUntilTime;
+
+    // ---- 场景伤害源记忆（由 AnimalHurtFeedback 写入，觅食/巡游回避使用）----
+    /// <summary>最近一次受伤的伤害源世界位置。</summary>
+    public Vector2 LastHazardPosition;
+
+    /// <summary>最近一次受伤的时间戳（Time.time）。</summary>
+    public float LastHazardTime = float.NegativeInfinity;
+
+    /// <summary>记忆期内连续受伤次数（软→硬递进：1 次软偏置，≥阈值硬禁止）。</summary>
+    public int HazardHitCount;
+
+    /// <summary>伤害源记忆保留时长（秒），超时遗忘。</summary>
+    public float HazardMemoryDuration = 5f;
+
+    /// <summary>伤害源记忆是否仍有效。</summary>
+    public bool HasHazardMemory => Time.time - LastHazardTime <= HazardMemoryDuration;
+
+    /// <summary>记录一次伤害源受伤：记忆期内连击累加，否则重置为 1。</summary>
+    public void RememberHazard(Vector2 position)
+    {
+        HazardHitCount = HasHazardMemory ? HazardHitCount + 1 : 1;
+        LastHazardPosition = position;
+        LastHazardTime = Time.time;
+    }
 
     // ---- 回撤状态（由逃生节点写入，回撤节点读取）----
     /// <summary>逃生起点：脱离危险后需要返回的位置（由逃生节点进入时记录）。</summary>
@@ -225,6 +259,10 @@ public class Blackboard
         IsPlayerSameForm = false;
         StunUntilTime = float.NegativeInfinity;
         IsPanting = false;
+        InvincibleUntilTime = float.NegativeInfinity;
+        LastHazardPosition = Vector2.zero;
+        LastHazardTime = float.NegativeInfinity;
+        HazardHitCount = 0;
         PlayerDistance = 0f;
         PlayerDirection = Vector2.zero;
         IsFoodDetected = false;
@@ -234,6 +272,7 @@ public class Blackboard
         IsGroundedAhead = false;
         IsWallAhead = false;
         IsGapAhead = false;
+        IsHazardAhead = false;
         HungerLevel = 0f;
         CurrentBehavior = "";
         RetreatTarget = Vector2.zero;
