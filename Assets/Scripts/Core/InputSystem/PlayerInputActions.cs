@@ -181,6 +181,15 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""SpitFire"",
+                    ""type"": ""Button"",
+                    ""id"": ""a1b2c3d4-0004-4000-8000-000000000004"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -577,6 +586,17 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": ""Gamepad"",
                     ""action"": ""Spit"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""a1b2c3d4-0005-4000-8000-000000000005"",
+                    ""path"": ""<Keyboard>/j"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""SpitFire"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -1174,6 +1194,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         m_Slime_Menu = m_Slime.FindAction("Menu", throwIfNotFound: true);
         m_Slime_Scroll = m_Slime.FindAction("Scroll", throwIfNotFound: true);
         m_Slime_Spit = m_Slime.FindAction("Spit", throwIfNotFound: true);
+        m_Slime_SpitFire = m_Slime.FindAction("SpitFire", throwIfNotFound: true);
         // UI
         m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
         m_UI_Navigate = m_UI.FindAction("Navigate", throwIfNotFound: true);
@@ -1277,6 +1298,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Slime_Menu;
     private readonly InputAction m_Slime_Scroll;
     private readonly InputAction m_Slime_Spit;
+    private readonly InputAction m_Slime_SpitFire;
     /// <summary>
     /// Provides access to input actions defined in input action map "Slime".
     /// </summary>
@@ -1328,6 +1350,10 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Slime/Spit".
         /// </summary>
         public InputAction @Spit => m_Wrapper.m_Slime_Spit;
+        /// <summary>
+        /// Provides access to the underlying input action "Slime/SpitFire".
+        /// </summary>
+        public InputAction @SpitFire => m_Wrapper.m_Slime_SpitFire;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -1384,6 +1410,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @Spit.started += instance.OnSpit;
             @Spit.performed += instance.OnSpit;
             @Spit.canceled += instance.OnSpit;
+            @SpitFire.started += instance.OnSpitFire;
+            @SpitFire.performed += instance.OnSpitFire;
+            @SpitFire.canceled += instance.OnSpitFire;
         }
 
         /// <summary>
@@ -1425,6 +1454,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @Spit.started -= instance.OnSpit;
             @Spit.performed -= instance.OnSpit;
             @Spit.canceled -= instance.OnSpit;
+            @SpitFire.started -= instance.OnSpitFire;
+            @SpitFire.performed -= instance.OnSpitFire;
+            @SpitFire.canceled -= instance.OnSpitFire;
         }
 
         /// <summary>
@@ -1795,6 +1827,13 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnSpit(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "SpitFire" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnSpitFire(InputAction.CallbackContext context);
     }
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "UI" which allows adding and removing callbacks.

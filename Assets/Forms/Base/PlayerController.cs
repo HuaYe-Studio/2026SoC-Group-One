@@ -86,11 +86,24 @@ public class PlayerController : MonoBehaviour
     private void OnEnable()
     {
         MockEventCenter.OnFormUnlocked += AddNewForm;
+        MockEventCenter.OnPlayerDeath += OnPlayerDeathHandler;
+        MockEventCenter.OnPlayerRespawn += OnPlayerRespawnHandler;
     }
 
     private void OnDisable()
     {
         MockEventCenter.OnFormUnlocked -= AddNewForm;
+        MockEventCenter.OnPlayerDeath -= OnPlayerDeathHandler;
+        MockEventCenter.OnPlayerRespawn -= OnPlayerRespawnHandler;
+    }
+
+    private void OnPlayerDeathHandler() => ActiveForm?.Die();
+
+    private void OnPlayerRespawnHandler()
+    {
+        if (allForms == null) return;
+        foreach (BaseForm form in allForms)
+            if (form != null) form.Revive();
     }
 
     private void AddNewForm(FormType formType)

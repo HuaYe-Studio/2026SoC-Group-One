@@ -32,14 +32,14 @@ public static class MockEventCenter
         OnFormChanged?.Invoke(formType);
     }
 
-    public static event System.Action<int, int> OnCheckPlayerHP;
+    public static event Action<int, int> OnCheckPlayerHP;
 
     public static void TriggerCheckPlayerHP(int currentHP, int maxHP)
     {
         OnCheckPlayerHP?.Invoke(currentHP, maxHP);
     }
 
-    public static event System.Action<int, int> OnPlayerHurt;
+    public static event Action<int, int> OnPlayerHurt;
 
     public static void TriggerPlayerHurt(int currentHP, int maxHP)
     {
@@ -47,7 +47,7 @@ public static class MockEventCenter
         Debug.Log($"Player hurt: {currentHP}/{maxHP}");
     }
 
-    public static event System.Action<int, int> OnPlayerHeal;
+    public static event Action<int, int> OnPlayerHeal;
 
     public static void TriggerPlayerHeal(int currentHP, int maxHP)
     {
@@ -55,28 +55,28 @@ public static class MockEventCenter
         Debug.Log($"Player healed: {currentHP}/{maxHP}");
     }
 
-    public static event System.Action OnPlayerDeath;
+    public static event Action OnPlayerDeath;
 
     public static void TriggerPlayerDeath()
     {
         OnPlayerDeath?.Invoke();
     }
 
+    public static event Action OnPlayerRespawn;
+
+    public static void TriggerPlayerRespawn()
+    {
+        OnPlayerRespawn?.Invoke();
+    }
+
     /// <summary>
     /// 某只动物被攻击（任何来源：玩家吞噬、敌方碰撞、陷阱等）。
     /// 供通用复仇机制感知：攻击者是谁，受害者是谁。
     /// </summary>
-    public static event System.Action<GameObject, GameObject, float> OnAnimalAttacked;
+    public static event Action<GameObject, GameObject, float> OnAnimalAttacked;
 
     public static void TriggerAnimalAttacked(GameObject victim, GameObject attacker, float damage)
     {
         OnAnimalAttacked?.Invoke(victim, attacker, damage);
     }
-    public static event System.Action<float, float> OnStaminaChanged;
-
-    public static void TriggerStaminaChanged(float current, float max)
-    {
-        OnStaminaChanged?.Invoke(current, max);
-    }
-
 }
