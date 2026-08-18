@@ -145,15 +145,16 @@ public class BTFleeAction : BTNode
 
     /// <summary>
     /// 地形感知：利用 Blackboard 的地形感知结果调整逃跑方向。
-    /// 前方有墙 → 第1次反向跳（换方向逃）；连续撞墙 → 原地垂直跳，
-    /// 避免"逃离→撞墙→朝玩家方向跳→再撞墙"的墙角乒乓。
+    /// 前方有墙或危险物（尖刺）→ 反向跳（换方向逃）；连续撞墙 → 原地垂直跳，
+    /// 避免"逃离→撞墙/踩刺→朝玩家方向跳→再撞墙"的墙角乒乓。
     /// </summary>
     private float ApplyTerrainAwareness(float direction)
     {
         if (_frog == null)
             return direction;
 
-        if (_bb.IsWallAhead)
+        // 前方有墙或危险物（尖刺）都视为"此路不通"，统一反向跳避开
+        if (_bb.IsWallAhead || _bb.IsHazardAhead)
         {
             _consecutiveWallHits++;
             _lastWallHitTime = Time.time;

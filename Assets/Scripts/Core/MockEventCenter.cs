@@ -79,4 +79,30 @@ public static class MockEventCenter
     {
         OnAnimalAttacked?.Invoke(victim, attacker, damage);
     }
+
+    // ---- BOSS 战广播（跨模块：UI 血条 / 音效 / 表现层订阅）----
+
+    /// <summary>蜂巢被破坏（参数=蜂巢编号 1/2/3）。由 Hive 内部触发。</summary>
+    public static event Action<int> OnHiveDestroyed;
+
+    public static void TriggerHiveDestroyed(int hiveIndex)
+    {
+        OnHiveDestroyed?.Invoke(hiveIndex);
+    }
+
+    /// <summary>BOSS 阶段变化（参数=新阶段）。由 BossController.SetPhase 触发。</summary>
+    public static event Action<BossPhase> OnBossPhaseChanged;
+
+    public static void TriggerBossPhaseChanged(BossPhase phase)
+    {
+        OnBossPhaseChanged?.Invoke(phase);
+    }
+
+    /// <summary>BOSS 已被击败（胜利）。由 BossController 退去时触发。</summary>
+    public static event Action OnBossDefeated;
+
+    public static void TriggerBossDefeated()
+    {
+        OnBossDefeated?.Invoke();
+    }
 }
