@@ -50,4 +50,5 @@ ProjectSettings/TimelineSettings.assettemp_docx/
 .hermes/
 CLAUDE.md
 .mcp.json
+.claude/settings.local.json
 .vsconfig

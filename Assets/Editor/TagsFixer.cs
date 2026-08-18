@@ -13,8 +13,18 @@ public static class TagsFixer
         Debug.Log("标签修复完成：Player、Animal 标签已存在，Sheep 标签已设为 Animal");
     }
 
+    private static readonly string[] BuiltInDefaultTags =
+    {
+        "Untagged", "Respawn", "Finish", "EditorOnly", "MainCamera", "Player", "GameController"
+    };
+
     private static void EnsureTag(string tag)
     {
+        if (System.Array.IndexOf(BuiltInDefaultTags, tag) >= 0)
+        {
+            Debug.Log("跳过内置默认标签: " + tag);
+            return;
+        }
         Object tagManager = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0];
         SerializedObject so = new SerializedObject(tagManager);
         SerializedProperty tags = so.FindProperty("tags");
