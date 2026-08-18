@@ -23,8 +23,11 @@ public class SlidingDoor : MonoBehaviour
         if (rb == null)
             rb = gameObject.AddComponent<Rigidbody2D>();
 
+        // 关键设置：IsKinematic 让门不受外力影响
+        rb.isKinematic = true;
         rb.gravityScale = 0f;
         rb.constraints = RigidbodyConstraints2D.FreezeRotation;
+        rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
 
         if (autoFindTerminal && terminal == null)
             terminal = GetComponent<Terminal>();
@@ -32,7 +35,8 @@ public class SlidingDoor : MonoBehaviour
         closedPos = closedPoint != null ? (Vector2)closedPoint.position : (Vector2)transform.position;
         openPos = openPoint != null ? (Vector2)openPoint.position : closedPos + Vector2.right * 3f;
 
-        transform.position = startOpen ? openPos : closedPos;
+        // 使用 rb.position 而不是 transform.position
+        rb.position = startOpen ? openPos : closedPos;
         isOpen = startOpen;
 
         if (terminal != null)
@@ -45,18 +49,10 @@ public class SlidingDoor : MonoBehaviour
     private void FixedUpdate()
     {
         Vector2 targetPos = isOpen ? openPos : closedPos;
-        float distance = Vector2.Distance(transform.position, targetPos);
 
-        if (distance < 0.01f)
-        {
-            rb.velocity = Vector2.zero;
-            transform.position = targetPos;
-        }
-        else
-        {
-            Vector2 direction = (targetPos - (Vector2)transform.position).normalized;
-            rb.velocity = direction * slideSpeed;
-        }
+        // 使用 MovePosition 控制 kinematic rigidbody
+        Vector2 newPos = Vector2.MoveTowards(rb.position, targetPos, slideSpeed * Time.fixedDeltaTime);
+        rb.MovePosition(newPos);
     }
 
     private void OnTerminalChanged(bool state)
