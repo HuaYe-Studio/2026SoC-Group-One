@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 2698408973274465834}
   - component: {fileID: 4670522009570192737}
   - component: {fileID: 8665883185476409654}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: PF_Mech_Platform
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -132,7 +132,7 @@ BoxCollider2D:
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: 0, y: 0.24882719}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -143,7 +143,7 @@ BoxCollider2D:
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 1, y: 1}
+  m_Size: {x: 1, y: 0.5023456}
   m_EdgeRadius: 0
 --- !u!50 &8665883185476409654
 Rigidbody2D:
