@@ -520,6 +520,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8010264352765468477}
   - component: {fileID: 7148762086464606629}
+  - component: {fileID: 2989935047161419185}
   m_Layer: 5
   m_Name: PF_UI_FormWheel
   m_TagString: Untagged
@@ -555,6 +556,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0f4d448b76ba8ad45a06a10035422f11, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _isKeyBoard: 0
+--- !u!114 &2989935047161419185
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3266552620380050464}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4464e862affd27244a054bdb265a8265, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
   _wheelPanel: {fileID: 8557841280180362902}
   _wheelPanelRadius: 2
   _wheelOptions:
@@ -571,7 +585,6 @@ MonoBehaviour:
   _duration: 0.2
   _scaleFactor: 1.6
   _selectedOptionText: {fileID: 3970280872399873308}
-  _isKeyBoard: 0
   _arrow: {fileID: 6883443519248066541}
 --- !u!1 &3897506599815253599
 GameObject:
