@@ -80,7 +80,7 @@ public static class MockEventCenter
         OnAnimalAttacked?.Invoke(victim, attacker, damage);
     }
 
-    // ---- BOSS 战广播（跨模块：UI 血条 / 音效 / 组员 A/B 订阅）----
+    // ---- BOSS 战广播（跨模块：UI 血条 / 音效 / 表现层订阅）----
 
     /// <summary>蜂巢被破坏（参数=蜂巢编号 1/2/3）。由 Hive 内部触发。</summary>
     public static event Action<int> OnHiveDestroyed;

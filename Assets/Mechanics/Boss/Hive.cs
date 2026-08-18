@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// 蜂巢：BOSS 战的破坏目标。由组员实现具体表现（模型/粒子/音效），
+/// 蜂巢：BOSS 战的破坏目标。具体表现（模型/粒子/音效）由表现层实现，
 /// Boss 侧只依赖本契约调用 TakeHit / 订阅 OnDestroyed。
 /// 破坏全部蜂巢 → BossController.NotifyHiveDestroyed → 进入胜利时序（PendingVictory）。
 /// </summary>
@@ -42,7 +42,7 @@ public class Hive : MonoBehaviour
         _isDestroyed = true;
         OnDestroyed?.Invoke(this);
         MockEventCenter.TriggerHiveDestroyed(hiveIndex);
-        // 表现（模型隐藏/粒子/音效）由组员实现，这里仅禁用碰撞与渲染占位
+        // 表现（模型隐藏/粒子/音效）由表现层处理，这里仅禁用碰撞与渲染占位
         var collider = GetComponent<Collider2D>();
         if (collider != null) collider.enabled = false;
         var renderer = GetComponent<SpriteRenderer>();

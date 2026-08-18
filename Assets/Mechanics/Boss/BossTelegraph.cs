@@ -2,11 +2,11 @@ using UnityEngine;
 
 /// <summary>
 /// 红框预警组件：攻击前显示伤害区域，给玩家反应窗口。
-/// 由 UI/组员实现表现（红框 Sprite/LineRenderer/闪烁动画），Boss 侧只依赖本契约。
+/// 表现（红框 Sprite/LineRenderer/闪烁动画）由表现层实现，Boss 侧只依赖本契约。
 /// </summary>
 public class BossTelegraph : MonoBehaviour
 {
-    [Tooltip("红框渲染组件（组员实现时挂具体渲染器，这里预留引用）")]
+    [Tooltip("红框渲染组件（表现层实现时挂具体渲染器，这里预留引用）")]
     [SerializeField] private SpriteRenderer _boxRenderer;
 
     [Tooltip("红框尺寸初始值（由 BossAttack.hitboxSize 驱动）")]
@@ -65,6 +65,13 @@ public class BossTelegraph : MonoBehaviour
         gameObject.SetActive(false);
         if (_boxRenderer != null)
             _boxRenderer.enabled = false;
+    }
+
+    /// <summary>设置红框可见性（锁定阶段闪烁用，不改变 _isActive 状态）。</summary>
+    public void SetVisible(bool visible)
+    {
+        if (_boxRenderer != null)
+            _boxRenderer.enabled = visible;
     }
 
     /// <summary>定位到指定位置（跟随预警每帧调用）。</summary>

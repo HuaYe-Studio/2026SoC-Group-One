@@ -64,6 +64,10 @@ public class EnvironmentMonitor : MonoBehaviour
     private PlayerController _playerController;
     private DevourableAnimal _devourable; // 提供自身形态，用于同形态友好判定
 
+    // BOSS 感知：缓存 BossController 引用（懒加载 + 每秒重试，避免每帧 FindObjectOfType）
+    private BossController _bossController;
+    private float _nextBossFindTime;
+
     // 调试用：记录上次输出时的状态，只在变化时输出
     private bool _lastLogVisible;
     private bool _lastLogSameForm;
@@ -118,6 +122,7 @@ public class EnvironmentMonitor : MonoBehaviour
         _bb.AnimalPosition = transform.position;
 
         DetectThreats();
+        DetectBoss();
         DetectFood();
         DetectTerrain();
         DetectFellows();
@@ -236,6 +241,53 @@ public class EnvironmentMonitor : MonoBehaviour
 
         // 感知数据写入完毕后，刷新带迟滞的威胁紧迫状态（供逃生/回撤决策使用）
         _bb.RefreshThreatUrgent();
+    }
+
+    /// <summary>
+    /// BOSS 感知：读 BossController 的威胁属性，写入 Blackboard 的 BOSS 维度。
+    /// 检测半径 = BossController.ThreatRadius（狂暴时增大）；威胁强度 = ThreatLevel（狂暴时提升）。
+    /// 仅 BOSS 激活（IsActive）时感知，未找到/未激活时清零。
+    /// 写入后由决策层（BTBossFleeAction）调用 RefreshBossUrgent 做迟滞仲裁。
+    /// </summary>
+    private void DetectBoss()
+    {
+        if (_bossController == null && Time.time >= _nextBossFindTime)
+        {
+            _bossController = FindObjectOfType<BossController>();
+            _nextBossFindTime = Time.time + 1f; // 未找到时每秒重试一次
+        }
+
+        if (_bossController == null || !_bossController.IsActive)
+        {
+            _bb.IsBossDetected = false;
+            _bb.BossDistance = 0f;
+            _bb.BossThreatLevel = 0f;
+            return;
+        }
+
+        Transform bossTransform = _bossController.ThreatTransform;
+        if (bossTransform == null)
+        {
+            _bb.IsBossDetected = false;
+            _bb.BossDistance = 0f;
+            _bb.BossThreatLevel = 0f;
+            return;
+        }
+
+        float dist = Vector2.Distance(transform.position, bossTransform.position);
+        if (dist <= _bossController.ThreatRadius)
+        {
+            _bb.IsBossDetected = true;
+            _bb.BossDirection = ((Vector2)(bossTransform.position - transform.position)).normalized;
+            _bb.BossDistance = dist;
+            _bb.BossThreatLevel = _bossController.ThreatLevel;
+        }
+        else
+        {
+            _bb.IsBossDetected = false;
+            _bb.BossDistance = dist;
+            _bb.BossThreatLevel = 0f;
+        }
     }
 
     /// <summary>

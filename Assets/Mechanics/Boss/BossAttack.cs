@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 
 /// <summary>
-/// 攻击上下文：把"攻击 ↔ BOSS"解耦。组员 A 实现的具体攻击只依赖此上下文，
+/// 攻击上下文：把"攻击 ↔ BOSS"解耦。具体攻击实现只依赖此上下文，
 /// 不直接引用 BossController，BossController 构造上下文并驱动攻击执行。
 /// </summary>
 public struct BossAttackContext

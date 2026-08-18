@@ -378,6 +378,7 @@ public class FrogBT : MonoBehaviour
 
         string branch = bb.IsStunned ? "Stunned眩晕"
             : _frog.IsStuck ? "Unstick脱困"
+            : bb.IsBossUrgent ? "BossEscape逃离BOSS"
             : bb.IsThreatUrgent ? "Flee逃跑"
             : bb.ShouldSearch ? "Search搜索"
             : bb.IsFoodDetected ? "Pounce捕食"

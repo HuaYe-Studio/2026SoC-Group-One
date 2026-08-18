@@ -3,6 +3,20 @@ using System.Collections;
 using UnityEngine;
 
 /// <summary>
+/// BOSS 动画状态枚举：驱动 Animator 整数参数（BOSS_AnimState），与动物 AnimState 模式一致。
+/// 预留接口：BossController 在关键时机自动调用 SetAnimState；攻击实现/表现层可直接复用。
+/// 动画师只需在 Animator 上建立同名整数参数并挂对应状态（0=Idle 1=Enter 2=Attack 3=Enrage 4=Defeated）。
+/// </summary>
+public enum BossAnimState
+{
+    Idle = 0,     // 待机/常态
+    Enter = 1,    // 出场滑入
+    Attack = 2,   // 通用攻击（拍击/撕咬/横扫共用，细分状态可后续扩展枚举）
+    Enrage = 3,   // 狂暴（阶段变化时触发，动画师可做变身闪红/膨胀）
+    Defeated = 4, // 被击败/退去
+}
+
+/// <summary>
 /// 蛇王 BOSS 控制器：状态机（5 状态）+ 3 段血条 + 攻击调度 + 威胁源注册 + 出场/退去。
 ///
 /// 状态机：Normal → Enrage1 → Enrage2 → Enrage3 → Defeated。
@@ -17,7 +31,7 @@ using UnityEngine;
 ///
 /// 设计约定（需团队确认）：
 /// - 胜利条件默认「破坏全部蜂巢」（_winOnAllHives）或「Enrage3 残余血量打空」（_winOnHpDepleted），两者独立；
-/// - BOSS 受击伤害入口 TakeDamage(int) 已就绪，具体伤害来源（玩家直击/蜂巢连锁爆炸）由组员后续对接；
+/// - BOSS 受击伤害入口 TakeDamage(int) 已就绪，具体伤害来源（玩家直击/蜂巢连锁爆炸等）由后续系统对接；
 /// - 蜂巢被毁默认不直接伤害 BOSS（_segmentDamagePerHive=0），如需"一蜂巢=一段血"可配置为 1。
 /// </summary>
 public class BossController : MonoBehaviour, IHazardSource
@@ -38,13 +52,15 @@ public class BossController : MonoBehaviour, IHazardSource
     [SerializeField] private Hive[] _hives;
     [Tooltip("摄像机控制器（入场拉远/退去恢复）。留空则自动查找")]
     [SerializeField] private CameraController _camera;
+    [Tooltip("BOSS 动画组件（Animator 参数 BOSS_AnimState）。留空则自动在自身/子物体查找")]
+    [SerializeField] private Animator _animator;
 
     [Header("出场/退去")]
-    [Tooltip("出场起点偏移（相对站位）：从场边滑入。零向量=原地出场")]
-    [SerializeField] private Vector2 _enterOffset = new Vector2(10f, 0f);
+    [Tooltip("出场起点偏移（相对站位）：BOSS 从「站位+此偏移」处滑入站位。\n正值=从右侧滑入（向左移动）；负值=从左侧滑入（向右移动，BOSS 从左往右出场用负值）。零向量=原地出场")]
+    [SerializeField] private Vector2 _enterOffset = new Vector2(-10f, 0f);
     [Tooltip("出场滑入耗时（秒）")]
     [SerializeField] private float _enterDuration = 1.2f;
-    [Tooltip("退去目标位移（相对站位）")]
+    [Tooltip("退去目标位移（相对站位）：BOSS 往「站位+此偏移」方向滑出。\n正值=向右退去；负值=向左退去")]
     [SerializeField] private Vector2 _exitOffset = new Vector2(8f, 0f);
     [Tooltip("退去滑出耗时（秒）")]
     [SerializeField] private float _exitDuration = 1.5f;
@@ -85,6 +101,16 @@ public class BossController : MonoBehaviour, IHazardSource
     [Tooltip("攻击命中玩家的伤害值（PlayerHP.TakeDamage）")]
     [SerializeField] private int _attackDamage = 1;
 
+    [Header("移动追击")]
+    [Tooltip("开启战斗期追击：BOSS 朝玩家水平移动（除出场/退去滑行外的主动移动方式）")]
+    [SerializeField] private bool _enableChase = true;
+    [Tooltip("追击速度（米/秒）")]
+    [SerializeField] private float _chaseSpeed = 2f;
+    [Tooltip("贴近距离（米）：与玩家距离小于此值停止追击（给攻击预警/判定腾出空间）")]
+    [SerializeField] private float _chaseStopDistance = 2f;
+    [Tooltip("最大追击距离（米）：超出此距离不追（防止追出场外）")]
+    [SerializeField] private float _chaseMaxDistance = 20f;
+
     [Header("威胁源（IHazardSource + 感知契约）")]
     [Tooltip("接触伤害值（BOSS 本体触碰动物/玩家，供 IHazardSource 消费方使用）")]
     [SerializeField] private int _contactDamage = 1;
@@ -118,6 +144,8 @@ public class BossController : MonoBehaviour, IHazardSource
     private BossAttack _currentAttack;
     private Coroutine _attackLoop;
     private Coroutine _movementRoutine;
+    private Coroutine _chaseRoutine;   // 移动追击协程（战斗期朝玩家水平移动）
+    private Rigidbody2D _rb;           // 追击用刚体（Kinematic 优先；未挂则直接改 Transform）
     private Vector2 _arenaPosition;  // 站位（出场滑入/退去滑出的基准点）
 
     // ---- 对外事件契约（UI 血条/文字提示/音效订阅）----
@@ -139,7 +167,7 @@ public class BossController : MonoBehaviour, IHazardSource
     public int CurrentSegmentHP => _currentSegmentHP;
     public int SegmentMax => _segmentMax;
 
-    // ---- 感知层契约（组员 B 的 EnvironmentMonitor 读取）----
+    // ---- 感知层契约（EnvironmentMonitor 读取）----
     /// <summary>BOSS 位置锚点（感知层检测基准）。</summary>
     public Transform ThreatTransform => _snakeHead != null ? _snakeHead : transform;
     /// <summary>感知半径（狂暴时增大）。</summary>
@@ -155,8 +183,26 @@ public class BossController : MonoBehaviour, IHazardSource
     public int Damage => _contactDamage;
     public Vector2 Knockback => _contactKnockback;
 
+    // ---- 动画预留接口（Animator 参数 BOSS_AnimState，见 BossAnimState 枚举）----
+    /// <summary>BOSS Animator（供攻击实现/表现层直接取用；未配置时返回 null）。</summary>
+    public Animator BossAnimator => _animator;
+
+    /// <summary>
+    /// 设置 BOSS 动画状态（写 Animator 整数参数 BOSS_AnimState）。
+    /// 未挂 Animator 时静默忽略，不影响逻辑运行。动画师可直接用此方法驱动任意动画。
+    /// </summary>
+    public void SetAnimState(BossAnimState state)
+    {
+        if (_animator == null) return;
+        _animator.SetInteger(BossAnimParam, (int)state);
+    }
+
+    private const string BossAnimParam = "BOSS_AnimState";
+
     private void Awake()
     {
+        _rb = GetComponent<Rigidbody2D>();
+
         if (_player == null)
         {
             GameObject playerGo = GameObject.FindGameObjectWithTag("Player");
@@ -175,6 +221,8 @@ public class BossController : MonoBehaviour, IHazardSource
             _telegraph = GetComponentInChildren<BossTelegraph>(true);
         if (_camera == null)
             _camera = FindObjectOfType<CameraController>();
+        if (_animator == null)
+            _animator = GetComponentInChildren<Animator>(true);
         if (_snakeHead == null) _snakeHead = transform;
         if (_snakeTail == null) _snakeTail = transform;
 
@@ -218,6 +266,9 @@ public class BossController : MonoBehaviour, IHazardSource
 
         if (_telegraph != null) _telegraph.Hide();
 
+        // 出场动画（滑入期间）
+        SetAnimState(BossAnimState.Enter);
+
         // 摄像机拉远（5 → 6.5 平滑）
         if (_camera != null) _camera.EnterBossArena(_arenaCameraSize);
 
@@ -227,6 +278,10 @@ public class BossController : MonoBehaviour, IHazardSource
 
         // 攻击调度
         _attackLoop = StartCoroutine(AttackLoop());
+
+        // 移动追击（战斗期朝玩家水平移动）
+        if (_enableChase)
+            _chaseRoutine = StartCoroutine(ChasePlayer());
 
         Debug.Log($"[BossController] {name} 进入场地，阶段={_phase}", this);
     }
@@ -246,6 +301,8 @@ public class BossController : MonoBehaviour, IHazardSource
             }
             transform.position = _arenaPosition;
         }
+        // 出场滑入结束 → 待机
+        SetAnimState(BossAnimState.Idle);
         _movementRoutine = null;
     }
 
@@ -253,6 +310,7 @@ public class BossController : MonoBehaviour, IHazardSource
     private IEnumerator DefeatSequence()
     {
         if (_attackLoop != null) { StopCoroutine(_attackLoop); _attackLoop = null; }
+        if (_chaseRoutine != null) { StopCoroutine(_chaseRoutine); _chaseRoutine = null; }
 
         SetPhase(BossPhase.Defeated);
 
@@ -291,6 +349,44 @@ public class BossController : MonoBehaviour, IHazardSource
         gameObject.SetActive(false);
     }
 
+    // ===================== 移动追击 =====================
+
+    /// <summary>
+    /// 战斗期移动追击：每帧朝玩家水平移动（只动 x，保留重力/物理 y）。
+    /// 追击条件：激活 + 非击败 + 玩家存在 + 距离在（贴近距离, 最大追击距离）区间内。
+    /// 贴近距离内停止追击，给攻击预警/判定腾出空间；超出最大距离不追，防止追出场外。
+    /// </summary>
+    private IEnumerator ChasePlayer()
+    {
+        while (_isActive && _phase != BossPhase.Defeated)
+        {
+            if (_player != null)
+            {
+                float dist = Vector2.Distance(transform.position, _player.position);
+                if (dist > _chaseStopDistance && dist <= _chaseMaxDistance)
+                {
+                    // 水平朝玩家逼近（位移方式由 MoveBoss 统一处理：Rigidbody2D 或直接 Transform）
+                    MoveBoss(new Vector3(
+                        Mathf.Sign(_player.position.x - transform.position.x) * _chaseSpeed * Time.deltaTime,
+                        0f, 0f));
+                }
+            }
+            yield return null;
+        }
+        _chaseRoutine = null;
+    }
+
+    /// <summary>
+    /// 位移 BOSS：有 Rigidbody2D 时用 MovePosition（走物理，可碰撞/不穿墙），否则直接改 Transform。
+    /// </summary>
+    private void MoveBoss(Vector3 step)
+    {
+        if (_rb != null)
+            _rb.MovePosition(_rb.position + (Vector2)step);
+        else
+            transform.position += step;
+    }
+
     // ===================== 血条 / 阶段 =====================
 
     private void ResetFight()
@@ -314,7 +410,7 @@ public class BossController : MonoBehaviour, IHazardSource
     }
 
     /// <summary>
-    /// BOSS 受击（伤害来源：玩家直击/蜂巢连锁爆炸等，由组员对接）。
+    /// BOSS 受击（伤害来源：玩家直击/蜂巢连锁爆炸等，由后续系统对接）。
     /// 段内伤害累计到当前段；段打空 → PendingEnrage（硬直后狂暴升级）。
     /// Enrage3 最终阶段结算残余血量，打空 → PendingVictory。
     /// </summary>
@@ -370,6 +466,12 @@ public class BossController : MonoBehaviour, IHazardSource
         _phase = phase;
         OnPhaseChanged?.Invoke(_phase);
         MockEventCenter.TriggerBossPhaseChanged(_phase);
+
+        // 动画联动：进入狂暴（Enrage1-3）播狂暴变身；被击败播退场
+        if (phase == BossPhase.Defeated)
+            SetAnimState(BossAnimState.Defeated);
+        else if (phase != BossPhase.Normal)
+            SetAnimState(BossAnimState.Enrage);
     }
 
     private void NotifyHPChanged()
@@ -479,10 +581,13 @@ public class BossController : MonoBehaviour, IHazardSource
             BossAttack attack = PickAttack();
             if (attack == null)
             {
-                // 组员 A 未交付攻击实现时兜底等待，避免空转刷屏
+                // 未挂载攻击实现时兜底等待，避免空转刷屏
                 yield return new WaitForSeconds(1f);
                 continue;
             }
+
+            // 攻击动画（细分攻击可后续扩展枚举，如 AttackSlam/AttackBite）
+            SetAnimState(BossAnimState.Attack);
 
             _currentAttack = attack;
             BossAttackContext ctx = new BossAttackContext
