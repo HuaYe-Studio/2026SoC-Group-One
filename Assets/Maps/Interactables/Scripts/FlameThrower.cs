@@ -55,7 +55,6 @@ public class FlameThrower : MonoBehaviour
 
     // 内部状态
     private bool isSpraying = false;
-    private float pulseTimer = 0f;
     private Coroutine sprayCoroutine = null;
 
     void Start()
@@ -95,7 +94,6 @@ public class FlameThrower : MonoBehaviour
             return;
 
         isSpraying = true;
-        pulseTimer = 0f;
 
         if (sprayCoroutine != null)
             StopCoroutine(sprayCoroutine);

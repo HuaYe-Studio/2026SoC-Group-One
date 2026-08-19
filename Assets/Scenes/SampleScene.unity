@@ -2253,6 +2253,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: Player
       objectReference: {fileID: 0}
+    - target: {fileID: 8842012382244513926, guid: 7ca10d0636bc3734b8d3d52a271a73c0, type: 3}
+      propertyPath: wallJumpVerticalForce
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 8842012382244513926, guid: 7ca10d0636bc3734b8d3d52a271a73c0, type: 3}
+      propertyPath: wallJumpHorizontalForce
+      value: 8
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -2407,6 +2415,7 @@ MonoBehaviour:
   zoomSpeed: 1
   minZoom: 2
   maxZoom: 5
+  _lockZoomDuringBossFight: 1
 --- !u!1001 &2115504918
 PrefabInstance:
   m_ObjectHideFlags: 0

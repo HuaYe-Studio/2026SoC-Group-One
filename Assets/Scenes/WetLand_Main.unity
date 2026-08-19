@@ -31891,10 +31891,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 2091084545104360566, guid: 7ca10d0636bc3734b8d3d52a271a73c0, type: 3}
-      propertyPath: devourableLayer.m_Bits
-      value: 129
-      objectReference: {fileID: 0}
     - target: {fileID: 2838083659676168268, guid: 7ca10d0636bc3734b8d3d52a271a73c0, type: 3}
       propertyPath: m_LocalPosition.x
       value: -14.15

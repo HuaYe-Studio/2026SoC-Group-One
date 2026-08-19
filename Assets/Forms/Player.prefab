@@ -595,7 +595,7 @@ MonoBehaviour:
             m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
             m_IntArgument: 0
             m_FloatArgument: 0
-            m_StringArgument:
+            m_StringArgument: 
             m_BoolArgument: 0
           m_CallState: 2
   acceleration: 0.5
@@ -632,7 +632,7 @@ MonoBehaviour:
   detectionRadius: 2
   devourableLayer:
     serializedVersion: 2
-    m_Bits: 128
+    m_Bits: 129
   pounceSpeed: 14
   pounceMaxDuration: 0.6
   cooldownSeconds: 0.5
@@ -852,8 +852,8 @@ MonoBehaviour:
             m_StringArgument: 
             m_BoolArgument: 0
           m_CallState: 2
-  normalJumpForce: 5
-  maxChargedJumpForce: 7
+  normalJumpForce: 5.5
+  maxChargedJumpForce: 7.5
   jumpStaminaCost: 20
   chargeTimeToMax: 0.5
   jumpCutMultiplier: 0.5
@@ -862,12 +862,13 @@ MonoBehaviour:
   wallLayer:
     serializedVersion: 2
     m_Bits: 8
-  wallCheckDistance: 0.4
+  wallCheckDistance: 0.3
   wallCheckInset: 0.05
   wallRayCount: 3
-  wallJumpHorizontalForce: 10
-  wallJumpVerticalForce: 12
+  wallJumpHorizontalForce: 5
+  wallJumpVerticalForce: 7
   wallJumpCoyoteTime: 0.15
+  wallJumpInputLockTime: 0.2
   airControlSpeed: 4
   jumpClip: {fileID: 0}
   landClip: {fileID: 0}
