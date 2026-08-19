@@ -66,7 +66,8 @@ public class ContactDamage : MonoBehaviour, IHazardSource
         if (hp != null)
         {
             hp.TakeDamage(damage);
-            ApplyKnockback(target);
+            if (!hp.IsDead)
+                ApplyKnockback(target);
             return;
         }
 
