@@ -17,6 +17,9 @@ public class FlockMember : MonoBehaviour
     /// <summary>群 ID（未配置时回落到自身 Tag）。</summary>
     public string FlockId => string.IsNullOrEmpty(_flockId) ? gameObject.tag : _flockId;
 
+    /// <summary>运行时设置群 ID（蜜蜂等动态生成个体按巢成群用）。</summary>
+    public void SetFlockId(string flockId) => _flockId = flockId;
+
     /// <summary>当前速度（Boids 对齐力输入）。</summary>
     public Vector2 Velocity => _rb != null ? _rb.velocity : Vector2.zero;
 

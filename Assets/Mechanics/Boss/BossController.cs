@@ -34,7 +34,7 @@ public enum BossAnimState
 /// - BOSS 受击伤害入口 TakeDamage(int) 已就绪，具体伤害来源（玩家直击/蜂巢连锁爆炸等）由后续系统对接；
 /// - 蜂巢被毁默认不直接伤害 BOSS（_segmentDamagePerHive=0），如需"一蜂巢=一段血"可配置为 1。
 /// </summary>
-public class BossController : MonoBehaviour, IHazardSource
+public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
 {
     /// <summary>内部待决状态：由三公开标志（PendingEnrage/PendingCalm/PendingVictory）驱动。</summary>
     public enum PendingType { None, Enrage, Calm, Victory }
@@ -90,14 +90,14 @@ public class BossController : MonoBehaviour, IHazardSource
     [SerializeField] private int _segmentDamagePerHive = 0;
 
     [Header("攻击调度")]
-    [Tooltip("攻击冷却（秒）：Normal")]
-    [SerializeField] private float _cooldownNormal = 3f;
-    [Tooltip("攻击冷却（秒）：Enrage1")]
-    [SerializeField] private float _cooldownEnrage1 = 2.5f;
-    [Tooltip("攻击冷却（秒）：Enrage2")]
-    [SerializeField] private float _cooldownEnrage2 = 2f;
-    [Tooltip("攻击冷却（秒）：Enrage3")]
-    [SerializeField] private float _cooldownEnrage3 = 1.4f;
+    [Tooltip("攻击冷却区间（秒）：Normal")]
+    [SerializeField] private Vector2 _cooldownNormal = new Vector2(3f, 4f);
+    [Tooltip("攻击冷却区间（秒）：Enrage1")]
+    [SerializeField] private Vector2 _cooldownEnrage1 = new Vector2(2f, 2.5f);
+    [Tooltip("攻击冷却区间（秒）：Enrage2")]
+    [SerializeField] private Vector2 _cooldownEnrage2 = new Vector2(1.8f, 2.2f);
+    [Tooltip("攻击冷却区间（秒）：Enrage3")]
+    [SerializeField] private Vector2 _cooldownEnrage3 = new Vector2(1.5f, 2f);
     [Tooltip("攻击命中玩家的伤害值（PlayerHP.TakeDamage）")]
     [SerializeField] private int _attackDamage = 1;
 
@@ -155,7 +155,6 @@ public class BossController : MonoBehaviour, IHazardSource
     public event Action OnDefeated;
     /// <summary>血量变化（段内/段打空/残余血量变化时触发，UI 血条刷新）。</summary>
     public event Action OnHPChanged;
-
     // ---- 三标志（待决状态，供表现层/调试查询）----
     public bool PendingEnrage => _pending == PendingType.Enrage;
     public bool PendingCalm => _pending == PendingType.Calm;
@@ -182,6 +181,14 @@ public class BossController : MonoBehaviour, IHazardSource
     public bool IsInstantKill => _contactInstantKill;
     public int Damage => _contactDamage;
     public Vector2 Knockback => _contactKnockback;
+
+    // ---- IAttackTarget（蜜蜂等攻击单位追踪/受创/击败，面向接口编程）----
+    /// <summary>目标位置锚点（蛇头，蜜蜂追踪基准）。</summary>
+    public Vector2 Position => ThreatTransform.position;
+    /// <summary>目标是否存活：已激活且未被击败。</summary>
+    public bool IsAlive => _isActive && _phase != BossPhase.Defeated;
+    /// <summary>受创到阈值（段血打空）→ 蜜蜂等攻击单位驱散。</summary>
+    public event Action OnWeakened;
 
     // ---- 动画预留接口（Animator 参数 BOSS_AnimState，见 BossAnimState 枚举）----
     /// <summary>BOSS Animator（供攻击实现/表现层直接取用；未配置时返回 null）。</summary>
@@ -436,6 +443,7 @@ public class BossController : MonoBehaviour, IHazardSource
 
         // 段打空 → 扣除段数并进入狂暴硬直
         _remainingSegments = Mathf.Max(0, _remainingSegments - 1);
+        OnWeakened?.Invoke();
         if (_remainingSegments <= 0)
         {
             // 最后一段打空：进入 Enrage3 最终阶段（用残余血量）
@@ -628,13 +636,17 @@ public class BossController : MonoBehaviour, IHazardSource
         return _attacks[0];
     }
 
-    private float GetCooldown() => _phase switch
+    private float GetCooldown()
     {
-        BossPhase.Enrage1 => _cooldownEnrage1,
-        BossPhase.Enrage2 => _cooldownEnrage2,
-        BossPhase.Enrage3 => _cooldownEnrage3,
-        _ => _cooldownNormal,
-    };
+        Vector2 range = _phase switch
+        {
+            BossPhase.Enrage1 => _cooldownEnrage1,
+            BossPhase.Enrage2 => _cooldownEnrage2,
+            BossPhase.Enrage3 => _cooldownEnrage3,
+            _ => _cooldownNormal,
+        };
+        return UnityEngine.Random.Range(range.x, range.y);
+    }
 
     // ===================== 落点伤害对接（onHit 回调）=====================
 
@@ -645,6 +657,11 @@ public class BossController : MonoBehaviour, IHazardSource
     private void HandleAttackHit(Vector2 hitPoint)
     {
         DamagePlayerIfHit(hitPoint);
+
+        // 只有可破坏蜂巢的攻击（A拍击/C撕咬）才结算蜂巢；B横扫全屏不破巢
+        if (_currentAttack != null && !_currentAttack.CanDestroyHive)
+            return;
+
         DamageHivesIfHit(hitPoint);
     }
 

@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.Events;
 
 public class SignalSource : MonoBehaviour
@@ -18,7 +18,7 @@ public class SignalSource : MonoBehaviour
     public UnityEvent onSignalOn;
     public UnityEvent onSignalOff;
 
-    private Collider2D[] detectedObjects;
+    private static readonly Collider2D[] _hitBuffer = new Collider2D[16];
     private bool previousSignalState;
 
     public bool IsActive => isActive;
@@ -61,11 +61,11 @@ public class SignalSource : MonoBehaviour
 
     private bool DetectInRectangle()
     {
-        detectedObjects = Physics2D.OverlapBoxAll(transform.position, detectionSize, 0f, detectionLayer);
+        int hitCount = Physics2D.OverlapBoxNonAlloc(transform.position, detectionSize, 0f, _hitBuffer, detectionLayer);
 
-        foreach (Collider2D col in detectedObjects)
+        for (int i = 0; i < hitCount; i++)
         {
-            IHeavy heavy = col.GetComponent<IHeavy>();
+            IHeavy heavy = _hitBuffer[i].GetComponent<IHeavy>();
             if (heavy != null && heavy.IsHeavy)
             {
                 return true;
@@ -77,11 +77,11 @@ public class SignalSource : MonoBehaviour
 
     private bool DetectInCircle()
     {
-        detectedObjects = Physics2D.OverlapCircleAll(transform.position, detectionRadius, detectionLayer);
+        int hitCount = Physics2D.OverlapCircleNonAlloc(transform.position, detectionRadius, _hitBuffer, detectionLayer);
 
-        foreach (Collider2D col in detectedObjects)
+        for (int i = 0; i < hitCount; i++)
         {
-            IHeavy heavy = col.GetComponent<IHeavy>();
+            IHeavy heavy = _hitBuffer[i].GetComponent<IHeavy>();
             if (heavy != null && heavy.IsHeavy)
             {
                 return true;
