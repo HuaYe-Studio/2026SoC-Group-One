@@ -14,16 +14,39 @@ using DG.Tweening;
 public class LoadPanelController : MonoBehaviour
 {
     [SerializeField] private CanvasGroup _panelCanvasGroup; // 遮罩面板的 CanvasGroup 组件
+    [SerializeField] private CanvasGroup _confirmDeletePanel;//确认删除存档面板的CanvasGroup组件
     // Start is called before the first frame update
     void Start()
     {
-        
+
     }
 
     // Update is called once per frame
     void Update()
     {
-        
+
+    }
+
+    public void ShowConfirmDeletePanel()
+    {
+        _confirmDeletePanel.DOFade(1f, 0.2f).SetUpdate(true);
+        _confirmDeletePanel.blocksRaycasts = true;
+        _confirmDeletePanel.interactable = true;
+
+        _panelCanvasGroup.DOFade(0.4f, 0.2f).SetUpdate(true);
+        _panelCanvasGroup.blocksRaycasts = false;
+        _panelCanvasGroup.interactable = false;
+    }
+
+    public void HideConfirmDeletePanel()
+    {
+        _confirmDeletePanel.DOFade(0f, 0.2f).SetUpdate(true);
+        _confirmDeletePanel.blocksRaycasts = false;
+        _confirmDeletePanel.interactable = false;
+
+        _panelCanvasGroup.DOFade(1f, 0.2f).SetUpdate(true);
+        _panelCanvasGroup.blocksRaycasts = true;
+        _panelCanvasGroup.interactable = true;
     }
 
     public void ShowLoadPanel()
