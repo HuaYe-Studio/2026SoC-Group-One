@@ -39,12 +39,8 @@ public class Flammable : MonoBehaviour
     public ParticleSystem fireParticles;
 
     [Header("层级检测")]
-    [Tooltip("火焰所在的层级（Layer）")]
-    public LayerMask fireLayerMask;
     [Tooltip("墙体所在的层级（Layer）")]
     public LayerMask wallLayerMask;
-    [Tooltip("引燃检测层级")]
-    public LayerMask flammableLayerMask;
 
     // 内部状态
     private bool isBurning = false;
@@ -65,13 +61,6 @@ public class Flammable : MonoBehaviour
             fireParticles.Stop();
             fireParticles.Clear();
         }
-
-        if (flammableLayerMask == 0)
-            flammableLayerMask = LayerMask.GetMask("Flammable");
-        if (fireLayerMask == 0)
-            fireLayerMask = LayerMask.GetMask("Fire");
-        if (wallLayerMask == 0)
-            wallLayerMask = LayerMask.GetMask("Wall");
     }
 
     void Update()
@@ -122,7 +111,7 @@ public class Flammable : MonoBehaviour
             fireParticles.Play();
         }
 
-        Debug.Log(gameObject.name + " 被点燃！");
+        //Debug.Log(gameObject.name + " 被点燃！");
     }
 
     /// <summary>
@@ -162,7 +151,7 @@ public class Flammable : MonoBehaviour
             enabled = false;
         }
 
-        Debug.Log(gameObject.name + " 燃烧结束。");
+        //Debug.Log(gameObject.name + " 燃烧结束。");
     }
 
     /// <summary>
@@ -173,8 +162,7 @@ public class Flammable : MonoBehaviour
         int hitCount = Physics2D.OverlapCircleNonAlloc(
             transform.position,
             ignitionRadius,
-            nearbyColliders,
-            flammableLayerMask
+            nearbyColliders
         );
 
         for (int i = 0; i < hitCount; i++)
@@ -187,7 +175,7 @@ public class Flammable : MonoBehaviour
             if (otherFlammable != null && !otherFlammable.isBurning && !otherFlammable.isExtinguished)
             {
                 otherFlammable.Ignite();
-                Debug.Log(gameObject.name + " 引燃了 " + otherFlammable.gameObject.name);
+                //Debug.Log(gameObject.name + " 引燃了 " + otherFlammable.gameObject.name);
             }
         }
     }
@@ -238,7 +226,7 @@ public class Flammable : MonoBehaviour
             return;
 
         // 检测碰撞对象是否为火焰
-        if (fireLayerMask == (fireLayerMask | (1 << collision.gameObject.layer)))
+        if (collision.gameObject.CompareTag("Fire"))
         {
             Ignite();
         }
@@ -249,8 +237,7 @@ public class Flammable : MonoBehaviour
     /// </summary>
     private void OnCollisionStay2D(Collision2D collision)
     {
-        if (!isBurning && !isExtinguished &&
-            (fireLayerMask == (fireLayerMask | (1 << collision.gameObject.layer))))
+        if (!isBurning && !isExtinguished && collision.gameObject.CompareTag("Fire"))
         {
             Ignite();
         }
@@ -264,7 +251,7 @@ public class Flammable : MonoBehaviour
         if (isBurning || isExtinguished)
             return;
 
-        if (fireLayerMask == (fireLayerMask | (1 << other.gameObject.layer)))
+        if (other.CompareTag("Fire"))
         {
             Ignite();
         }
@@ -272,8 +259,7 @@ public class Flammable : MonoBehaviour
 
     private void OnTriggerStay2D(Collider2D other)
     {
-        if (!isBurning && !isExtinguished &&
-            (fireLayerMask == (fireLayerMask | (1 << other.gameObject.layer))))
+        if (!isBurning && !isExtinguished && other.CompareTag("Fire"))
         {
             Ignite();
         }
