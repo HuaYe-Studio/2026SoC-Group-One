@@ -10,6 +10,6 @@ namespace AbilitySystem
         public string abilityName;
         public InputActionSlot inputSlot;
         public InputPhase phase;
-        public UnityEvent onInputFired;
+        public UnityEvent onAbilityActivated;
     }
 }

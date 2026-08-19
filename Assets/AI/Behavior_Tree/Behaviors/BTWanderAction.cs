@@ -6,7 +6,9 @@ using UnityEngine;
 /// - 路点采样带可达性校验（Physics2D.Raycast，可选障碍层），被挡时重新采样；
 /// - 障碍软避让：前方扇形多射线探测，命中后转向障碍较少一侧并平滑绕行，
 ///   带冷却时间防振荡（避免贴墙左右抖死循环）；
-/// - 超出范围时目标路点软吸引回出生点 x，而非瞬间反向；
+/// - 超出范围时目标路点软吸引回中心 x，而非瞬间反向；
+/// - 领地软约束（阶段四方案A）：与巡游中心（通常为领地中心）的 2D 距离超过
+///   巡游半径时，强制面向中心并拉回路点，让非 A* 动物也倾向待在领地内；
 /// - 方向由 heading 角度 + MoveTowardsAngle 限幅平滑转向，垂直漂移交给
 ///   BubbleFishAI.PerformMove 的 Perlin 噪声。持续 Running。
 /// </summary>
@@ -16,6 +18,8 @@ public class BTWanderAction : BTNode
     private readonly Blackboard _bb;
     private readonly float _swimRange;
     private readonly LayerMask _obstacleMask;
+    private readonly System.Func<float, float> _steer;               // 可选：移动方向修正委托（Boids 三力等），null 时不修正
+    private readonly System.Func<Vector2> _centerProvider;           // 可选：巡游中心提供器（领地中心等），null 时用出生点
     private float _headingDeg;       // 当前游动方向角（度，0=右，180=左）
     private float _targetDeg;        // 目标方向角（度）
     private float _waypointX;        // 目标路点水平坐标（垂直由 PerformMove 噪声驱动）
@@ -40,25 +44,44 @@ public class BTWanderAction : BTNode
     private const float HoverDuration = 0.6f;      // 悬停时长（秒）
     private const float DashSpeedMultiplier = 1.5f;    // 冲刺速度倍率
 
-    /// <param name="swimRange">巡游范围半径（米），超出后目标路点软吸引回出生点</param>
+    /// <param name="swimRange">巡游范围半径（米），超出后目标路点软吸引回中心</param>
     /// <param name="obstacleMask">路点可达性/障碍探测的障碍层（0 表示不检测）</param>
-    public BTWanderAction(AnimalBase animal, float swimRange = 6f, LayerMask obstacleMask = default)
+    /// <param name="steer">可选：移动方向修正委托（如 Boids 三力），入参导航水平方向、返回修正后方向；null 不修正</param>
+    /// <param name="centerProvider">可选：巡游中心提供器（如领地中心），运行时每次查询；null 用出生点</param>
+    public BTWanderAction(AnimalBase animal, float swimRange = 6f, LayerMask obstacleMask = default,
+        System.Func<float, float> steer = null, System.Func<Vector2> centerProvider = null)
     {
         _animal = animal;
         _bb = animal != null ? animal.Board : null;
         _swimRange = swimRange;
         _obstacleMask = obstacleMask;
+        _steer = steer;
+        _centerProvider = centerProvider;
         _waypointX = _animal != null ? _animal.transform.position.x : 0f;
+    }
+
+    /// <summary>巡游中心：优先用领地中心（centerProvider），否则回退出生点。</summary>
+    private Vector2 GetCenter()
+    {
+        return _centerProvider != null ? _centerProvider() : _animal.SpawnPosition;
     }
 
     public override State Tick()
     {
         Vector2 position = (Vector2)_animal.transform.position;
-        float spawnX = _animal.SpawnPosition.x;
+        Vector2 center = GetCenter();
 
-        // 超出巡游范围 → 目标路点软吸引回出生点 x
-        if (Mathf.Abs(position.x - spawnX) > _swimRange)
-            _waypointX = spawnX;
+        // 领地/巡游范围约束：2D 距离超出巡游半径 → 面向中心并拉回路点，强力回归；
+        // 仅水平越界时沿用原逻辑（路点软吸引），避免 2D 边界处左右抖动
+        if (Vector2.Distance(position, center) > _swimRange)
+        {
+            _waypointX = center.x;
+            _targetDeg = center.x >= position.x ? 0f : 180f;
+        }
+        else if (Mathf.Abs(position.x - center.x) > _swimRange)
+        {
+            _waypointX = center.x;
+        }
 
         // 到达路点或超时未达 → 重新采样新路点
         if (Time.time >= _nextWaypointPick || Mathf.Abs(_waypointX - position.x) <= WaypointArriveRadius)
@@ -97,6 +120,9 @@ public class BTWanderAction : BTNode
             PlayRhythmAnim("SwimForward");
 
         float direction = Mathf.Cos(_headingDeg * Mathf.Deg2Rad);
+        // 可选方向修正（Boids 三力）：叠加在漫游导航方向上，只调方向、不改路点
+        if (_steer != null)
+            direction = _steer(direction);
         _animal.PerformMove(direction, speedMultiplier);
         return State.Running;
     }
@@ -161,11 +187,11 @@ public class BTWanderAction : BTNode
     {
         _nextWaypointPick = Time.time + WaypointResampleInterval;
         Vector2 position = (Vector2)_animal.transform.position;
-        float spawnX = _animal.SpawnPosition.x;
+        float centerX = GetCenter().x;
 
         for (int i = 0; i < 6; i++)
         {
-            float candidate = spawnX + Random.Range(-_swimRange, _swimRange);
+            float candidate = centerX + Random.Range(-_swimRange, _swimRange);
             if (!IsLineClear(position, new Vector2(candidate, position.y)))
                 continue; // 水平段被障碍物阻挡 → 换一个点
 

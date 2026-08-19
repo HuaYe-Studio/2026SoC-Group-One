@@ -1,3 +1,4 @@
+﻿using System.ComponentModel;
 using UnityEngine;
 
 public class HeavyObject : MonoBehaviour, IHeavy
@@ -13,5 +14,14 @@ public class HeavyObject : MonoBehaviour, IHeavy
     public void ToggleHeavy()
     {
         isHeavy = !isHeavy;
+    }
+    public void SetPlayerHeavy(GameObject player)
+    {
+        player.AddComponent<HeavyObject>();
+    }
+    public void RemovePlayerHeavy(GameObject player)
+    {
+        HeavyObject heavy = player.GetComponent<HeavyObject>();
+        Destroy(heavy);
     }
 }

@@ -235,6 +235,7 @@ MonoBehaviour:
   grantedForm: 1
   priority: 0
   destroyAfterDevour: 0
+  devourSound: {fileID: 0}
 --- !u!114 &4664454892179609109
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -302,6 +303,10 @@ MonoBehaviour:
   _groundLayer:
     serializedVersion: 2
     m_Bits: 8
+  _hazardTags:
+  - Spike
+  _hazardCheckDistance: 1.5
+  _hazardCheckHeight: 1
   _fellowRadius: 5
   _fellowLayer:
     serializedVersion: 2
@@ -326,4 +331,20 @@ MonoBehaviour:
   _pantDurationMin: 0.8
   _pantDurationMax: 1.5
   _searchThreatThreshold: 30
+  _enableSeparation: 1
+  _flockNeighborRadius: 4
+  _flockSeparationRadius: 1.2
+  _separationWeight: 1
+  _flockMaxSteer: 0.8
+  _forageObstacleMask:
+    serializedVersion: 2
+    m_Bits: 8
+  _forageProbeDistance: 2.5
+  _forageProbeHeight: 1
+  _hazardTags:
+  - Spike
+  _territoryBiasChance: 0.5
+  _hazardHardThreshold: 2
+  _hazardAvoidChance: 0.7
+  _hazardSoftDistanceScale: 0.5
   _enableDebugLog: 0

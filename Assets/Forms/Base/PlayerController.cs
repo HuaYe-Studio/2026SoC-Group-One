@@ -8,6 +8,27 @@ public class PlayerController : MonoBehaviour
 
     private readonly Dictionary<FormType, int> _formTypeToIndex = new Dictionary<FormType, int>();
     private readonly HashSet<FormType> _unlockedForms = new HashSet<FormType>();
+    private readonly HashSet<WaterZone> _waterZones = new HashSet<WaterZone>();
+
+    public bool IsInWater => _waterZones.Count > 0;
+    public bool IsSubmerged
+    {
+        get
+        {
+            foreach (WaterZone zone in _waterZones)
+                if (zone != null && zone.IsDeep)
+                    return true;
+            return false;
+        }
+    }
+
+    public void EnterWater(WaterZone zone) => _waterZones.Add(zone);
+    public void ExitWater(WaterZone zone) => _waterZones.Remove(zone);
+
+    private readonly HashSet<IceSurface> _iceZones = new HashSet<IceSurface>();
+    public bool IsOnIce => _iceZones.Count > 0;
+    public void EnterIce(IceSurface zone) => _iceZones.Add(zone);
+    public void ExitIce(IceSurface zone) => _iceZones.Remove(zone);
 
     public BaseForm ActiveForm => (allForms != null && activeFormIndex < allForms.Length)
         ? allForms[activeFormIndex]
@@ -64,11 +85,24 @@ public class PlayerController : MonoBehaviour
     private void OnEnable()
     {
         MockEventCenter.OnFormUnlocked += AddNewForm;
+        MockEventCenter.OnPlayerDeath += OnPlayerDeathHandler;
+        MockEventCenter.OnPlayerRespawn += OnPlayerRespawnHandler;
     }
 
     private void OnDisable()
     {
         MockEventCenter.OnFormUnlocked -= AddNewForm;
+        MockEventCenter.OnPlayerDeath -= OnPlayerDeathHandler;
+        MockEventCenter.OnPlayerRespawn -= OnPlayerRespawnHandler;
+    }
+
+    private void OnPlayerDeathHandler() => ActiveForm?.Die();
+
+    private void OnPlayerRespawnHandler()
+    {
+        if (allForms == null) return;
+        foreach (BaseForm form in allForms)
+            if (form != null) form.Revive();
     }
 
     private void AddNewForm(FormType formType)
@@ -88,6 +122,29 @@ public class PlayerController : MonoBehaviour
     {
         if (_formTypeToIndex.TryGetValue(formType, out int index))
             SwitchToForm(index);
+    }
+
+    public FormType GetCurrentForm() =>
+        ActiveForm != null ? ActiveForm.FormType : FormType.Slime;
+
+    public List<FormType> GetUnlockedForms() => new List<FormType>(_unlockedForms);
+
+    public void RestoreForms(FormType current, List<FormType> unlocked)
+    {
+        _unlockedForms.Clear();
+        _unlockedForms.Add(FormType.Slime);
+        if (unlocked != null)
+            foreach (var f in unlocked)
+                _unlockedForms.Add(f);
+        _unlockedForms.Add(current);
+        SwitchToFormByType(current);
+    }
+
+    public BaseForm GetForm(FormType type)
+    {
+        if (_formTypeToIndex.TryGetValue(type, out int index) && allForms != null && index < allForms.Length)
+            return allForms[index];
+        return null;
     }
 
     private void Update()

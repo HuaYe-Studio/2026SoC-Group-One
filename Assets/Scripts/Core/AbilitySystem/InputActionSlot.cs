@@ -6,7 +6,8 @@ namespace AbilitySystem
         Input_Space,
         Ability1,
         Ability2,
-        AnimalWheel
+        AnimalWheel,
+        SpitFire
     }
 
     public enum InputPhase

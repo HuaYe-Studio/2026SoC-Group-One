@@ -53,6 +53,15 @@ public class BubbleFishBT : MonoBehaviour
     [Tooltip("玩家高代价上限（格子上与玩家重合时的额外代价）")]
     [SerializeField] private float _playerPenaltyCost = 200f;
 
+    [Tooltip("BOSS 高代价半径（米）：BOSS 附近格子代价提升，逃跑路径自动绕开（优先于玩家惩罚）")]
+    [SerializeField] private float _bossPenaltyRadius = 6f;
+
+    [Tooltip("BOSS 高代价上限（格子上与 BOSS 重合时的额外代价，应 > 玩家惩罚，体现 BOSS 威胁更高）")]
+    [SerializeField] private float _bossPenaltyCost = 320f;
+
+    [Tooltip("领地外通行代价：鱼倾向待在共享领地内；须低于玩家代价，玩家紧迫威胁时仍会游出领地逃跑")]
+    [SerializeField] private float _territoryOutsideCost = 50f;
+
     [Header("逃跑设置")]
     [Tooltip("逃跑目标轮换数：从离玩家最远的 N 个安全点中轮换选取，防止路径永远固定被玩家守点")]
     [SerializeField] private int _escapePickCount = 2;
@@ -90,9 +99,14 @@ public class BubbleFishBT : MonoBehaviour
     private BTNode _root;
     private string _lastBranch;
     private BTNode.State _lastResult;
+    private AnimalHurtFeedback _hurtFeedback; // 受伤反馈组件（受伤时弹跳+位移）
 
     // 群体行为：恐惧传播 + 领头机制（跟随者朝领头逃向）
     private FearSpreader _fearSpreader;
+
+    // 领地：鱼群共享领地（以 FlockId 为 key），安全点在领地分配后生成
+    private string _territoryKey;
+    private bool _safePointsReady;
 
     // 群体巡游（Boids）：成员标识 + 邻居查询缓冲（复用，非分配）
     private FlockMember _flockMember;
@@ -109,6 +123,10 @@ public class BubbleFishBT : MonoBehaviour
     private int _escapeIndex;
     private const float EscapeTargetRefreshInterval = 2f;
 
+    // BOSS 逃跑目标缓存（复用同一刷新节流，独立于玩家逃跑目标）
+    private Vector2 _bossEscapeTarget;
+    private float _bossEscapeTargetTime;
+
     private void Awake()
     {
         _fish = GetComponent<BubbleFishAI>();
@@ -118,6 +136,26 @@ public class BubbleFishBT : MonoBehaviour
         // Boids 兜底：prefab 未挂 FlockMember 时运行时补挂（Awake 阶段添加，当帧完成群注册）
         if (_flockMember == null && _enableBoids)
             _flockMember = gameObject.AddComponent<FlockMember>();
+
+        // 个体差异：确保存在 AnimalStats（随机基础数值 + 强度分），未挂则运行时补挂
+        AnimalStats stats = GetComponent<AnimalStats>();
+        if (stats == null)
+            stats = gameObject.AddComponent<AnimalStats>();
+
+        // 受伤反馈：确保存在 AnimalHurtFeedback（受伤时弹跳+位移+无敌），未挂则运行时补挂
+        _hurtFeedback = GetComponent<AnimalHurtFeedback>();
+        if (_hurtFeedback == null)
+            _hurtFeedback = gameObject.AddComponent<AnimalHurtFeedback>();
+
+        // MC 式软推开：同类重叠时沿最短穿透轴物理推开；鱼全向游泳 → 2D 全向
+        AnimalSoftPush softPush = GetComponent<AnimalSoftPush>();
+        if (softPush == null)
+            softPush = gameObject.AddComponent<AnimalSoftPush>();
+        softPush.Dimension = AnimalSoftPush.PushDimension.Omnidirectional;
+
+        // 注册共享领地：同群鱼共用一个领地（以 FlockId 为 key），共享半径固定（strength 仅作 API 一致性传入）
+        _territoryKey = _flockMember != null ? _flockMember.FlockId : gameObject.tag;
+        TerritoryManager.Register(_territoryKey, _fish.SpawnPosition, _regionType, isShared: true, strength: stats.Strength);
 
         Blackboard bb = _fish.Board;
         if (_manualSafePoints != null && _manualSafePoints.Length > 0)
@@ -129,12 +167,9 @@ public class BubbleFishBT : MonoBehaviour
                     ? (Vector2)_manualSafePoints[i].position
                     : _fish.SpawnPosition;
             bb.SafePoints = manual;
+            _safePointsReady = true;
         }
-        else
-        {
-            bb.SafePoints = SafePointGenerator.GenerateSafePoints(
-                _fish.SpawnPosition, _safePointCount, _safePointRadius, _regionType, _safePointSpacing);
-        }
+        // 自动安全点延后到领地统一分配完成后再生成（见 Update 首帧），以领地中心替代出生点
 
         _root = BuildTree();
     }
@@ -160,6 +195,26 @@ public class BubbleFishBT : MonoBehaviour
         BTNode unstickBranch = WithDebug("Unstick", new BTSequence(
             WithDebug("Unstick/Cond", new BTCondition(() => _fish.IsStuck)),
             WithDebug("Unstick/Action", new BTUnstickAction(_fish))
+        ));
+
+        // 受伤反馈：弹跳 + 位移（眩晕/脱困之后、逃跑之前，受伤瞬间抢占；鱼永不着地，靠超时完成）
+        BTNode hurtBranch = WithDebug("Hurt", new BTSequence(
+            WithDebug("Hurt/Cond", new BTCondition(() => _hurtFeedback.IsHurting)),
+            WithDebug("Hurt/Action", new BTHurtFeedbackAction(_fish, _hurtFeedback))
+        ));
+
+        // BOSS 逃跑：检测到 BOSS（紧迫威胁）→ A* 到离 BOSS 最远的安全点。
+        // 优先级高于"逃离玩家"（四档仲裁：场景伤害 > BOSS > 玩家），故置于玩家逃跑分支之前。
+        BTNode bossEscapeBranch = WithDebug("BossEscape", new BTSequence(
+            WithDebug("BossEscape/Cond", new BTCondition(IsBossThreatUrgent)),
+            WithDebug("BossEscape/Action", new BTAStarMoveAction(_fish,
+                targetProvider: GetBossEscapeTarget,
+                costAt: CostAt,
+                speedMultiplier: _escapeSpeedMultiplier,
+                arriveRadius: _arriveRadius,
+                repathInterval: _repathInterval,
+                move: (direction, mult) => _fish.Swim(direction, mult),
+                animResolver: ResolvePathAnimation))
         ));
 
         // 逃跑：紧迫威胁 → A* 到离玩家最远的安全点（玩家高代价使路径自动绕开玩家）
@@ -199,12 +254,13 @@ public class BubbleFishBT : MonoBehaviour
             move: (direction, mult) => _fish.Swim(ApplyFlockSteering(direction), mult),
             animResolver: ResolvePathAnimation));
 
-        return new BTSelector(stunnedBranch, unstickBranch, escapeBranch, searchBranch, wanderBranch);
+        return new BTSelector(stunnedBranch, unstickBranch, hurtBranch, bossEscapeBranch, escapeBranch, searchBranch, wanderBranch);
     }
 
     /// <summary>
-    /// A* 额外代价：空气（区域外）高代价 + 玩家高代价。
-    /// 玩家高代价按距离线性衰减，使路径平滑绕开而非硬绕。
+    /// A* 额外代价：空气（区域外）高代价 + 领地外代价 + 玩家高代价。
+    /// 代价层级：空气(1000) > 玩家(200) > 领地外(50) > 正常(0)，
+    /// 领地外代价低于玩家代价，保证玩家紧迫威胁时鱼仍会游出领地逃跑。
     /// </summary>
     private float CostAt(Vector2 worldPos)
     {
@@ -214,6 +270,11 @@ public class BubbleFishBT : MonoBehaviour
         if (_regionType != AnimalRegion.RegionType.Generic && !IsInsideRegion(worldPos))
             cost += _airCost;
 
+        // 领地外代价：低于玩家代价，鱼倾向待在共享领地内，但不被领地困死
+        Territory territory = TerritoryManager.Get(_territoryKey);
+        if (territory != null && !territory.Contains(worldPos))
+            cost += _territoryOutsideCost;
+
         // 玩家高代价：玩家可见且在该格附近 → 提升代价，路径绕开
         Blackboard bb = _fish.Board;
         if (bb.IsPlayerVisible)
@@ -222,6 +283,15 @@ public class BubbleFishBT : MonoBehaviour
             float d = Vector2.Distance(worldPos, playerPos);
             if (d < _playerPenaltyRadius)
                 cost += _playerPenaltyCost * (1f - d / _playerPenaltyRadius);
+        }
+
+        // BOSS 高代价：BOSS 已检测到且在该格附近 → 代价高于玩家惩罚（威胁优先级：BOSS 本体 > 玩家）
+        if (bb.IsBossDetected)
+        {
+            Vector2 bossPos = (Vector2)_fish.transform.position + bb.BossDirection * bb.BossDistance;
+            float d = Vector2.Distance(worldPos, bossPos);
+            if (d < _bossPenaltyRadius)
+                cost += _bossPenaltyCost * (1f - d / _bossPenaltyRadius);
         }
 
         return cost;
@@ -270,6 +340,46 @@ public class BubbleFishBT : MonoBehaviour
         _escapeIndex = (_escapeIndex + 1) % pickCount;
         _escapeTarget = pts[ordered[_escapeIndex]];
         return _escapeTarget;
+    }
+
+    /// <summary>
+    /// BOSS 逃跑目标：在"离 BOSS 最远的 N 个安全点"中轮换选取（与玩家逃跑同套逻辑，基准改为 BOSS 位置），
+    /// 每 EscapeTargetRefreshInterval 秒重选，避免路径固定被 BOSS 堵死。
+    /// </summary>
+    private Vector2 GetBossEscapeTarget()
+    {
+        if (Time.time < _bossEscapeTargetTime)
+            return _bossEscapeTarget;
+
+        _bossEscapeTargetTime = Time.time + EscapeTargetRefreshInterval;
+
+        Blackboard bb = _fish.Board;
+        Vector2[] pts = bb.SafePoints;
+        if (pts == null || pts.Length == 0)
+            return _fish.SpawnPosition;
+
+        // BOSS 世界位置由感知数据推导（位置 + 方向 × 距离）
+        Vector2 bossPos = bb.IsBossDetected
+            ? (Vector2)_fish.transform.position + bb.BossDirection * bb.BossDistance
+            : _fish.SpawnPosition;
+
+        // 按离 BOSS 距离降序排列索引，取前 _escapePickCount 个轮换选择
+        List<int> ordered = new List<int>(pts.Length);
+        for (int i = 0; i < pts.Length; i++)
+            ordered.Add(i);
+        ordered.Sort((a, b) =>
+            Vector2.Distance(pts[b], bossPos).CompareTo(Vector2.Distance(pts[a], bossPos)));
+
+        int pickCount = Mathf.Clamp(_escapePickCount, 1, pts.Length);
+        _bossEscapeTarget = pts[ordered[_escapeIndex % pickCount]];
+        return _bossEscapeTarget;
+    }
+
+    /// <summary>BOSS 是否构成紧迫威胁（刷新迟滞仲裁后判定）。</summary>
+    private bool IsBossThreatUrgent()
+    {
+        _fish.Board.RefreshBossUrgent();
+        return _fish.Board.IsBossUrgent;
     }
 
     /// <summary>
@@ -365,12 +475,34 @@ public class BubbleFishBT : MonoBehaviour
             _root = BuildTree();
         }
 
+        // 首帧：所有动物 Awake 完成后统一分配领地，再用领地中心生成安全点（替代出生点）
+        if (!_safePointsReady)
+        {
+            TerritoryManager.EnsureAssigned();
+            GenerateSafePointsFromTerritory();
+        }
+
         BTNode.State result = _root.Tick();
 
         _debugBranch = GetBranchName();
 
         if (_enableDebugLog)
             LogStateChange(result);
+    }
+
+    /// <summary>
+    /// 用共享领地中心生成安全点（领地分配完成后调用）；领地未分配时回退到出生点。
+    /// </summary>
+    private void GenerateSafePointsFromTerritory()
+    {
+        Blackboard bb = _fish.Board;
+        Territory territory = TerritoryManager.Get(_territoryKey);
+        Vector2 center = territory != null ? territory.Center : _fish.SpawnPosition;
+        float radius = territory != null ? territory.Radius : _safePointRadius;
+
+        bb.SafePoints = SafePointGenerator.GenerateSafePoints(
+            center, _safePointCount, radius, _regionType, _safePointSpacing);
+        _safePointsReady = true;
     }
 
     /// <summary>
@@ -382,6 +514,8 @@ public class BubbleFishBT : MonoBehaviour
 
         if (bb.IsStunned) return "Stunned";
         if (_fish.IsStuck) return "Unstick";
+        if (_hurtFeedback.IsHurting) return "Hurt";
+        if (IsBossThreatUrgent()) return "BossEscape";
         if (bb.IsThreatUrgent) return "Escape";
         if (bb.ShouldSearch) return "Search";
         return "Wander";

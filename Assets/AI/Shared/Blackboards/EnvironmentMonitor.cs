@@ -41,6 +41,15 @@ public class EnvironmentMonitor : MonoBehaviour
     [SerializeField] private float _wallCheckDistance = 1f;
     [SerializeField] private LayerMask _groundLayer;
 
+    [Tooltip("危险物 Tag 列表（如尖刺 Spike）：前方此距离内命中即视为前方危险，逃跑时绕行。不写死，可在 Inspector 按 Tag 扩展")]
+    [SerializeField] private string[] _hazardTags = { "Spike" };
+
+    [Tooltip("危险物探测距离（米）：朝前方此距离内的危险物视为'前方有危险'")]
+    [SerializeField] private float _hazardCheckDistance = 1.5f;
+
+    [Tooltip("危险物探测盒高度（米）：覆盖体型，防止尖刺太小被 Raycast 穿透漏检")]
+    [SerializeField] private float _hazardCheckHeight = 1.0f;
+
     [Header("Fellow Detection")]
     [SerializeField] private float _fellowRadius = 5f;
     [SerializeField] private LayerMask _fellowLayer;
@@ -55,6 +64,10 @@ public class EnvironmentMonitor : MonoBehaviour
     private PlayerController _playerController;
     private DevourableAnimal _devourable; // 提供自身形态，用于同形态友好判定
 
+    // BOSS 感知：缓存 BossController 引用（懒加载 + 每秒重试，避免每帧 FindObjectOfType）
+    private BossController _bossController;
+    private float _nextBossFindTime;
+
     // 调试用：记录上次输出时的状态，只在变化时输出
     private bool _lastLogVisible;
     private bool _lastLogSameForm;
@@ -65,6 +78,10 @@ public class EnvironmentMonitor : MonoBehaviour
     public float FleeRadius => _fleeRadius;
     public float FoodRadius => _foodRadius;
     public float FellowRadius => _fellowRadius;
+
+    // GC 优化：NonAlloc 预分配缓冲（复用，避免每帧扫描分配数组）
+    private readonly Collider2D[] _scanBuffer = new Collider2D[32];
+    private readonly Collider2D[] _foodBuffer = new Collider2D[16];
 
     // 同类信息（保留原列表，暂未接入黑板）
     public System.Collections.Generic.List<Transform> NearbyFellows { get; private set; }
@@ -105,6 +122,7 @@ public class EnvironmentMonitor : MonoBehaviour
         _bb.AnimalPosition = transform.position;
 
         DetectThreats();
+        DetectBoss();
         DetectFood();
         DetectTerrain();
         DetectFellows();
@@ -149,14 +167,15 @@ public class EnvironmentMonitor : MonoBehaviour
         UpdatePlayerFormAwareness();
 
         float detectRadius = Mathf.Max(_visionRadius, _hearingRadius);
-        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, detectRadius, _threatLayer);
+        int hitCount = Physics2D.OverlapCircleNonAlloc(transform.position, detectRadius, _scanBuffer, _threatLayer);
 
         float nearestDist = float.MaxValue;
         Transform nearest = null;
         Rigidbody2D nearestRb = null;
 
-        foreach (Collider2D hit in hits)
+        for (int i = 0; i < hitCount; i++)
         {
+            Collider2D hit = _scanBuffer[i];
             float dist = Vector2.Distance(transform.position, hit.transform.position);
             if (dist >= nearestDist) continue;
 
@@ -225,6 +244,53 @@ public class EnvironmentMonitor : MonoBehaviour
     }
 
     /// <summary>
+    /// BOSS 感知：读 BossController 的威胁属性，写入 Blackboard 的 BOSS 维度。
+    /// 检测半径 = BossController.ThreatRadius（狂暴时增大）；威胁强度 = ThreatLevel（狂暴时提升）。
+    /// 仅 BOSS 激活（IsActive）时感知，未找到/未激活时清零。
+    /// 写入后由决策层（BTBossFleeAction）调用 RefreshBossUrgent 做迟滞仲裁。
+    /// </summary>
+    private void DetectBoss()
+    {
+        if (_bossController == null && Time.time >= _nextBossFindTime)
+        {
+            _bossController = FindObjectOfType<BossController>();
+            _nextBossFindTime = Time.time + 1f; // 未找到时每秒重试一次
+        }
+
+        if (_bossController == null || !_bossController.IsActive)
+        {
+            _bb.IsBossDetected = false;
+            _bb.BossDistance = 0f;
+            _bb.BossThreatLevel = 0f;
+            return;
+        }
+
+        Transform bossTransform = _bossController.ThreatTransform;
+        if (bossTransform == null)
+        {
+            _bb.IsBossDetected = false;
+            _bb.BossDistance = 0f;
+            _bb.BossThreatLevel = 0f;
+            return;
+        }
+
+        float dist = Vector2.Distance(transform.position, bossTransform.position);
+        if (dist <= _bossController.ThreatRadius)
+        {
+            _bb.IsBossDetected = true;
+            _bb.BossDirection = ((Vector2)(bossTransform.position - transform.position)).normalized;
+            _bb.BossDistance = dist;
+            _bb.BossThreatLevel = _bossController.ThreatLevel;
+        }
+        else
+        {
+            _bb.IsBossDetected = false;
+            _bb.BossDistance = dist;
+            _bb.BossThreatLevel = 0f;
+        }
+    }
+
+    /// <summary>
     /// 更新玩家形态感知：缓存 PlayerController，比较玩家当前形态与自身形态。
     /// 同形态（如玩家变为青蛙）时黑板标记友好，AI 不再产生威胁反应。
     /// </summary>
@@ -260,14 +326,15 @@ public class EnvironmentMonitor : MonoBehaviour
 
     private void DetectFood()
     {
-        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, _foodRadius, _foodLayer);
+        int hitCount = Physics2D.OverlapCircleNonAlloc(transform.position, _foodRadius, _foodBuffer, _foodLayer);
 
         float nearestDist = float.MaxValue;
         _bb.IsFoodDetected = false;
         _bb.NearestFood = null;
 
-        foreach (Collider2D hit in hits)
+        for (int i = 0; i < hitCount; i++)
         {
+            Collider2D hit = _foodBuffer[i];
             float dist = Vector2.Distance(transform.position, hit.transform.position);
             if (dist < nearestDist)
             {
@@ -296,20 +363,53 @@ public class EnvironmentMonitor : MonoBehaviour
         _bb.IsGroundedAhead = groundHit.collider != null;
         _bb.IsGapAhead = !_bb.IsGroundedAhead;
 
-        // 前方墙壁检测
+        // 前方墙壁检测：除玩家层与自身(Animal)层外，任何非触发器固体都视为墙，
+        // 覆盖"默认层且无 Tag 的墙"等漏配，避免动物反复撞墙。
+        // 仍排除玩家层，避免羊冲撞玩家时被误判为"撞墙提前刹车"。
+        int wallMask = _threatLayer.value != 0
+            ? ~(_threatLayer.value | (1 << gameObject.layer))
+            : ~(1 << gameObject.layer);
         Vector2 wallOrigin = (Vector2)transform.position + Vector2.up * 0.3f;
-        RaycastHit2D wallHit = Physics2D.Raycast(wallOrigin, forward,
-            _wallCheckDistance, _groundLayer);
+        RaycastHit2D wallHit = Physics2D.Raycast(wallOrigin, forward, _wallCheckDistance, wallMask);
         _bb.IsWallAhead = wallHit.collider != null;
+
+        // 前方危险物检测（尖刺等）：OverlapBox 覆盖体型，按 Tag 匹配，供逃跑节点绕行
+        _bb.IsHazardAhead = DetectHazardAhead(forward);
+    }
+
+    /// <summary>
+    /// 朝前方探测危险物（尖刺等）。用 OverlapBox（非 Raycast）覆盖体型，按 Tag 匹配，
+    /// 避免尖刺太小被单射线漏检。空 Tag 列表时直接返回 false（退化关闭）。
+    /// </summary>
+    private bool DetectHazardAhead(Vector2 forward)
+    {
+        if (_hazardTags == null || _hazardTags.Length == 0)
+            return false;
+
+        Vector2 origin = (Vector2)transform.position + Vector2.up * 0.3f;
+        Vector2 center = origin + forward * (_hazardCheckDistance * 0.5f);
+        Vector2 size = new Vector2(_hazardCheckDistance, _hazardCheckHeight);
+
+        Collider2D hit = Physics2D.OverlapBox(center, size, 0f);
+        if (hit == null || hit.isTrigger)
+            return false;
+
+        for (int i = 0; i < _hazardTags.Length; i++)
+        {
+            if (hit.CompareTag(_hazardTags[i]))
+                return true;
+        }
+        return false;
     }
 
     private void DetectFellows()
     {
         NearbyFellows.Clear();
 
-        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, _fellowRadius, _fellowLayer);
-        foreach (Collider2D hit in hits)
+        int hitCount = Physics2D.OverlapCircleNonAlloc(transform.position, _fellowRadius, _scanBuffer, _fellowLayer);
+        for (int i = 0; i < hitCount; i++)
         {
+            Collider2D hit = _scanBuffer[i];
             if (hit.transform != transform)
                 NearbyFellows.Add(hit.transform);
         }

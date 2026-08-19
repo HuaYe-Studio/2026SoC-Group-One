@@ -1,6 +1,22 @@
 using UnityEngine;
 
 /// <summary>
+/// 威胁源优先级（四档，从高到低）：
+/// InstantKill 死亡源 > SceneHazard 场景伤害源 > BossBody BOSS本体 > PlayerHigh/PlayerLow 玩家。
+/// 行为树通过分支顺序兑现优先级（受伤/即死 > BOSS 逃跑 > 玩家逃跑 > 搜索），
+/// 本枚举供调试与统一查询（Blackboard.CurrentThreatPriority）。
+/// </summary>
+public enum ThreatPriority
+{
+    None = 0,
+    PlayerLow,
+    PlayerHigh,
+    BossBody,
+    SceneHazard,
+    InstantKill,
+}
+
+/// <summary>
 /// AI 认知黑板：记录动物的内部认知状态，供行为树查询决策。
 /// 感知层（EnvironmentMonitor）负责写入原始感知数据，
 /// 认知层（NeedsSystem 等）负责写入内部状态，
@@ -78,6 +94,9 @@ public class Blackboard
     /// <summary>前方是否有沟壑（无地面）。</summary>
     public bool IsGapAhead;
 
+    /// <summary>前方是否有危险物（尖刺等，由 EnvironmentMonitor 按 Tag 检测）。</summary>
+    public bool IsHazardAhead;
+
     // ---- 内部需求（由 NeedsSystem 写入，预留）----
     /// <summary>饥饿度（0-100），驱动觅食行为。</summary>
     public float HungerLevel;
@@ -95,6 +114,134 @@ public class Blackboard
     /// <summary>是否处于连跳组间的喘息停顿（跳一组后的短暂休息，播放 Rest 动画）。
     /// 与 IsStunned 互斥：喘息是觅食节奏的一部分，眩晕是吞噬/受击僵直。</summary>
     public bool IsPanting;
+
+    // ---- 无敌状态（由 AnimalHurtFeedback 写入，受伤反馈期间生效）----
+    /// <summary>无敌截止时间点（Time.time）。受伤瞬间由 AnimalHurtFeedback 设置，期间重复触碰伤害源不触发。</summary>
+    public float InvincibleUntilTime = float.NegativeInfinity;
+
+    /// <summary>当前是否处于无敌中（与 IsStunned 语义不同：无敌期间动物仍可行动，只是免疫伤害）。</summary>
+    public bool IsInvincible => Time.time < InvincibleUntilTime;
+
+    // ---- 场景伤害源记忆（由 AnimalHurtFeedback 写入，觅食/巡游回避使用）----
+    /// <summary>最近一次受伤的伤害源世界位置。</summary>
+    public Vector2 LastHazardPosition;
+
+    /// <summary>最近一次受伤的时间戳（Time.time）。</summary>
+    public float LastHazardTime = float.NegativeInfinity;
+
+    /// <summary>记忆期内连续受伤次数（软→硬递进：1 次软偏置，≥阈值硬禁止）。</summary>
+    public int HazardHitCount;
+
+    /// <summary>伤害源记忆保留时长（秒），超时遗忘。</summary>
+    public float HazardMemoryDuration = 5f;
+
+    /// <summary>伤害源记忆是否仍有效。</summary>
+    public bool HasHazardMemory => Time.time - LastHazardTime <= HazardMemoryDuration;
+
+    /// <summary>记录一次伤害源受伤：记忆期内连击累加，否则重置为 1。</summary>
+    public void RememberHazard(Vector2 position)
+    {
+        HazardHitCount = HasHazardMemory ? HazardHitCount + 1 : 1;
+        LastHazardPosition = position;
+        LastHazardTime = Time.time;
+    }
+
+    // ---- BOSS 认知（感知层 EnvironmentMonitor 写入原始数据，仲裁逻辑计算紧迫状态）----
+    /// <summary>当前是否检测到 BOSS（由感知层按 BossController.ThreatRadius 写入）。</summary>
+    public bool IsBossDetected;
+
+    /// <summary>BOSS 相对自身的方向（归一化，仅 IsBossDetected 时有效）。</summary>
+    public Vector2 BossDirection;
+
+    /// <summary>到 BOSS 的当前距离（仅 IsBossDetected 时有效）。</summary>
+    public float BossDistance;
+
+    /// <summary>BOSS 威胁强度（0~100，由仲裁逻辑按 BossController.ThreatLevel/CurrentPhase 写入；狂暴时提升）。</summary>
+    public float BossThreatLevel;
+
+    /// <summary>BOSS 逃跑触发半径（进入阈值；应 ≤ BossController.ThreatRadius 才能感知后立即触发）。</summary>
+    public float BossFleeRadius = 12f;
+
+    /// <summary>BOSS 威胁解除半径（离开阈值，> BossFleeRadius，避免边界抖动）。</summary>
+    public float BossSafeRadius = 18f;
+
+    /// <summary>BOSS 威胁消退阈值：BossThreatLevel 低于该值视为不构成紧迫威胁。</summary>
+    public float BossCalmThreatThreshold = 40f;
+
+    private bool _isBossUrgent;
+    private float _bossThreatEnterTime = float.NegativeInfinity;
+
+    /// <summary>BOSS 是否构成紧迫威胁（带迟滞 + 最小持续时长，优先级高于玩家威胁）。</summary>
+    public bool IsBossUrgent => _isBossUrgent;
+
+    /// <summary>
+    /// 刷新 BOSS 紧迫状态（迟滞 + 最小持续时长，与玩家维度 RefreshThreatUrgent 平行）。
+    /// 由行为树 BOSS 逃跑分支条件 / 感知层每帧调用；仲裁逻辑同时在此写入 BossThreatLevel。
+    /// </summary>
+    public void RefreshBossUrgent()
+    {
+        // 未检测到 BOSS（含 BossDistance 尚未写入的默认 0）：解除紧迫
+        if (!IsBossDetected || BossDistance <= 0f)
+        {
+            SetBossUrgent(false);
+            return;
+        }
+
+        // 威胁强度门控：BossThreatLevel 过低（如非狂暴、玩家已远离）不构成紧迫威胁
+        if (BossThreatLevel < BossCalmThreatThreshold)
+        {
+            SetBossUrgent(false);
+            return;
+        }
+
+        // 距离迟滞：进入阈值触发，离开解除阈值才解除（与玩家维度一致）
+        if (BossDistance <= BossFleeRadius)
+        {
+            SetBossUrgent(true);
+        }
+        else if (BossDistance >= BossSafeRadius &&
+                 Time.time - _bossThreatEnterTime >= ThreatMinHoldDuration)
+        {
+            SetBossUrgent(false);
+        }
+    }
+
+    private void SetBossUrgent(bool value)
+    {
+        if (_isBossUrgent == value)
+            return;
+
+        _isBossUrgent = value;
+        _bossThreatEnterTime = value ? Time.time : float.NegativeInfinity;
+    }
+
+    // ---- 威胁源优先级仲裁（四档：死亡源 > 场景伤害源 > BOSS本体 > 玩家高/低威胁）----
+    /// <summary>主导威胁类型（供调试/UI/通用决策查询，行为树通过分支顺序兑现优先级）。</summary>
+    public ThreatPriority CurrentThreatPriority => EvaluateThreatPriority();
+
+    /// <summary>
+    /// 计算当前主导威胁（四档仲裁）：
+    /// - InstantKill  死亡源：即死由 AnimalHurtFeedback 直接灭活，动物不再参与决策，此处仅作语义档位；
+    /// - SceneHazard  场景伤害源：刚被伤害源命中（记忆期内），高于 BOSS 与玩家；
+    /// - BossBody     BOSS 本体：紧迫 BOSS 威胁，高于玩家（行为树中 BOSS 逃跑分支排在玩家逃跑之前）；
+    /// - PlayerHigh/Low 玩家：紧迫（高威胁）/ 记忆搜索（低威胁）。
+    /// </summary>
+    public ThreatPriority EvaluateThreatPriority()
+    {
+        if (HasHazardMemory)
+            return ThreatPriority.SceneHazard;
+
+        if (IsBossUrgent)
+            return ThreatPriority.BossBody;
+
+        if (IsThreatUrgent)
+            return ThreatPriority.PlayerHigh;
+
+        if (ShouldSearch)
+            return ThreatPriority.PlayerLow;
+
+        return ThreatPriority.None;
+    }
 
     // ---- 回撤状态（由逃生节点写入，回撤节点读取）----
     /// <summary>逃生起点：脱离危险后需要返回的位置（由逃生节点进入时记录）。</summary>
@@ -225,6 +372,10 @@ public class Blackboard
         IsPlayerSameForm = false;
         StunUntilTime = float.NegativeInfinity;
         IsPanting = false;
+        InvincibleUntilTime = float.NegativeInfinity;
+        LastHazardPosition = Vector2.zero;
+        LastHazardTime = float.NegativeInfinity;
+        HazardHitCount = 0;
         PlayerDistance = 0f;
         PlayerDirection = Vector2.zero;
         IsFoodDetected = false;
@@ -234,6 +385,7 @@ public class Blackboard
         IsGroundedAhead = false;
         IsWallAhead = false;
         IsGapAhead = false;
+        IsHazardAhead = false;
         HungerLevel = 0f;
         CurrentBehavior = "";
         RetreatTarget = Vector2.zero;
@@ -242,5 +394,11 @@ public class Blackboard
         SafePointIndex = 0;
         _isThreatUrgent = false;
         _threatEnterTime = float.NegativeInfinity;
+        IsBossDetected = false;
+        BossDirection = Vector2.zero;
+        BossDistance = 0f;
+        BossThreatLevel = 0f;
+        _isBossUrgent = false;
+        _bossThreatEnterTime = float.NegativeInfinity;
     }
 }

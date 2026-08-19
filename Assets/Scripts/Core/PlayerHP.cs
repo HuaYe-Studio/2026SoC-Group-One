@@ -17,6 +17,11 @@ public class PlayerHP : MonoBehaviour
     public bool IsInvincible => Time.time < _invincibilityEndTime;
     public bool IsDead => _isDead;
 
+    public void SetInvincible(float duration)
+    {
+        _invincibilityEndTime = Time.time + duration;
+    }
+
     private void Awake()
     {
         _currentHP = maxHP;
@@ -36,6 +41,8 @@ public class PlayerHP : MonoBehaviour
                 TakeDamage(1);
             if (UnityEngine.InputSystem.Keyboard.current.lKey.wasPressedThisFrame)
                 Heal(1);
+            if (UnityEngine.InputSystem.Keyboard.current.rKey.wasPressedThisFrame)
+                Respawn();
         }
 #endif
     }
@@ -67,6 +74,22 @@ public class PlayerHP : MonoBehaviour
         MockEventCenter.TriggerPlayerHeal(_currentHP, maxHP);
     }
 
+    public void Respawn()
+    {
+        _isDead = false;
+        _currentHP = maxHP;
+        _invincibilityEndTime = 0f;
+        if (_flashCoroutine != null)
+        {
+            StopCoroutine(_flashCoroutine);
+            _flashCoroutine = null;
+        }
+        if (PlayerInputReader.HasInstance)
+            PlayerInputReader.Instance.enabled = true;
+        MockEventCenter.TriggerPlayerRespawn();
+        MockEventCenter.TriggerCheckPlayerHP(_currentHP, maxHP);
+    }
+
     private void Die()
     {
         _isDead = true;
@@ -75,10 +98,6 @@ public class PlayerHP : MonoBehaviour
 
         if (PlayerInputReader.HasInstance)
             PlayerInputReader.Instance.enabled = false;
-
-        var rb = GetComponent<Rigidbody2D>();
-        if (rb != null)
-            rb.velocity = Vector2.zero;
     }
 
     private IEnumerator FlashRoutine()

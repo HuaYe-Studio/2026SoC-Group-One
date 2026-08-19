@@ -8,6 +8,9 @@ public class DevourableAnimal : MonoBehaviour, IDevourable
     [SerializeField] private float priority;
     [SerializeField] private bool destroyAfterDevour;
 
+    [Header("Audio")]
+    [SerializeField] private AudioClip devourSound;
+
     public FormType GrantedForm => grantedForm;
     public bool IsTargeted { get; set; }
     public SpriteRenderer SpriteRenderer { get; private set; }
@@ -66,6 +69,9 @@ public class DevourableAnimal : MonoBehaviour, IDevourable
     {
         if (_rb != null)
             _rb.velocity = Vector2.zero;
+
+        if (devourSound != null)
+            AudioManager.Instance?.PlaySfx(devourSound);
 
         MockEventCenter.TriggerAnimalAttacked(gameObject, PlayerAttacker, 0f);
 

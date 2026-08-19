@@ -1,5 +1,186 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &455918213783148008
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 290356464195351002}
+  - component: {fileID: 7578347185979632069}
+  - component: {fileID: 2033122542717303955}
+  - component: {fileID: 795763448929138049}
+  - component: {fileID: 2768510424582700458}
+  m_Layer: 6
+  m_Name: SheepForm
+  m_TagString: Player
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &290356464195351002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 455918213783148008}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2838083659676168268}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!212 &7578347185979632069
+SpriteRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 455918213783148008}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_Sprite: {fileID: 21300000, guid: 9456c3bcedaafef4a86e6d846fbc90c7, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 0.16, y: 0.16}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 1
+  m_MaskInteraction: 0
+  m_SpriteSortPoint: 0
+--- !u!61 &2033122542717303955
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 455918213783148008}
+  m_Enabled: 1
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_UsedByComposite: 0
+  m_Offset: {x: 0, y: 0}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0.5, y: 0.5}
+    oldSize: {x: 0.16, y: 0.16}
+    newSize: {x: 0.16, y: 0.16}
+    adaptiveTilingThreshold: 0.5
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  serializedVersion: 2
+  m_Size: {x: 0.8, y: 0.8}
+  m_EdgeRadius: 0
+--- !u!95 &795763448929138049
+Animator:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 455918213783148008}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 119e3b87c98be6541a25108c8c0f417e, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &2768510424582700458
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 455918213783148008}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cf05b71343476347b3893089c0b902a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  formType: 3
+  moveSpeed: 5
+  gravityScale: 1
+  fallGravityMultiplier: 1.5
+  groundCheckWidth: 0.8
+  groundCheckHeight: 0.05
+  groundCheckVerticalOffset: 0.02
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 8
+  abilityBindings: []
+  chargeSpeed: 12
+  chargeDuration: 0.5
+  chargeCooldown: 1.5
+  slideInitialSpeed: 8
+  slideDeceleration: 4.5
 --- !u!1 &821364179661146706
 GameObject:
   m_ObjectHideFlags: 0
@@ -12,6 +193,7 @@ GameObject:
   - component: {fileID: 9176721822590151171}
   - component: {fileID: 5333663214594488414}
   - component: {fileID: 4341644968850883059}
+  - component: {fileID: 2353528780955567327}
   m_Layer: 6
   m_Name: BubbleFishForm
   m_TagString: Player
@@ -142,17 +324,71 @@ MonoBehaviour:
   groundCheckVerticalOffset: 0.02
   groundLayer:
     serializedVersion: 2
-    m_Bits: 1
+    m_Bits: 8
   abilityBindings:
-  - abilityName: Toggle Expansion
+  - abilityName: Expand Hold
     inputSlot: 2
     phase: 0
-    onInputFired:
+    onAbilityActivated:
       m_PersistentCalls:
         m_Calls:
         - m_Target: {fileID: 4341644968850883059}
           m_TargetAssemblyTypeName: BubbleFishForm, Assembly-CSharp
-          m_MethodName: ToggleExpansion
+          m_MethodName: StartExpand
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
+  - abilityName: Expand Release
+    inputSlot: 2
+    phase: 2
+    onAbilityActivated:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 4341644968850883059}
+          m_TargetAssemblyTypeName: BubbleFishForm, Assembly-CSharp
+          m_MethodName: StopExpand
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
+  - abilityName: Dive Hold
+    inputSlot: 3
+    phase: 0
+    onAbilityActivated:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 4341644968850883059}
+          m_TargetAssemblyTypeName: BubbleFishForm, Assembly-CSharp
+          m_MethodName: StartShrink
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
+  - abilityName: Dive Release
+    inputSlot: 3
+    phase: 2
+    onAbilityActivated:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 4341644968850883059}
+          m_TargetAssemblyTypeName: BubbleFishForm, Assembly-CSharp
+          m_MethodName: StopShrink
           m_Mode: 1
           m_Arguments:
             m_ObjectArgument: {fileID: 0}
@@ -166,6 +402,28 @@ MonoBehaviour:
   buoyancyForce: 8
   pressureForce: 5
   underwaterMoveSpeed: 3.5
+  idleDamp: 6
+--- !u!95 &2353528780955567327
+Animator:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 821364179661146706}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 5cf2f64defd006b4f9058eba05503160, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &4789497493976429904
 GameObject:
   m_ObjectHideFlags: 0
@@ -321,7 +579,25 @@ MonoBehaviour:
   groundLayer:
     serializedVersion: 2
     m_Bits: 8
-  abilityBindings: []
+  abilityBindings:
+  - abilityName: Spit Fire
+    inputSlot: 5
+    phase: 3
+    onAbilityActivated:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 7125327682567490769}
+          m_TargetAssemblyTypeName: SlimeForm, Assembly-CSharp
+          m_MethodName: SpitFire
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument:
+            m_BoolArgument: 0
+          m_CallState: 2
   acceleration: 0.5
   deceleration: 0.5
   devourHandler: {fileID: 2091084545104360566}
@@ -543,7 +819,7 @@ MonoBehaviour:
   - abilityName: Jump Press
     inputSlot: 1
     phase: 0
-    onInputFired:
+    onAbilityActivated:
       m_PersistentCalls:
         m_Calls:
         - m_Target: {fileID: 8842012382244513926}
@@ -561,7 +837,7 @@ MonoBehaviour:
   - abilityName: Jump Release
     inputSlot: 1
     phase: 2
-    onInputFired:
+    onAbilityActivated:
       m_PersistentCalls:
         m_Calls:
         - m_Target: {fileID: 8842012382244513926}
@@ -625,10 +901,11 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2838083659676168268}
-  - component: {fileID: 8139496476503272819}
   - component: {fileID: 1506354432520958816}
+  - component: {fileID: 8139496476503272819}
   - component: {fileID: 8084950948594842238}
   - component: {fileID: 4925435840266706490}
+  - component: {fileID: 714463921836420346}
   m_Layer: 6
   m_Name: Player
   m_TagString: Player
@@ -652,25 +929,9 @@ Transform:
   - {fileID: 7238363458401885930}
   - {fileID: 5083136719780692478}
   - {fileID: 8579459921674063326}
+  - {fileID: 290356464195351002}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8139496476503272819
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6837292219011752717}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7bcebb77a7d445e47a01b3b43bd3d983, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  allForms:
-  - {fileID: 7125327682567490769}
-  - {fileID: 8842012382244513926}
-  - {fileID: 4341644968850883059}
-  activeFormIndex: 0
 --- !u!50 &1506354432520958816
 Rigidbody2D:
   serializedVersion: 4
@@ -698,6 +959,24 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 4
+--- !u!114 &8139496476503272819
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6837292219011752717}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7bcebb77a7d445e47a01b3b43bd3d983, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  allForms:
+  - {fileID: 7125327682567490769}
+  - {fileID: 8842012382244513926}
+  - {fileID: 4341644968850883059}
+  - {fileID: 2768510424582700458}
+  activeFormIndex: 0
 --- !u!114 &8084950948594842238
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -727,3 +1006,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxStamina: 100
   recoverPerSecond: 30
+--- !u!114 &714463921836420346
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6837292219011752717}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b4089d5287e14a46bfa8479452749d8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  elementDefinitions:
+  - type: 0
+    binding:
+      abilityName: 
+      inputSlot: 0
+      phase: 0
+      onAbilityActivated:
+        m_PersistentCalls:
+          m_Calls: []

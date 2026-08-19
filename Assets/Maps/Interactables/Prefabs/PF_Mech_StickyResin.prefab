@@ -10,6 +10,12 @@ GameObject:
   m_Component:
   - component: {fileID: 8051739070190028050}
   - component: {fileID: 9126715245155167485}
+  - component: {fileID: 1437635210778948965}
+  - component: {fileID: 1265318734611316560}
+  - component: {fileID: 656387283472953589}
+  - component: {fileID: 779463525903775353}
+  - component: {fileID: 5674435598068673843}
+  - component: {fileID: 4079219730936491236}
   m_Layer: 0
   m_Name: PF_Mech_StickyResin
   m_TagString: Untagged
@@ -84,3 +90,184 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!61 &1437635210778948965
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7644110900254919194}
+  m_Enabled: 1
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 1
+  m_UsedByEffector: 1
+  m_UsedByComposite: 0
+  m_Offset: {x: 0, y: 0}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0.5, y: 0.5}
+    oldSize: {x: 1, y: 1}
+    newSize: {x: 1, y: 1}
+    adaptiveTilingThreshold: 0.5
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  serializedVersion: 2
+  m_Size: {x: 1, y: 1}
+  m_EdgeRadius: 0
+--- !u!50 &1265318734611316560
+Rigidbody2D:
+  serializedVersion: 4
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7644110900254919194}
+  m_BodyType: 0
+  m_Simulated: 1
+  m_UseFullKinematicContacts: 0
+  m_UseAutoMass: 0
+  m_Mass: 1
+  m_LinearDrag: 0
+  m_AngularDrag: 0.05
+  m_GravityScale: 0
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_Interpolate: 0
+  m_SleepingMode: 1
+  m_CollisionDetection: 0
+  m_Constraints: 0
+--- !u!114 &656387283472953589
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7644110900254919194}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62cbac214ec98414bb17fb8c1be37988, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &779463525903775353
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7644110900254919194}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f108df238141aa64ea915319b645e83d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  devourableOnce: 1
+  priority: 0
+  onDevourEffect:
+    m_PersistentCalls:
+      m_Calls: []
+  devourSound: {fileID: 0}
+  canVoluntarySpit: 1
+  onEquipEffect:
+    m_PersistentCalls:
+      m_Calls: []
+  onUnequipEffect:
+    m_PersistentCalls:
+      m_Calls: []
+  statModifier:
+    moveSpeedMultiplier: 1
+    gravityScaleMultiplier: 1
+    fallGravityMultiplier: 1
+    massMultiplier: 1
+    climbSpeedMultiplier: 1
+    slideDownSpeedMultiplier: 1
+    climbStaminaCostMultiplier: 0.7
+    clingStaminaCostMultiplier: 1
+    tintColor: {r: 0, g: 0, b: 0, a: 0}
+    overlaySprite: {fileID: 0}
+    grantedAbility:
+      abilityName: 
+      inputSlot: 0
+      phase: 0
+      onAbilityActivated:
+        m_PersistentCalls:
+          m_Calls: []
+--- !u!114 &5674435598068673843
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7644110900254919194}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7304d249fdcf79d4787bc886ef3e74c9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  burnDuration: 5
+  destroyOnBurnOut: 1
+  burnOutStatePrefab: {fileID: 0}
+  ignitionRadius: 1
+  ignitionCheckInterval: 0.5
+  showParticlesOnIgnite: 1
+  smokePuffPrefab: {fileID: 3416110216422019651, guid: f284858ccdaa14b46b767c95208046bd, type: 3}
+  smokeEmitInterval: 0.3
+  smokeRiseSpeed: 1.5
+  smokeColumnWidth: 1
+  smokeMaxHeight: 7
+  smokeWallLife: 1
+  fireParticles: {fileID: 0}
+  fireLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  wallLayerMask:
+    serializedVersion: 2
+    m_Bits: 8
+  flammableLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+--- !u!249 &4079219730936491236
+AreaEffector2D:
+  serializedVersion: 2
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7644110900254919194}
+  m_Enabled: 1
+  m_UseColliderMask: 1
+  m_ColliderMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_UseGlobalAngle: 0
+  m_ForceAngle: 0
+  m_ForceMagnitude: 0
+  m_ForceVariation: 0
+  m_ForceTarget: 0
+  m_Drag: 10
+  m_AngularDrag: 0
