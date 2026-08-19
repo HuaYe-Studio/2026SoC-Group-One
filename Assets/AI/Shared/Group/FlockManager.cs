@@ -12,6 +12,10 @@ public static class FlockManager
     private static readonly Dictionary<string, List<FlockMember>> _flocks =
         new Dictionary<string, List<FlockMember>>();
 
+    // 同族共享状态：群ID → (成员 → 巡游点索引)。蜜蜂认领巡游点时写入，其他蜜蜂避开已认领点。
+    private static readonly Dictionary<string, Dictionary<FlockMember, int>> _claimedPoints =
+        new Dictionary<string, Dictionary<FlockMember, int>>();
+
     /// <summary>注册成员（由 FlockMember.OnEnable 调用，重复注册自动去重）。</summary>
     public static void Register(FlockMember member)
     {
@@ -39,6 +43,55 @@ public static class FlockManager
             if (members.Count == 0)
                 _flocks.Remove(member.FlockId);
         }
+
+        // 顺带释放巡游点认领（避免已销毁成员占着点不放）
+        ReleaseClaimedPoint(member);
+    }
+
+    /// <summary>
+    /// 认领巡游点（同族通信）：记录 member 在群内认领的点索引，供其他蜜蜂避开。
+    /// 重复认领会覆盖旧值（蜜蜂换点时先 Release 再 Claim）。
+    /// </summary>
+    public static void ClaimPoint(FlockMember member, int pointIndex)
+    {
+        if (member == null) return;
+        string id = member.FlockId;
+        if (!_claimedPoints.TryGetValue(id, out Dictionary<FlockMember, int> claims))
+        {
+            claims = new Dictionary<FlockMember, int>();
+            _claimedPoints[id] = claims;
+        }
+        claims[member] = pointIndex;
+    }
+
+    /// <summary>释放巡游点认领（蜜蜂换点/销毁时调用）。</summary>
+    public static void ReleaseClaimedPoint(FlockMember member)
+    {
+        if (member == null) return;
+        if (_claimedPoints.TryGetValue(member.FlockId, out Dictionary<FlockMember, int> claims))
+        {
+            claims.Remove(member);
+            if (claims.Count == 0)
+                _claimedPoints.Remove(member.FlockId);
+        }
+    }
+
+    /// <summary>
+    /// 查询群内已被认领的巡游点索引（不含自身认领的）。
+    /// 结果写入 results（非分配），返回数量。蜜蜂据此避开同族已占用的点，降低扎堆。
+    /// </summary>
+    public static int GetClaimedPoints(FlockMember self, HashSet<int> results)
+    {
+        results.Clear();
+        if (self == null) return 0;
+        if (!_claimedPoints.TryGetValue(self.FlockId, out Dictionary<FlockMember, int> claims)) return 0;
+
+        foreach (var kv in claims)
+        {
+            if (kv.Key == null || kv.Key == self) continue; // 跳过已销毁成员与自身
+            results.Add(kv.Value);
+        }
+        return results.Count;
     }
 
     /// <summary>

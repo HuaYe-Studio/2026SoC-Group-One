@@ -39,7 +39,8 @@ public class NavGrid2D : MonoBehaviour
     [Tooltip("网格边界的额外扩边（米），防止区域边界处目标点无法落格")]
     [SerializeField] private float _boundsMargin = 1f;
 
-    private bool[,] _blocked;   // true = 物理不可通行
+    private bool[,] _blocked;          // true = 物理不可通行（障碍/危险物）
+    private bool[,] _groundBlocked;    // true = 悬空格（无地面支撑；飞行单位寻路时可忽略）
     private Vector2 _origin;    // 网格左下角世界坐标
     private int _width;
     private int _height;
@@ -89,6 +90,7 @@ public class NavGrid2D : MonoBehaviour
         _origin = new Vector2(bounds.min.x, bounds.min.y);
 
         _blocked = new bool[_width, _height];
+        _groundBlocked = new bool[_width, _height];
 
         // 采样盒尺寸略小于格，避免相邻障碍格边缘误判
         Vector2 sampleSize = Vector2.one * (_cellSize * _clearanceFactor);
@@ -122,12 +124,12 @@ public class NavGrid2D : MonoBehaviour
                     }
                 }
 
-                // 悬空检测：格中心下方无地面支撑则视为不可通行（防止领地/寻路落在悬空格）
-                if (!_blocked[x, y] && _enableGroundSupportCheck && _groundLayers.value != 0)
+                // 悬空检测：格中心下方无地面支撑则记为悬空格（飞行单位可忽略，见 IsBlockedFor）
+                if (_enableGroundSupportCheck && _groundLayers.value != 0)
                 {
                     RaycastHit2D groundHit = Physics2D.Raycast(center, Vector2.down, _cellSize * 2f, _groundLayers);
                     if (groundHit.collider == null || groundHit.collider.isTrigger)
-                        _blocked[x, y] = true;
+                        _groundBlocked[x, y] = true;
                 }
             }
         }
@@ -180,13 +182,22 @@ public class NavGrid2D : MonoBehaviour
         return _origin + new Vector2((x + 0.5f) * _cellSize, (y + 0.5f) * _cellSize);
     }
 
-    /// <summary>该格是否物理不可通行。</summary>
-    public bool IsBlocked(int x, int y)
+    /// <summary>该格是否物理不可通行（含悬空格，供鱼/陆地动物寻路）。</summary>
+    public bool IsBlocked(int x, int y) => IsBlockedFor(x, y, false);
+
+    /// <summary>
+    /// 按单位类型判定格是否可通行：
+    /// ignoreGroundSupport=true 时忽略悬空格（飞行单位如蜜蜂，只避物理障碍）；
+    /// false 时悬空格同样不可通行（鱼/陆地动物，防止落在无支撑位置）。
+    /// </summary>
+    public bool IsBlockedFor(int x, int y, bool ignoreGroundSupport)
     {
         EnsureBaked();
         if (x < 0 || y < 0 || x >= _width || y >= _height)
             return true;
-        return _blocked[x, y];
+        if (_blocked[x, y]) return true;
+        if (!ignoreGroundSupport && _groundBlocked[x, y]) return true;
+        return false;
     }
 
     public bool IsBlocked(Vector2Int cell) => IsBlocked(cell.x, cell.y);
