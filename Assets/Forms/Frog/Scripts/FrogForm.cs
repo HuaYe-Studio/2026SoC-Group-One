@@ -24,6 +24,7 @@ public class FrogForm : BaseForm
     [SerializeField] private float wallJumpHorizontalForce = 10f;
     [SerializeField] private float wallJumpVerticalForce = 12f;
     [SerializeField] private float wallJumpCoyoteTime = 0.15f;
+    [SerializeField] private float wallJumpInputLockTime = 0.15f;
 
     [Header("Air Control")]
     [SerializeField] private float airControlSpeed = 4f;
@@ -53,7 +54,9 @@ public class FrogForm : BaseForm
     private int _lastWallJumpSide;
     private int _wallContactSide;
     private float _wallMemoryTimer;
+    private float _wallJumpInputLockTimer;
     private bool _pendingWallJumpAnim;
+    private bool _isWallJump;
 
     public override void Initialize(PlayerController ctrl)
     {
@@ -127,14 +130,14 @@ public class FrogForm : BaseForm
     {
         if (!_chargeModeEnabled)
         {
-            if (currentState == ActionState.Jumping && rb.velocity.y > 0)
+            if (currentState == ActionState.Jumping && rb.velocity.y > 0 && !_isWallJump)
                 ApplyJumpCut();
             return;
         }
 
         if (_chargeStartTime < 0f)
         {
-            if (currentState == ActionState.Jumping && rb.velocity.y > 0)
+            if (currentState == ActionState.Jumping && rb.velocity.y > 0 && !_isWallJump)
                 ApplyJumpCut();
             return;
         }
@@ -169,6 +172,7 @@ public class FrogForm : BaseForm
 
         _coyoteTimer = 0f;
         _jumpBufferTimer = 0f;
+        _isWallJump = false;
 
         rb.velocity = new Vector2(rb.velocity.x, force);
         currentState = ActionState.Jumping;
@@ -184,7 +188,8 @@ public class FrogForm : BaseForm
 
         if (currentState == ActionState.Jumping && !IsGrounded)
         {
-            rb.velocity = new Vector2(horizontal * airControlSpeed, rb.velocity.y);
+            if (_wallJumpInputLockTimer <= 0f)
+                rb.velocity = new Vector2(horizontal * airControlSpeed, rb.velocity.y);
             return;
         }
 
@@ -209,6 +214,7 @@ public class FrogForm : BaseForm
     {
         _coyoteTimer = 0f;
         _jumpBufferTimer = 0f;
+        _isWallJump = false;
 
         rb.velocity = new Vector2(rb.velocity.x, normalJumpForce);
         currentState = ActionState.Jumping;
@@ -275,6 +281,10 @@ public class FrogForm : BaseForm
         else if (_wallMemoryTimer > 0f)
             _wallMemoryTimer -= Time.fixedDeltaTime;
 
+        // Consume the buffered jump as a wall jump as soon as the wall becomes available.
+        if (_jumpBufferTimer > 0f)
+            TryWallJump();
+
         if (_chargeStartTime >= 0f && !CanJump())
         {
             _chargeStartTime = -1f;
@@ -283,6 +293,7 @@ public class FrogForm : BaseForm
 
         if (_coyoteTimer > 0f) _coyoteTimer -= Time.fixedDeltaTime;
         if (_jumpBufferTimer > 0f) _jumpBufferTimer -= Time.fixedDeltaTime;
+        if (_wallJumpInputLockTimer > 0f) _wallJumpInputLockTimer -= Time.fixedDeltaTime;
 
         SyncAnimator();
     }
@@ -296,6 +307,14 @@ public class FrogForm : BaseForm
         int side = _wallContactSide != 0 ? _wallContactSide : -_lastWallJumpSide;
         if (side == 0 || side == _lastWallJumpSide) return false;
 
+        // Require horizontal input away from the wall so the jump always separates from it.
+        if (PlayerInputReader.HasInstance)
+        {
+            float awayDir = side > 0 ? -1f : 1f;
+            if (PlayerInputReader.Instance.MoveValue.x * awayDir <= 0f)
+                return false;
+        }
+
         DoWallJump(side);
         return true;
     }
@@ -307,6 +326,8 @@ public class FrogForm : BaseForm
         _wallMemoryTimer = 0f;
         _coyoteTimer = 0f;
         _jumpBufferTimer = 0f;
+        _wallJumpInputLockTimer = wallJumpInputLockTime;
+        _isWallJump = true;
         _pendingWallJumpAnim = true;
 
         float awayDir = wallSide > 0 ? -1f : 1f;
