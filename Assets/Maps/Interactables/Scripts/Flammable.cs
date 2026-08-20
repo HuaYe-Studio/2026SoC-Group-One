@@ -175,7 +175,7 @@ public class Flammable : MonoBehaviour
             if (otherFlammable != null && !otherFlammable.isBurning && !otherFlammable.isExtinguished)
             {
                 otherFlammable.Ignite();
-                //Debug.Log(gameObject.name + " 引燃了 " + otherFlammable.gameObject.name);
+                Debug.Log(gameObject.name + " 引燃了 " + otherFlammable.gameObject.name);
             }
         }
     }
@@ -222,6 +222,7 @@ public class Flammable : MonoBehaviour
     /// </summary>
     private void OnCollisionEnter2D(Collision2D collision)
     {
+        Debug.Log($"触发器进入: {collision.gameObject.name}, Tag: {collision.gameObject.tag}");
         if (isBurning || isExtinguished)
             return;
 

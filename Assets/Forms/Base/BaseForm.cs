@@ -201,6 +201,33 @@ public abstract class BaseForm : MonoBehaviour
         return (hitL, hitR);
     }
 
+    // Param-driven like DetectWalls so concrete values live on each form's serialized fields.
+    // Probes the head in two zones (left/right), each flush with bounds.max.y, so a zone fires
+    // iff it is within checkDistance of an overhead surface on `layer`. Exactly one zone firing
+    // means the head clips a platform edge (caller ejects away from it); both firing is a ceiling.
+    private const float CeilingProbeHeight = 0.05f;
+
+    protected (bool left, bool right) DetectCeiling(
+        float checkDistance, float checkWidthFraction, LayerMask layer)
+    {
+        if (myCollider == null) return (false, false);
+
+        Bounds bounds = myCollider.bounds;
+        float headWidth = bounds.size.x * checkWidthFraction;
+        float zoneOffset = headWidth * 0.25f;
+        Vector2 size = new Vector2(headWidth / 2f, CeilingProbeHeight);
+        float topY = bounds.max.y - CeilingProbeHeight * 0.5f;
+        float centerX = bounds.center.x;
+
+        Vector2 leftOrigin = new Vector2(centerX - zoneOffset, topY);
+        Vector2 rightOrigin = new Vector2(centerX + zoneOffset, topY);
+
+        RaycastHit2D leftHit = Physics2D.BoxCast(leftOrigin, size, 0f, Vector2.up, checkDistance, layer);
+        RaycastHit2D rightHit = Physics2D.BoxCast(rightOrigin, size, 0f, Vector2.up, checkDistance, layer);
+
+        return (leftHit.collider != null, rightHit.collider != null);
+    }
+
     protected virtual void UpdateAirState()
     {
         if (rb == null) return;
@@ -474,6 +501,20 @@ public abstract class BaseForm : MonoBehaviour
         }
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireCube(bounds.center, bounds.size);
+    }
+
+    // Mirrors DetectCeiling's two probe zones (swept volume) so the editor visual can't drift
+    // from the runtime probe whenever the shared geometry constants change.
+    protected void DrawCeilingCheckGizmos(Collider2D col, float checkDistance, float checkWidthFraction)
+    {
+        Bounds bounds = col.bounds;
+        float headWidth = bounds.size.x * checkWidthFraction;
+        float zoneOffset = headWidth * 0.25f;
+        float centerY = bounds.max.y - CeilingProbeHeight * 0.5f + checkDistance * 0.5f;
+        Vector2 zoneSize = new Vector2(headWidth / 2f, CeilingProbeHeight + checkDistance);
+        Gizmos.color = Color.magenta;
+        Gizmos.DrawWireCube(new Vector2(bounds.center.x - zoneOffset, centerY), zoneSize);
+        Gizmos.DrawWireCube(new Vector2(bounds.center.x + zoneOffset, centerY), zoneSize);
     }
 
     protected virtual void OnDrawGizmosSelected()

@@ -26,6 +26,13 @@ public class FrogForm : BaseForm
     [SerializeField] private float wallJumpCoyoteTime = 0.15f;
     [SerializeField] private float wallJumpInputLockTime = 0.15f;
 
+    [Header("Jump Correct")]
+    [SerializeField] private float ceilingCheckDistance = 0.1f;
+    [SerializeField] private float ceilingCheckWidth = 0.8f;
+    [SerializeField] private float ceilingCornerEjectSpeed = 3f;
+    [SerializeField] private float ceilingEjectDuration = 0.12f;
+    [SerializeField] private float ceilingEjectRiseFloor = 2f;
+
     [Header("Air Control")]
     [SerializeField] private float airControlSpeed = 4f;
 
@@ -58,6 +65,10 @@ public class FrogForm : BaseForm
     private bool _pendingWallJumpAnim;
     private bool _isWallJump;
 
+    private int _ceilingEjectDir;
+    private float _ceilingEjectTimer;
+    private float _ceilingEjectRiseVelocity;
+
     public override void Initialize(PlayerController ctrl)
     {
         base.Initialize(ctrl);
@@ -70,6 +81,7 @@ public class FrogForm : BaseForm
     public override void Die()
     {
         _chargeStartTime = -1f;
+        _ceilingEjectTimer = 0f;
         base.Die();
     }
 
@@ -172,6 +184,7 @@ public class FrogForm : BaseForm
 
         _coyoteTimer = 0f;
         _jumpBufferTimer = 0f;
+        _ceilingEjectTimer = 0f;
         _isWallJump = false;
 
         rb.velocity = new Vector2(rb.velocity.x, force);
@@ -214,6 +227,7 @@ public class FrogForm : BaseForm
     {
         _coyoteTimer = 0f;
         _jumpBufferTimer = 0f;
+        _ceilingEjectTimer = 0f;
         _isWallJump = false;
 
         rb.velocity = new Vector2(rb.velocity.x, normalJumpForce);
@@ -245,7 +259,10 @@ public class FrogForm : BaseForm
         base.HandleLanding();
 
         if (landingThisFrame)
+        {
+            _ceilingEjectTimer = 0f;
             PlaySfx(landClip);
+        }
     }
 
     protected override void UpdateAirState()
@@ -263,6 +280,32 @@ public class FrogForm : BaseForm
         if (currentState == ActionState.Dead) return;
 
         base.FixedUpdate();
+
+        // Ceiling-corner correction: a sustained window re-applies the eject velocity each fixed
+        // step so the frog wins over the physics solver's head-bonk response and keeps rising.
+        if (_ceilingEjectTimer > 0f)
+        {
+            _ceilingEjectTimer -= Time.fixedDeltaTime;
+            rb.velocity = new Vector2(_ceilingEjectDir * ceilingCornerEjectSpeed, _ceilingEjectRiseVelocity);
+            currentState = ActionState.Jumping;
+        }
+        else if (currentState == ActionState.Jumping && rb.velocity.y > 0f)
+        {
+            var (ceilingLeft, ceilingRight) = DetectCeiling(ceilingCheckDistance, ceilingCheckWidth, wallLayer);
+
+            if (ceilingLeft != ceilingRight)
+            {
+                _ceilingEjectDir = ceilingLeft ? 1 : -1;
+                _ceilingEjectRiseVelocity = Mathf.Max(rb.velocity.y, ceilingEjectRiseFloor);
+                _ceilingEjectTimer = ceilingEjectDuration;
+                rb.velocity = new Vector2(_ceilingEjectDir * ceilingCornerEjectSpeed, _ceilingEjectRiseVelocity);
+            }
+            else if (ceilingLeft && ceilingRight)
+            {
+                rb.velocity = new Vector2(rb.velocity.x, 0f);
+                currentState = ActionState.Falling;
+            }
+        }
 
         var (wallLeft, wallRight) = DetectWalls(wallCheckDistance, wallCheckInset, wallRayCount, wallLayer);
 
@@ -327,6 +370,7 @@ public class FrogForm : BaseForm
         _coyoteTimer = 0f;
         _jumpBufferTimer = 0f;
         _wallJumpInputLockTimer = wallJumpInputLockTime;
+        _ceilingEjectTimer = 0f;
         _isWallJump = true;
         _pendingWallJumpAnim = true;
 
@@ -365,7 +409,10 @@ public class FrogForm : BaseForm
     {
         base.OnDrawGizmosSelected();
         if (GetComponent<Collider2D>() is { } col)
+        {
             DrawWallCheckGizmos(col, wallCheckDistance, wallCheckInset, wallRayCount);
+            DrawCeilingCheckGizmos(col, ceilingCheckDistance, ceilingCheckWidth);
+        }
     }
 #endif
 }
