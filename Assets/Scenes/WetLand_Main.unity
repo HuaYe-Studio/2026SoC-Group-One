@@ -8962,7 +8962,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6492558111664184708, guid: c1d3afb1e43616144a5ab6a2838ff58c, type: 3}
       propertyPath: itemID
-      value: 2
+      value: Frog_2
       objectReference: {fileID: 0}
     - target: {fileID: 6576219959141388252, guid: c1d3afb1e43616144a5ab6a2838ff58c, type: 3}
       propertyPath: m_LocalPosition.x
@@ -17668,7 +17668,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6492558111664184708, guid: c1d3afb1e43616144a5ab6a2838ff58c, type: 3}
       propertyPath: itemID
-      value: 3
+      value: Frog_3
       objectReference: {fileID: 0}
     - target: {fileID: 6576219959141388252, guid: c1d3afb1e43616144a5ab6a2838ff58c, type: 3}
       propertyPath: m_LocalPosition.x
@@ -18161,6 +18161,10 @@ PrefabInstance:
     - target: {fileID: 5652069731127602469, guid: c1d3afb1e43616144a5ab6a2838ff58c, type: 3}
       propertyPath: m_Name
       value: PF_Mech_MemoryCollection
+      objectReference: {fileID: 0}
+    - target: {fileID: 6492558111664184708, guid: c1d3afb1e43616144a5ab6a2838ff58c, type: 3}
+      propertyPath: itemID
+      value: Frog_1
       objectReference: {fileID: 0}
     - target: {fileID: 6576219959141388252, guid: c1d3afb1e43616144a5ab6a2838ff58c, type: 3}
       propertyPath: m_LocalPosition.x

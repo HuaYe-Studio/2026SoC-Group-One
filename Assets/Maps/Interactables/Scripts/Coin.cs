@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class Coin : MonoBehaviour
 {
+    public int value = 1;
    private void OnTriggerEnter2D(Collider2D other)
     {
         if(other.CompareTag("Player"))
@@ -13,7 +14,7 @@ public class Coin : MonoBehaviour
     }
     void Collect()
     {
-        CoinManager.Instance.AddCoin(1);
+        CoinManager.Instance.AddCoin(value);
         Destroy(gameObject);
     }
 }

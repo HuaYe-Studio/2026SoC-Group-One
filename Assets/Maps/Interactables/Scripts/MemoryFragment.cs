@@ -7,7 +7,7 @@ using static MemoryFragment;
 public class MemoryFragment : MonoBehaviour
 {
     [Header("ID")]
-    public int itemID;
+    public string itemID;
 
     [Header("replace")]
     public GameObject coinPrefab;
