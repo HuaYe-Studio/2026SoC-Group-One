@@ -22,17 +22,20 @@ public static class AStarPathfinder
     /// <param name="start">起点世界坐标</param>
     /// <param name="end">终点世界坐标</param>
     /// <param name="costAt">额外代价函数（世界坐标→额外代价，如空气/玩家惩罚）。可为 null</param>
-    /// <param name="outPath">输出路径点（世界坐标，含起点不含终点？含终点）。调用方负责 Clear</param>
+    /// <param name="outPath">输出路径点（世界坐标）。调用方负责 Clear</param>
+    /// <param name="ignoreGroundSupport">飞行单位寻路用：忽略悬空格，只避物理障碍（如蜜蜂）</param>
     /// <returns>是否找到路径</returns>
     public static bool FindPath(NavGrid2D grid, Vector2 start, Vector2 end,
-        System.Func<Vector2, float> costAt, List<Vector2> outPath)
+        System.Func<Vector2, float> costAt, List<Vector2> outPath,
+        bool ignoreGroundSupport = false)
     {
         outPath.Clear();
 
-        Vector2Int startCell = ClampToFreeCell(grid, start);
-        Vector2Int endCell = ClampToFreeCell(grid, end);
+        Vector2Int startCell = ClampToFreeCell(grid, start, ignoreGroundSupport);
+        Vector2Int endCell = ClampToFreeCell(grid, end, ignoreGroundSupport);
 
-        if (grid.IsBlocked(startCell) || grid.IsBlocked(endCell))
+        if (grid.IsBlockedFor(startCell.x, startCell.y, ignoreGroundSupport) ||
+            grid.IsBlockedFor(endCell.x, endCell.y, ignoreGroundSupport))
             return false;
 
         // 起点终点同格：直接给终点
@@ -90,14 +93,14 @@ public static class AStarPathfinder
             for (int d = 0; d < dirs.Length; d++)
             {
                 Vector2Int n = current.Cell + dirs[d];
-                if (grid.IsBlocked(n))
+                if (grid.IsBlockedFor(n.x, n.y, ignoreGroundSupport))
                     continue;
 
                 // 对角线穿角检查：斜向移动时相邻两直角格都须可通行，防止穿墙角
                 if (dirs[d].x != 0 && dirs[d].y != 0)
                 {
-                    if (grid.IsBlocked(current.Cell.x + dirs[d].x, current.Cell.y) ||
-                        grid.IsBlocked(current.Cell.x, current.Cell.y + dirs[d].y))
+                    if (grid.IsBlockedFor(current.Cell.x + dirs[d].x, current.Cell.y, ignoreGroundSupport) ||
+                        grid.IsBlockedFor(current.Cell.x, current.Cell.y + dirs[d].y, ignoreGroundSupport))
                         continue;
                 }
 
@@ -142,14 +145,15 @@ public static class AStarPathfinder
     }
 
     /// <summary>把世界坐标吸附到最近的可通行格；全阻塞时返回原格钳制。</summary>
-    private static Vector2Int ClampToFreeCell(NavGrid2D grid, Vector2 p)
+    private static Vector2Int ClampToFreeCell(NavGrid2D grid, Vector2 p, bool ignoreGroundSupport)
     {
         Vector2Int cell = grid.WorldToCell(ClampToBounds(grid, p));
-        if (!grid.IsBlocked(cell))
+        if (!grid.IsBlockedFor(cell.x, cell.y, ignoreGroundSupport))
             return cell;
 
-        // 从中心向外螺旋找最近可通行格
-        for (int r = 1; r < 8; r++)
+        // 从中心向外螺旋找最近可通行格（半径放宽到 24，覆盖起终点贴近大障碍的场景，
+        // 如蜜蜂在 Square/地形上方悬空区出生、附近全是障碍时仍能吸附到网格内的自由格）
+        for (int r = 1; r < 24; r++)
         {
             for (int dx = -r; dx <= r; dx++)
             {
@@ -157,7 +161,7 @@ public static class AStarPathfinder
                 {
                     if (Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy)) != r) continue;
                     Vector2Int c = cell + new Vector2Int(dx, dy);
-                    if (!grid.IsBlocked(c))
+                    if (!grid.IsBlockedFor(c.x, c.y, ignoreGroundSupport))
                         return c;
                 }
             }

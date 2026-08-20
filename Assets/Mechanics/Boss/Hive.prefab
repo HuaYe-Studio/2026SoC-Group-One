@@ -1,5 +1,131 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &947183791891259407
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4265793239896607640}
+  - component: {fileID: 1790575130043679316}
+  - component: {fileID: 3122400668705353764}
+  - component: {fileID: 7280081718892980518}
+  m_Layer: 0
+  m_Name: Area
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4265793239896607640
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 947183791891259407}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 78333397402794399}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!60 &1790575130043679316
+PolygonCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 947183791891259407}
+  m_Enabled: 1
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_UsedByComposite: 0
+  m_Offset: {x: 0, y: 0}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0, y: 0}
+    oldSize: {x: 0, y: 0}
+    newSize: {x: 0, y: 0}
+    adaptiveTilingThreshold: 0
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Points:
+    m_Paths:
+    - - {x: -0.03659892, y: 6.1727552}
+      - {x: -6.2683086, y: 1.5349872}
+      - {x: -1.1860349, y: -1.236338}
+      - {x: 1.9837009, y: -1.2363379}
+      - {x: 4.8072324, y: 0.41852438}
+      - {x: 5.440479, y: 2.670065}
+  m_UseDelaunayMesh: 0
+--- !u!114 &3122400668705353764
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 947183791891259407}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0f15c433f03e40246bf568edefdc3460, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _type: 2
+  _outsideCost: 1000
+--- !u!114 &7280081718892980518
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 947183791891259407}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: abae00c67d3ec4340a04657e704b7756, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _cellSize: 0.5
+  _obstacleLayers:
+    serializedVersion: 2
+    m_Bits: 8
+  _hazardTags:
+  - Spike
+  _hazardLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  _groundLayers:
+    serializedVersion: 2
+    m_Bits: 8
+  _enableGroundSupportCheck: 1
+  _clearanceFactor: 0.8
+  _boundsMargin: 1
 --- !u!1 &1103149349431986724
 GameObject:
   m_ObjectHideFlags: 0
@@ -30,7 +156,8 @@ Transform:
   m_LocalPosition: {x: 6.13, y: -1.55, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 4265793239896607640}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &2334232270425586723
@@ -99,3 +226,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hiveIndex: 0
   hitsToDestroy: 1
+  _beePrefab: {fileID: 3488087013475133379, guid: f361b15fff74e86439d5d375933bf90a, type: 3}
+  _beeCount: 6
+  _beeSpawnRadius: 1
+  _targetComponent: {fileID: 0}
+  _region: {fileID: 3122400668705353764}

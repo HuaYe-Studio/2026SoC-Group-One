@@ -15,6 +15,8 @@ public class BTChaseAction : BTNode
     private float _startTime;
     private bool _hasStarted;
 
+    private static readonly Collider2D[] _hitBuffer = new Collider2D[16];
+
     /// <param name="animal">动物实例</param>
     /// <param name="chaseSpeedMultiplier">追击速度倍率</param>
     /// <param name="eatRange">吃到判定距离</param>
@@ -88,13 +90,13 @@ public class BTChaseAction : BTNode
     /// </summary>
     private void EatFood()
     {
-        Collider2D[] hits = Physics2D.OverlapCircleAll(_animal.transform.position, _eatRange);
+        int hitCount = Physics2D.OverlapCircleNonAlloc(_animal.transform.position, _eatRange, _hitBuffer);
 
-        foreach (Collider2D hit in hits)
+        for (int i = 0; i < hitCount; i++)
         {
-            if (hit.CompareTag("Food"))
+            if (_hitBuffer[i].CompareTag("Food"))
             {
-                Object.Destroy(hit.gameObject);
+                Object.Destroy(_hitBuffer[i].gameObject);
                 break;
             }
         }
