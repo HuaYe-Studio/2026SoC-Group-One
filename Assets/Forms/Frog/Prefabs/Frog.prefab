@@ -286,7 +286,7 @@ MonoBehaviour:
   _hearingRadius: 4
   _threatLayer:
     serializedVersion: 2
-    m_Bits: 64
+    m_Bits: 320
   _fleeRadius: 5
   _safeRadius: 8
   _moveSpeedThreshold: 0.5
