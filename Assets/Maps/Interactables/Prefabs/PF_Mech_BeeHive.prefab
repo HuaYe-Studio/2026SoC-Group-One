@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 5351227671194448694}
   - component: {fileID: 3450083839810025975}
   - component: {fileID: 4911923882030953359}
-  m_Layer: 7
+  m_Layer: 0
   m_Name: PF_Mech_BeeHive
   m_TagString: Untagged
   m_Icon: {fileID: 0}
