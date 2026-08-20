@@ -40,6 +40,19 @@ public class StickyResin : MonoBehaviour
         }
         connectObjects.Remove(other.gameObject);
     }
+    public void DisconnectAllJoints()
+    {
+        // 遍历所有关节并销毁
+        foreach (FixedJoint2D joint in joints)
+        {
+            if (joint != null)
+            {
+                Destroy(joint);
+            }
+        }
+        joints.Clear();
+        connectObjects.Clear();
+    }
 }
 public interface IConnectable
 {

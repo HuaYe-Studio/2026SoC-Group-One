@@ -35,7 +35,6 @@ public class SlidingDoor : MonoBehaviour
         closedPos = closedPoint != null ? (Vector2)closedPoint.position : (Vector2)transform.position;
         openPos = openPoint != null ? (Vector2)openPoint.position : closedPos + Vector2.right * 3f;
 
-        // 使用 rb.position 而不是 transform.position
         rb.position = startOpen ? openPos : closedPos;
         isOpen = startOpen;
 
