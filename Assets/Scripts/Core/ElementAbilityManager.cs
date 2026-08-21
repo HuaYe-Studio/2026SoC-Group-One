@@ -15,15 +15,11 @@ public class ElementAbilityManager : MonoBehaviour
     [SerializeField] private List<ElementAbilityDef> elementDefinitions = new();
 
     private readonly HashSet<ElementType> _unlockedElements = new();
-    private readonly Dictionary<ElementType, AbilityInputBinding> _typeToBinding = new();
     private PlayerController _playerController;
 
     private void Awake()
     {
         _playerController = GetComponent<PlayerController>();
-        foreach (var def in elementDefinitions)
-            if (def.binding != null && !_typeToBinding.ContainsKey(def.type))
-                _typeToBinding[def.type] = def.binding;
     }
 
     public bool IsElementUnlocked(ElementType type) => _unlockedElements.Contains(type);
@@ -33,10 +29,15 @@ public class ElementAbilityManager : MonoBehaviour
     public void UnlockElement(ElementType type)
     {
         if (!_unlockedElements.Add(type)) return;
-        if (!_typeToBinding.TryGetValue(type, out var binding)) return;
 
         var slime = _playerController != null ? _playerController.GetForm(FormType.Slime) : null;
-        slime?.AddAbilityBinding(binding);
+        if (slime == null) return;
+
+        // An element may grant several bindings (e.g. SpitFire start + stop), configured
+        // as multiple ElementAbilityDef entries sharing the same type.
+        foreach (var def in elementDefinitions)
+            if (def.type == type && def.binding != null)
+                slime.AddAbilityBinding(def.binding);
     }
 
     public void RestoreElements(IEnumerable<ElementType> elements)
