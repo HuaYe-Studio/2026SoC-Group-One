@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class SlimeForm : BaseForm
@@ -33,6 +34,17 @@ public class SlimeForm : BaseForm
     [SerializeField] private AudioClip walkClip;
     [SerializeField] private float walkSoundInterval = 0.4f;
 
+    [Header("Spit Fire")]
+    [SerializeField] private GameObject flamePrefab;
+    [SerializeField] private Vector2 firePointOffset = new Vector2(0.7f, 0.4f);
+    [SerializeField] private float sprayInterval = 0.1f;
+    [SerializeField] private int flamesPerBatch = 1;
+    [SerializeField] private float spreadAngle = 30f;
+    [SerializeField] private float speedVariance = 1.5f;
+    [SerializeField] private float flameSpeed = 5f;
+    [SerializeField] private float flameLifeTime = 2f;
+    [SerializeField] private float flameMaxDistance = 0f;
+
     private float _currentVelocityX;
     private float _nextWalkSoundTime;
 
@@ -40,6 +52,9 @@ public class SlimeForm : BaseForm
     private float _wallClingExitTime;
     private float _staminaExhaustedTime = -1f;
     private bool _exhaustedFall;
+
+    private bool _isSpitFiring;
+    private Coroutine _sprayCoroutine;
 
     // Holdable modifier original values for clean revert
     private float _originalClimbSpeed;
@@ -49,7 +64,7 @@ public class SlimeForm : BaseForm
 
     private static readonly int SpeedHash = Animator.StringToHash("Speed");
     private static readonly int IsWallClingHash = Animator.StringToHash("IsWallCling");
-    private static readonly int SpitFireHash = Animator.StringToHash("SpitFire");
+    private static readonly int IsSpitFiringHash = Animator.StringToHash("IsSpitFiring");
 
     public override void Initialize(PlayerController ctrl)
     {
@@ -100,6 +115,7 @@ public class SlimeForm : BaseForm
     public override void OnFormDeactivated()
     {
         base.OnFormDeactivated();
+        StopSpitFire();
         if (currentState == ActionState.WallCling)
             ExitWallCling();
         if (devourHandler != null)
@@ -112,6 +128,7 @@ public class SlimeForm : BaseForm
 
     public override void Die()
     {
+        StopSpitFire();
         if (currentState == ActionState.WallCling)
             ExitWallCling();
         base.Die();
@@ -119,10 +136,79 @@ public class SlimeForm : BaseForm
 
     public void SpitFire()
     {
+        if (_isSpitFiring) return;
+
+        _isSpitFiring = true;
         if (animator != null)
-            animator.SetTrigger(SpitFireHash);
-        // TODO: implement fire projectile spawn / collision / damage later
-        Debug.Log("SpitFire ability triggered");
+            animator.SetBool(IsSpitFiringHash, true);
+
+        if (_sprayCoroutine == null)
+            _sprayCoroutine = StartCoroutine(SprayFlames());
+    }
+
+    public void StopSpitFire()
+    {
+        if (!_isSpitFiring) return;
+
+        _isSpitFiring = false;
+        if (animator != null)
+            animator.SetBool(IsSpitFiringHash, false);
+
+        if (_sprayCoroutine != null)
+        {
+            StopCoroutine(_sprayCoroutine);
+            _sprayCoroutine = null;
+        }
+    }
+
+    private IEnumerator SprayFlames()
+    {
+        while (_isSpitFiring)
+        {
+            SpawnFlameBatch();
+            yield return new WaitForSeconds(sprayInterval);
+        }
+        _sprayCoroutine = null;
+    }
+
+    private void SpawnFlameBatch()
+    {
+        if (flamePrefab == null) return;
+
+        Vector2 baseDirection = FacingDirection;
+        if (baseDirection == Vector2.zero)
+            baseDirection = Vector2.right;
+
+        Vector3 spawnPos = transform.position
+            + (Vector3)(baseDirection * firePointOffset.x)
+            + Vector3.up * firePointOffset.y;
+
+        for (int i = 0; i < flamesPerBatch; i++)
+        {
+            float angleOffset = Random.Range(-spreadAngle, spreadAngle) * 0.5f;
+            Vector2 direction = Quaternion.Euler(0, 0, angleOffset) * baseDirection;
+
+            float speed = Mathf.Max(flameSpeed + Random.Range(-speedVariance, speedVariance), 0.5f);
+
+            GameObject flame = Instantiate(flamePrefab, spawnPos, Quaternion.identity);
+
+            FlameProjectile flameScript = flame.GetComponent<FlameProjectile>();
+            if (flameScript == null)
+                flameScript = flame.AddComponent<FlameProjectile>();
+
+            flameScript.speed = speed;
+            flameScript.lifeTime = flameLifeTime;
+            flameScript.maxDistance = flameMaxDistance;
+            flameScript.Initialize(direction * speed, flameLifeTime);
+
+            // Flame.prefab carries a Water component that damages the Player.
+            // Player-owned flames are ignite/visual only and must not hurt the player.
+            Water water = flame.GetComponent<Water>();
+            if (water != null)
+                Destroy(water);
+
+            flame.transform.rotation = Quaternion.Euler(0, 0, Random.Range(0, 360f));
+        }
     }
 
     protected override void FixedUpdate()
