@@ -57,9 +57,11 @@ public class Hive : MonoBehaviour
         if (_isDestroyed) return;
 
         _currentHits++;
+        Debug.Log($"[Hive] 蜂巢#{hiveIndex} 受击（{_currentHits}/{hitsToDestroy}）命中点=({hitPoint.x:F1},{hitPoint.y:F1})", this);
         if (_currentHits < hitsToDestroy) return;
 
         _isDestroyed = true;
+        Debug.Log($"[Hive] 蜂巢#{hiveIndex} 被破坏！", this);
         OnDestroyed?.Invoke(this);
         MockEventCenter.TriggerHiveDestroyed(hiveIndex);
         NotifyBeesHiveDestroyed();

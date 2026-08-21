@@ -56,14 +56,14 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
     [SerializeField] private Animator _animator;
 
     [Header("出场/退去")]
-    [Tooltip("出场起点偏移（相对站位）：BOSS 从「站位+此偏移」处滑入站位。\n正值=从右侧滑入（向左移动）；负值=从左侧滑入（向右移动，BOSS 从左往右出场用负值）。零向量=原地出场")]
-    [SerializeField] private Vector2 _enterOffset = new Vector2(-10f, 0f);
-    [Tooltip("出场滑入耗时（秒）")]
-    [SerializeField] private float _enterDuration = 1.2f;
-    [Tooltip("退去目标位移（相对站位）：BOSS 往「站位+此偏移」方向滑出。\n正值=向右退去；负值=向左退去")]
-    [SerializeField] private Vector2 _exitOffset = new Vector2(8f, 0f);
-    [Tooltip("退去滑出耗时（秒）")]
-    [SerializeField] private float _exitDuration = 1.5f;
+    [Tooltip("出场起点偏移（相对站位）：BOSS 从「站位+此偏移」处伸出至站位。\n竖直蛇推荐负 Y（从地下向上伸出）；正值=从右侧伸入，负值=从左侧伸入。零向量=原地出场")]
+    [SerializeField] private Vector2 _enterOffset = new Vector2(0f, -8f);
+    [Tooltip("出场伸出速度（米/秒）")]
+    [SerializeField] private float _enterSpeed = 6f;
+    [Tooltip("退去目标偏移（相对站位）：BOSS 往「站位+此偏移」方向缩回。\n竖直蛇推荐负 Y（缩回地下）；正值=向右退去，负值=向左退去")]
+    [SerializeField] private Vector2 _exitOffset = new Vector2(0f, -8f);
+    [Tooltip("退去缩回速度（米/秒）")]
+    [SerializeField] private float _exitSpeed = 5f;
     [Tooltip("BOSS 战摄像机正交尺寸（默认 5 → 6.5 拉远）")]
     [SerializeField] private float _arenaCameraSize = 6.5f;
     [Tooltip("战斗结束后恢复的摄像机正交尺寸")]
@@ -76,6 +76,13 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
     [SerializeField] private int _segmentHealth = 3;
     [Tooltip("Enrage3 最终阶段残余血量（打空 → PendingVictory）")]
     [SerializeField] private int _finalHealth = 2;
+    [Header("狂暴持续时间")]
+    [Tooltip("Enrage1 持续时间（秒）：狂暴结束后自动恢复普通状态")]
+    [SerializeField] private float _enrageDuration1 = 5f;
+    [Tooltip("Enrage2 持续时间（秒）：狂暴结束后自动恢复普通状态")]
+    [SerializeField] private float _enrageDuration2 = 7f;
+    [Tooltip("Enrage3 持续时间（秒）：最终狂暴。0=不自动恢复（靠残余血打空胜利）")]
+    [SerializeField] private float _enrageDuration3 = 0f;
     [Tooltip("Pending 硬直时长（秒）：段打空/胜利前的停顿")]
     [SerializeField] private float _pendingDuration = 1.2f;
     [Tooltip("冷静半径（米）：PendingEnrage 期间玩家离开此距离 → 转 PendingCalm（脱战退档回血）")]
@@ -137,6 +144,7 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
     private bool _inFinalPhase;      // Enrage3：改用残余血量
     private PendingType _pending = PendingType.None;
     private float _pendingUntil;
+    private float _enrageEndTime;   // 狂暴结束时间（0=不自动恢复，用于固定时长狂暴）
     private int _hiveDestroyedCount;
 
     private Transform _player;
@@ -220,9 +228,10 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
             }
         }
 
-        if (_attacks == null || _attacks.Length == 0)
+        // 数组为空或全为 null（prefab 序列化常见 `[null]`）时自动查找，避免空引用元素顶掉自动发现
+        if (IsNullOrAllNull(_attacks))
             _attacks = GetComponentsInChildren<BossAttack>(true);
-        if (_hives == null || _hives.Length == 0)
+        if (IsNullOrAllNull(_hives))
             _hives = FindObjectsByType<Hive>(FindObjectsSortMode.None);
         if (_telegraph == null)
             _telegraph = GetComponentInChildren<BossTelegraph>(true);
@@ -249,12 +258,48 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
                 hive.OnDestroyed -= OnHiveDestroyed;
     }
 
+    /// <summary>数组为空、或所有元素都是 null（prefab 里 `[null]` 序列化的典型形态）。</summary>
+    private static bool IsNullOrAllNull<T>(T[] array) where T : class
+    {
+        if (array == null || array.Length == 0) return true;
+        for (int i = 0; i < array.Length; i++)
+            if (array[i] != null)
+                return false;
+        return true;
+    }
+
     private void Update()
     {
         if (!_isActive) return;
 
         if (_pending != PendingType.None)
             UpdatePending();
+
+        UpdateEnrageTimer();
+    }
+
+    /// <summary>固定时长狂暴计时：到点自动恢复普通状态（Enrage3 最终狂暴由 duration=0 禁用）。</summary>
+    private void UpdateEnrageTimer()
+    {
+        if (_enrageEndTime <= 0f || _phase == BossPhase.Defeated) return;
+        if (Time.time < _enrageEndTime) return;
+
+        _enrageEndTime = 0f;
+        SetPhase(BossPhase.Normal);
+        Debug.Log($"[BossController] {name} 狂暴结束，恢复普通状态", this);
+    }
+
+    /// <summary>按狂暴阶段取持续时间并启动计时（duration=0 表示不自动恢复）。</summary>
+    private void StartEnrageTimer(BossPhase phase)
+    {
+        float duration = phase switch
+        {
+            BossPhase.Enrage1 => _enrageDuration1,
+            BossPhase.Enrage2 => _enrageDuration2,
+            BossPhase.Enrage3 => _enrageDuration3,
+            _ => 0f,
+        };
+        _enrageEndTime = duration > 0f ? Time.time + duration : 0f;
     }
 
     // ===================== 出场 / 退去 =====================
@@ -299,16 +344,17 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
         {
             Vector2 start = _arenaPosition + _enterOffset;
             transform.position = start;
+            float duration = _enterOffset.magnitude / Mathf.Max(0.01f, _enterSpeed);
             float t = 0f;
             while (t < 1f)
             {
-                t += Time.deltaTime / Mathf.Max(0.01f, _enterDuration);
+                t += Time.deltaTime / duration;
                 transform.position = Vector2.Lerp(start, _arenaPosition, Mathf.SmoothStep(0f, 1f, t));
                 yield return null;
             }
             transform.position = _arenaPosition;
         }
-        // 出场滑入结束 → 待机
+        // 出场伸出结束 → 待机
         SetAnimState(BossAnimState.Idle);
         _movementRoutine = null;
     }
@@ -337,10 +383,11 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
 
         Vector2 start = transform.position;
         Vector2 target = start + _exitOffset;
+        float duration = _exitOffset.magnitude / Mathf.Max(0.01f, _exitSpeed);
         float t = 0f;
         while (t < 1f)
         {
-            t += Time.deltaTime / Mathf.Max(0.01f, _exitDuration);
+            t += Time.deltaTime / duration;
             transform.position = Vector2.Lerp(start, target, Mathf.SmoothStep(0f, 1f, t));
             yield return null;
         }
@@ -406,6 +453,7 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
         _hiveDestroyedCount = 0;
         _pending = PendingType.None;
         _pendingUntil = 0f;
+        _enrageEndTime = 0f;
 
         if (_hives != null)
         {
@@ -426,6 +474,8 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
         if (!_isActive || _phase == BossPhase.Defeated || _pending != PendingType.None)
             return;
         if (amount <= 0) return;
+
+        Debug.Log($"[BossController] {name} 受击 -{amount}（段内={_currentSegmentHP}/{_segmentMax}，剩余段={_remainingSegments}，终段={_inFinalPhase}）", this);
 
         if (_inFinalPhase)
         {
@@ -450,13 +500,16 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
             _inFinalPhase = true;
             _finalHPRemaining = Mathf.Max(1, _finalHealth);
             SetPhase(BossPhase.Enrage3);
+            StartEnrageTimer(BossPhase.Enrage3);
             NotifyHPChanged();
             BeginPending(PendingType.Enrage);
             return;
         }
 
         _currentSegmentHP = _segmentMax;
-        SetPhase(PhaseFromSegments(_remainingSegments));
+        BossPhase enragePhase = PhaseFromSegments(_remainingSegments);
+        SetPhase(enragePhase);
+        StartEnrageTimer(enragePhase);
         BeginPending(PendingType.Enrage);
     }
 
@@ -605,6 +658,7 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
                 snakeTail = _snakeTail,
                 telegraph = _telegraph,
                 onHit = HandleAttackHit,
+                enraged = _phase != BossPhase.Normal,
             };
 
             yield return StartCoroutine(attack.Execute(ctx));
@@ -656,6 +710,9 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
     /// </summary>
     private void HandleAttackHit(Vector2 hitPoint)
     {
+        string attackName = _currentAttack != null ? _currentAttack.GetType().Name : "null";
+        Debug.Log($"[BossController] {name} 攻击命中 攻击={attackName} 落点=({hitPoint.x:F1},{hitPoint.y:F1}) 可破巢={(_currentAttack != null && _currentAttack.CanDestroyHive)}", this);
+
         DamagePlayerIfHit(hitPoint);
 
         // 只有可破坏蜂巢的攻击（A拍击/C撕咬）才结算蜂巢；B横扫全屏不破巢
@@ -689,9 +746,13 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
             Hive hive = _hives[i];
             if (hive == null || hive.IsDestroyed) continue;
 
-            // 落点在蜂巢 2×2 判定盒内 → 受击
-            if (Vector2.Distance(hitPoint, hive.transform.position) <= _hiveHitRadius)
+            // 落点在蜂巢判定盒内 → 受击
+            float dist = Vector2.Distance(hitPoint, hive.transform.position);
+            if (dist <= _hiveHitRadius)
+            {
+                Debug.Log($"[BossController] 落点命中蜂巢#{hive.HiveIndex}（距离={dist:F2}m ≤ {_hiveHitRadius}m）", this);
                 hive.TakeHit(hitPoint);
+            }
         }
     }
 

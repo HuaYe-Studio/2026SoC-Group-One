@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 1910975142631521872}
   - component: {fileID: 2484698007255412260}
   - component: {fileID: 7137302672446041464}
+  - component: {fileID: 4445558007473283304}
   m_Layer: 8
   m_Name: BOSS
   m_TagString: Untagged
@@ -52,30 +53,33 @@ MonoBehaviour:
   _snakeTail: {fileID: 2705931448050790248}
   _telegraph: {fileID: 0}
   _attacks:
-  - {fileID: 6223524495152468436}
+  - {fileID: 0}
   _hives:
   - {fileID: 0}
   _camera: {fileID: 0}
   _animator: {fileID: 0}
-  _enterOffset: {x: -10, y: 0}
-  _enterDuration: 1.2
-  _exitOffset: {x: 8, y: 0}
-  _exitDuration: 1.5
+  _enterOffset: {x: 0, y: -8}
+  _enterSpeed: 6
+  _exitOffset: {x: 0, y: -8}
+  _exitSpeed: 5
   _arenaCameraSize: 6.5
   _idleCameraSize: 5
   _segmentCount: 3
   _segmentHealth: 3
   _finalHealth: 2
+  _enrageDuration1: 5
+  _enrageDuration2: 7
+  _enrageDuration3: 0
   _pendingDuration: 1.2
   _calmRadius: 12
   _calmRestoresSegment: 1
   _winOnAllHives: 1
   _winOnHpDepleted: 1
   _segmentDamagePerHive: 0
-  _cooldownNormal: 3
-  _cooldownEnrage1: 2.5
-  _cooldownEnrage2: 2
-  _cooldownEnrage3: 1.4
+  _cooldownNormal: {x: 3, y: 4}
+  _cooldownEnrage1: {x: 2, y: 2.5}
+  _cooldownEnrage2: {x: 1.8, y: 2.2}
+  _cooldownEnrage3: {x: 1.5, y: 2}
   _attackDamage: 1
   _enableChase: 1
   _chaseSpeed: 2
@@ -100,14 +104,14 @@ Rigidbody2D:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 944351066009322587}
-  m_BodyType: 0
+  m_BodyType: 1
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
   m_Mass: 1
   m_LinearDrag: 0
   m_AngularDrag: 0.05
-  m_GravityScale: 1
+  m_GravityScale: 0
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -118,7 +122,21 @@ Rigidbody2D:
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 0
-  m_Constraints: 0
+  m_Constraints: 4
+--- !u!114 &4445558007473283304
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 944351066009322587}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a52ae8646fc1c76479fbe15eaa9124e6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _boxRenderer: {fileID: 0}
+  _boxSize: {x: 3, y: 1.5}
 --- !u!1 &5487306251629417327
 GameObject:
   m_ObjectHideFlags: 0
@@ -146,7 +164,7 @@ Transform:
   m_GameObject: {fileID: 5487306251629417327}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -1.1953111, y: 4.4694557, z: 0}
+  m_LocalPosition: {x: -0.5840812, y: -4.4779572, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -222,9 +240,8 @@ GameObject:
   m_Component:
   - component: {fileID: 2449986650146376885}
   - component: {fileID: 2494735228320591585}
-  - component: {fileID: 6223524495152468436}
-  - component: {fileID: 6514379245358858339}
   - component: {fileID: 1622890718685054583}
+  - component: {fileID: 8043257414846221964}
   m_Layer: 8
   m_Name: Boss_Head
   m_TagString: Untagged
@@ -241,7 +258,7 @@ Transform:
   m_GameObject: {fileID: 6073250801367528590}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -6.03, y: 7.83, z: -1.7686906}
+  m_LocalPosition: {x: 0.155, y: 0.85, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -299,50 +316,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!114 &6223524495152468436
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6073250801367528590}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3ab2080a8267b624b8905a922ed35679, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  probability: 25
-  hitboxSize: {x: 3, y: 1.5}
-  canDestroyHive: 1
-  followDuration: 1
-  lockDuration: 0.5
---- !u!50 &6514379245358858339
-Rigidbody2D:
-  serializedVersion: 4
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6073250801367528590}
-  m_BodyType: 0
-  m_Simulated: 1
-  m_UseFullKinematicContacts: 0
-  m_UseAutoMass: 0
-  m_Mass: 1
-  m_LinearDrag: 0
-  m_AngularDrag: 0.05
-  m_GravityScale: 0
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_Interpolate: 0
-  m_SleepingMode: 1
-  m_CollisionDetection: 0
-  m_Constraints: 0
 --- !u!70 &1622890718685054583
 CapsuleCollider2D:
   m_ObjectHideFlags: 0
@@ -378,6 +351,23 @@ CapsuleCollider2D:
   m_Offset: {x: 0, y: 0}
   m_Size: {x: 1, y: 2}
   m_Direction: 0
+--- !u!114 &8043257414846221964
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6073250801367528590}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0e782198c655ac4491c517d39983948, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  probability: 40
+  hitboxSize: {x: 3, y: 1.5}
+  canDestroyHive: 1
+  followDuration: 1
+  lockDuration: 0.5
 --- !u!1 &8920223996409487028
 GameObject:
   m_ObjectHideFlags: 0
@@ -388,8 +378,9 @@ GameObject:
   m_Component:
   - component: {fileID: 2705931448050790248}
   - component: {fileID: 1750564186267582425}
-  - component: {fileID: 8074568962604473270}
   - component: {fileID: 639757101763192899}
+  - component: {fileID: 7620511777072973316}
+  - component: {fileID: 6935997116573265677}
   m_Layer: 8
   m_Name: Boss_Tail
   m_TagString: Untagged
@@ -406,7 +397,7 @@ Transform:
   m_GameObject: {fileID: 8920223996409487028}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -6.34, y: 6.13, z: -1.7686906}
+  m_LocalPosition: {x: -0.155, y: -0.85, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -464,33 +455,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!50 &8074568962604473270
-Rigidbody2D:
-  serializedVersion: 4
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8920223996409487028}
-  m_BodyType: 0
-  m_Simulated: 1
-  m_UseFullKinematicContacts: 0
-  m_UseAutoMass: 0
-  m_Mass: 0.0001
-  m_LinearDrag: 0
-  m_AngularDrag: 0.05
-  m_GravityScale: 0
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_Interpolate: 0
-  m_SleepingMode: 1
-  m_CollisionDetection: 0
-  m_Constraints: 0
 --- !u!70 &639757101763192899
 CapsuleCollider2D:
   m_ObjectHideFlags: 0
@@ -526,3 +490,37 @@ CapsuleCollider2D:
   m_Offset: {x: 0, y: 0}
   m_Size: {x: 1, y: 2}
   m_Direction: 0
+--- !u!114 &7620511777072973316
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8920223996409487028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ab2080a8267b624b8905a922ed35679, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  probability: 20
+  hitboxSize: {x: 3, y: 1.5}
+  canDestroyHive: 1
+  followDuration: 1
+  lockDuration: 0.5
+--- !u!114 &6935997116573265677
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8920223996409487028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e73910faa6b85a488eee61296a3e01c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  probability: 40
+  hitboxSize: {x: 3, y: 1.5}
+  canDestroyHive: 1
+  followDuration: 1
+  lockDuration: 0.5
