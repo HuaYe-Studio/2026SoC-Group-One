@@ -24,7 +24,7 @@ public class Spike : MonoBehaviour
     }
     private void Update()
     {
-        if (isPlayerOnSpike)
+        if (isPlayerOnSpike && col != null)
         {
             TryDamagePlayer(col);
         }
@@ -34,12 +34,16 @@ public class Spike : MonoBehaviour
         if (collision.gameObject.CompareTag("Player"))
         {
             isPlayerOnSpike = true;
+            col = collision;
             TryDamagePlayer(collision);
         }
     }
     private void TryDamagePlayer(Collision2D collision)
     {
         PlayerHP playerHP = collision.gameObject.GetComponent<PlayerHP>();
-        playerHP.TakeDamage(damage);
+        if (playerHP != null)
+        {
+            playerHP.TakeDamage(damage);
+        }
     }
 }

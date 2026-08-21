@@ -869,6 +869,11 @@ MonoBehaviour:
   wallJumpVerticalForce: 7
   wallJumpCoyoteTime: 0.15
   wallJumpInputLockTime: 0.2
+  ceilingCheckDistance: 0.1
+  ceilingCheckWidth: 0.8
+  ceilingCornerEjectSpeed: 3
+  ceilingEjectDuration: 0.12
+  ceilingEjectRiseFloor: 2
   airControlSpeed: 4
   jumpClip: {fileID: 0}
   landClip: {fileID: 0}
@@ -958,7 +963,7 @@ Rigidbody2D:
     m_Bits: 0
   m_Interpolate: 1
   m_SleepingMode: 1
-  m_CollisionDetection: 0
+  m_CollisionDetection: 1
   m_Constraints: 4
 --- !u!114 &8139496476503272819
 MonoBehaviour:
