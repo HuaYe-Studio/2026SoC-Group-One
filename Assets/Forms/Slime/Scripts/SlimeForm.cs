@@ -31,7 +31,7 @@ public class SlimeForm : BaseForm
     public float ClingStaminaPerSec { get => clingStaminaPerSec; set => clingStaminaPerSec = value; }
 
     [Header("Audio")]
-    [SerializeField] private AudioClip walkClip;
+    [SerializeField] private string walkSfxKey = "walk";
     [SerializeField] private float walkSoundInterval = 0.4f;
 
     [Header("Spit Fire")]
@@ -101,7 +101,7 @@ public class SlimeForm : BaseForm
 
         if (currentState == ActionState.Moving && IsGrounded && Time.time >= _nextWalkSoundTime)
         {
-            PlaySfx(walkClip);
+            PlaySfxByKey(walkSfxKey);
             _nextWalkSoundTime = Time.time + walkSoundInterval;
         }
     }

@@ -38,8 +38,8 @@ public class FrogForm : BaseForm
     [SerializeField] private float airControlSpeed = 4f;
 
     [Header("Audio")]
-    [SerializeField] private AudioClip jumpClip;
-    [SerializeField] private AudioClip landClip;
+    [SerializeField] private string jumpSfxKey = "jump";
+    [SerializeField] private string landSfxKey = "land";
 
     private static readonly int IsWallJumpHash = Animator.StringToHash("IsWallJump");
     private static readonly int IsChargingHash = Animator.StringToHash("IsCharging");
@@ -199,7 +199,7 @@ public class FrogForm : BaseForm
         ignoreGroundUntil = Time.fixedTime + GroundIgnoreAfterJump;
         IsGrounded = false;
 
-        PlaySfx(jumpClip);
+        PlaySfxByKey(jumpSfxKey);
     }
 
     protected override void DoMovement(float horizontal)
@@ -242,7 +242,7 @@ public class FrogForm : BaseForm
         ignoreGroundUntil = Time.fixedTime + GroundIgnoreAfterJump;
         IsGrounded = false;
 
-        PlaySfx(jumpClip);
+        PlaySfxByKey(jumpSfxKey);
     }
 
     private void ApplyJumpCut()
@@ -268,7 +268,7 @@ public class FrogForm : BaseForm
         if (landingThisFrame)
         {
             _ceilingEjectTimer = 0f;
-            PlaySfx(landClip);
+            PlaySfxByKey(landSfxKey);
         }
     }
 
@@ -387,7 +387,7 @@ public class FrogForm : BaseForm
         ignoreGroundUntil = Time.fixedTime + GroundIgnoreAfterJump;
         IsGrounded = false;
 
-        PlaySfx(jumpClip);
+        PlaySfxByKey(jumpSfxKey);
     }
 
     private void SyncAnimator()
