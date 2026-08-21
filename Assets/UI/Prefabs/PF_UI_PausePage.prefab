@@ -304,7 +304,7 @@ PrefabInstance:
       value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
     - target: {fileID: 6712439165433580806, guid: 697d6facd74843348b27483d838f8088, type: 3}
-      propertyPath: _isWithSettingPanel
+      propertyPath: _isWithPanel
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8250917110310029491, guid: 697d6facd74843348b27483d838f8088, type: 3}
@@ -487,7 +487,7 @@ PrefabInstance:
       value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
     - target: {fileID: 6712439165433580806, guid: 697d6facd74843348b27483d838f8088, type: 3}
-      propertyPath: _isWithSettingPanel
+      propertyPath: _isWithPanel
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8560928656389486874, guid: 697d6facd74843348b27483d838f8088, type: 3}
@@ -610,7 +610,7 @@ PrefabInstance:
       value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
     - target: {fileID: 6712439165433580806, guid: 697d6facd74843348b27483d838f8088, type: 3}
-      propertyPath: _isWithSettingPanel
+      propertyPath: _isWithPanel
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8560928656389486874, guid: 697d6facd74843348b27483d838f8088, type: 3}
