@@ -27,19 +27,22 @@ public class BossBiteAttack : BossAttack
     {
         BossTelegraph telegraph = ctx.telegraph;
 
-        // 1. 跟随预警：红框跟随玩家（撕咬预判），给玩家反应窗口
         if (telegraph != null)
-        {
             telegraph.BoxSize = HitboxSize;
-            telegraph.ShowFollow(ctx.player);
-        }
 
-        float followEnd = Time.time + FollowDuration;
-        while (Time.time < followEnd)
+        // 1. 跟随预警：红框跟随玩家（撕咬预判），给玩家反应窗口（狂暴中跳过跟随，直接锁定）
+        if (!ctx.enraged && FollowDuration > 0f)
         {
-            if (telegraph != null && ctx.player != null)
-                telegraph.FollowTo(ctx.player.position);
-            yield return null;
+            if (telegraph != null)
+                telegraph.ShowFollow(ctx.player);
+
+            float followEnd = Time.time + FollowDuration;
+            while (Time.time < followEnd)
+            {
+                if (telegraph != null && ctx.player != null)
+                    telegraph.FollowTo(ctx.player.position);
+                yield return null;
+            }
         }
 
         // 2. 锁定命中点：优先玩家当前位置，玩家缺失时回退蛇头锚点

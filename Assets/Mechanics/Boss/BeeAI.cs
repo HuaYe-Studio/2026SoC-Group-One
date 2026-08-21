@@ -92,6 +92,7 @@ public class BeeAI : MonoBehaviour
     // ---- 行为标志（BeeBT 条件查询）----
     private bool _hiveDestroyed;        // 蜂巢已破坏 → 切攻击
     private bool _scatterRequested;     // 目标受创/被击败 → 切飞散
+    private float _scatterStartTime = -1f; // 飞散起始时间（超时兜底销毁）
 
     public bool HiveDestroyed => _hiveDestroyed;
     public bool ShouldScatter => _scatterRequested;
@@ -414,6 +415,9 @@ public class BeeAI : MonoBehaviour
     /// <summary>飞散：背离目标飞出屏幕后销毁（被驱散的表现）。</summary>
     public void Scatter()
     {
+        if (_scatterStartTime < 0f)
+            _scatterStartTime = Time.time;
+
         Vector2 away = Vector2.right;
         if (_target != null)
         {
@@ -421,16 +425,22 @@ public class BeeAI : MonoBehaviour
             if (fromTarget.sqrMagnitude > 0.0001f) away = fromTarget.normalized;
         }
 
-        Fly(away);
+        // 飞散不参与 Boids：直接朝背离目标方向全速飞离（被驱散的表现，不受群体聚合拉回）
+        if (_rb != null)
+            _rb.velocity = away * _flySpeed * 1.5f;
 
         // 出屏销毁
+        bool outOfScreen = false;
         if (_mainCamera != null)
         {
             Vector3 view = _mainCamera.WorldToViewportPoint(transform.position);
-            if (view.x < -_scatterMargin || view.x > 1f + _scatterMargin ||
-                view.y < -_scatterMargin || view.y > 1f + _scatterMargin)
-                Destroy(gameObject);
+            outOfScreen = view.x < -_scatterMargin || view.x > 1f + _scatterMargin ||
+                          view.y < -_scatterMargin || view.y > 1f + _scatterMargin;
         }
+
+        // 出屏 或 超时兜底（3 秒仍未出屏，防无相机/方向受阻导致永不销毁）→ 销毁
+        if (outOfScreen || Time.time - _scatterStartTime > 3f)
+            Destroy(gameObject);
     }
 
     // ===================== 移动与伤害 =====================
@@ -464,6 +474,8 @@ public class BeeAI : MonoBehaviour
                 float angle = Random.Range(0f, 2f * Mathf.PI);
                 Vector2 candidate = (Vector2)_hiveAnchor.position +
                     new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
+                if (_guardPointJitter > 0f)
+                    candidate += Random.insideUnitCircle * _guardPointJitter; // 额外随机抖动，轨迹更错开
                 if (candidate.y < minY) candidate.y = minY;
 
                 if (_region != null && !_region.Contains(candidate)) { rejRegion++; continue; }
@@ -488,6 +500,8 @@ public class BeeAI : MonoBehaviour
             Vector2 basePos = (Vector2)_hiveAnchor.position +
                 new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * _guardRadius;
             Vector2 fallback = basePos;
+            if (_guardPointJitter > 0f)
+                fallback += Random.insideUnitCircle * _guardPointJitter;
             if (fallback.y < minY) fallback.y = minY;
             _guardPoints.Add(fallback);
         }

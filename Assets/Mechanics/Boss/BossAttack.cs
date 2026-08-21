@@ -21,6 +21,9 @@ public struct BossAttackContext
 
     /// <summary>命中判定回调：攻击命中点由攻击实现自己判定后调用，Boss 侧统一处理玩家伤害+蜂巢破坏。</summary>
     public Action<Vector2> onHit;
+
+    /// <summary>是否狂暴中：true 时红框跳过跟随阶段直接锁定玩家当前位置（文档 3.4 狂暴锁定）。</summary>
+    public bool enraged;
 }
 
 /// <summary>

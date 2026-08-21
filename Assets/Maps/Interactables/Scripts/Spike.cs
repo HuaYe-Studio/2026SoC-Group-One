@@ -40,6 +40,7 @@ public class Spike : MonoBehaviour
     }
     private void TryDamagePlayer(Collision2D collision)
     {
+        if (collision == null || collision.gameObject == null) return;
         PlayerHP playerHP = collision.gameObject.GetComponent<PlayerHP>();
         if (playerHP != null)
         {

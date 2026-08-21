@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 3737089347627640276}
   - component: {fileID: 6547251942202158273}
   - component: {fileID: 7653443250370298805}
-  m_Layer: 7
+  m_Layer: 0
   m_Name: PF_Mech_FireCrystal
   m_TagString: Untagged
   m_Icon: {fileID: 0}

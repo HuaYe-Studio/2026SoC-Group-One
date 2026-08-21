@@ -11,23 +11,36 @@ public class BossSlamAttack : BossAttack
 {
     private const float BlinkFrequency = 5f; // 锁定阶段红框闪烁频率（Hz）
 
+    private void Awake()
+    {
+        // 文档固定规格：A 拍击 = 40% / 3×1.5 / 跟随+锁定 / 破蜂巢
+        probability = 40f;
+        hitboxSize = new Vector2(3f, 1.5f);
+        canDestroyHive = true;
+        followDuration = 1f;
+        lockDuration = 0.5f;
+    }
+
     public override IEnumerator Execute(BossAttackContext ctx)
     {
         BossTelegraph telegraph = ctx.telegraph;
 
-        // 1. 跟随预警：红框跟随玩家，给玩家反应窗口
         if (telegraph != null)
-        {
             telegraph.BoxSize = HitboxSize;
-            telegraph.ShowFollow(ctx.player);
-        }
 
-        float followEnd = Time.time + FollowDuration;
-        while (Time.time < followEnd)
+        // 1. 跟随预警：红框跟随玩家，给玩家反应窗口（狂暴中跳过跟随，直接锁定）
+        if (!ctx.enraged && FollowDuration > 0f)
         {
-            if (telegraph != null && ctx.player != null)
-                telegraph.FollowTo(ctx.player.position);
-            yield return null;
+            if (telegraph != null)
+                telegraph.ShowFollow(ctx.player);
+
+            float followEnd = Time.time + FollowDuration;
+            while (Time.time < followEnd)
+            {
+                if (telegraph != null && ctx.player != null)
+                    telegraph.FollowTo(ctx.player.position);
+                yield return null;
+            }
         }
 
         // 2. 锁定命中点：优先玩家当前位置，玩家缺失时回退蛇尾锚点
