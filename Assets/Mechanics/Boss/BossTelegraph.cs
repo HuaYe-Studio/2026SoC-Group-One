@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 /// <summary>
@@ -6,6 +7,15 @@ using UnityEngine;
 /// </summary>
 public class BossTelegraph : MonoBehaviour
 {
+    /// <summary>跟随预警开始：传入目标 Transform 与当前红框尺寸（世界单位）。</summary>
+    public event Action<Transform, Vector2> OnFollowShown;
+
+    /// <summary>锁定预警开始：传入锁定世界坐标与当前红框尺寸（世界单位）。</summary>
+    public event Action<Vector2, Vector2> OnLockShown;
+
+    /// <summary>预警隐藏。</summary>
+    public event Action OnHidden;
+
     [Tooltip("红框渲染组件（表现层实现时挂具体渲染器，这里预留引用）")]
     [SerializeField] private SpriteRenderer _boxRenderer;
 
@@ -54,6 +64,7 @@ public class BossTelegraph : MonoBehaviour
             Box.enabled = true;
             Box.color = new Color(1f, 0.2f, 0.2f, 0.6f);
         }
+        OnFollowShown?.Invoke(target, _boxSize);
     }
 
     /// <summary>锁定预警：红框锁定在 pos，闪烁 lockDuration（由攻击实现负责时长与隐藏）。</summary>
@@ -65,6 +76,7 @@ public class BossTelegraph : MonoBehaviour
             Box.transform.position = pos;
             Box.enabled = true;
         }
+        OnLockShown?.Invoke(pos, _boxSize);
     }
 
     /// <summary>隐藏红框（只禁渲染器，不 SetActive 挂载物体——本组件可能挂在 BOSS 根物体上）。</summary>
@@ -73,6 +85,7 @@ public class BossTelegraph : MonoBehaviour
         _isActive = false;
         if (Box != null)
             Box.enabled = false;
+        OnHidden?.Invoke();
     }
 
     /// <summary>设置红框可见性（锁定阶段闪烁用，不改变 _isActive 状态）。</summary>

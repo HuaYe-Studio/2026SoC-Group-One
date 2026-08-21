@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -55,6 +56,8 @@ public class FrogForm : BaseForm
     private float _coyoteTimer;
     private float _jumpBufferTimer;
 
+    public event Action<bool> OnChargeModeChanged;
+
     public bool IsChargeMode => _chargeModeEnabled;
     public float ChargeProgress => _chargeProgress;
 
@@ -102,8 +105,12 @@ public class FrogForm : BaseForm
 
     private void OnToggleCharge(InputAction.CallbackContext ctx)
     {
+        if (Time.timeScale == 0f)
+            return;
+
         _chargeModeEnabled = !_chargeModeEnabled;
         _chargeProgress = 0f;
+        OnChargeModeChanged?.Invoke(_chargeModeEnabled);
     }
 
     private void Update()
