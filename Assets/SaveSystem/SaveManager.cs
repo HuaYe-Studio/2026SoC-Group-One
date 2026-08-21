@@ -15,6 +15,7 @@ public class SaveManager : MonoBehaviour
     // 缓存读档数据，用于场景加载完成后恢复
     private SaveData _pendingSaveData = null;
     private Coroutine _screenshotCoroutine;
+    private float _savePointSuppressEndTime;
 
     private void Awake()
     {
@@ -249,6 +250,15 @@ public class SaveManager : MonoBehaviour
             return false;
         }
     }
+
+    // 复活传送期间短暂抑制存档点自动保存
+    public void SuppressSavePointForRespawn()
+    {
+        _savePointSuppressEndTime = Time.unscaledTime + 0.5f;
+    }
+
+    // 当前是否处于复活传送抑制存档点保存的状态
+    public bool IsSavePointSaveSuppressed => Time.unscaledTime < _savePointSuppressEndTime;
 
     // ========== 截图预览 ==========
 

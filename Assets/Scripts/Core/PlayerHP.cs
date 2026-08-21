@@ -109,6 +109,9 @@ public class PlayerHP : MonoBehaviour
         SaveData data = SaveManager.Instance.LoadRawData();
         if (data == null) return; // no save yet → respawn in place
 
+        // 传送前抑制存档点自动保存，避免复活落地立即重写存档和截图
+        SaveManager.Instance.SuppressSavePointForRespawn();
+
         transform.position = data.GetSavePointPosition();
 
         Rigidbody2D rb = GetComponent<Rigidbody2D>();

@@ -21,6 +21,10 @@ public class SavePoint : MonoBehaviour
                 return;
             }
 
+            // 复活传送抑制期间不触发存档
+            if (SaveManager.Instance.IsSavePointSaveSuppressed)
+                return;
+
             // 获取存档坐标：如果有指定spawnPoint就用它的位置，否则用自身位置
             Vector2 pos = spawnPoint != null ? (Vector2)spawnPoint.position : (Vector2)transform.position;
 
