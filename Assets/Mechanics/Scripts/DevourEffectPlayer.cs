@@ -19,19 +19,24 @@ public class DevourEffectPlayer : MonoBehaviour
 
     private Camera _mainCam;
     private CinemachineBrain _brain;
-    private float _originalOrthoSize;
-    private Vector3 _originalPosition;
+    private float _returnOrthoSize;
+    private Vector3 _returnPosition;
 
     private void Awake()
     {
         _mainCam = GetComponent<Camera>();
         _brain = _mainCam != null ? _mainCam.GetComponent<CinemachineBrain>() : null;
-        _originalOrthoSize = _mainCam.orthographicSize;
-        _originalPosition = transform.position;
+        _returnOrthoSize = _mainCam.orthographicSize;
+        _returnPosition = transform.position;
     }
 
     public IEnumerator PlayZoomIn(Vector3 targetPosition)
     {
+        // Capture the follow position before the brain is disabled and the camera is moved,
+        // so PlayZoomOut returns to the player's current spot instead of the scene-start position.
+        _returnPosition = transform.position;
+        _returnOrthoSize = _mainCam != null ? _mainCam.orthographicSize : _returnOrthoSize;
+
         if (_brain != null) _brain.enabled = false;
 
         Vector3 targetCamPos = new Vector3(targetPosition.x, targetPosition.y, transform.position.z);
@@ -81,7 +86,7 @@ public class DevourEffectPlayer : MonoBehaviour
 
     public IEnumerator PlayZoomOut()
     {
-        transform.DOMove(_originalPosition, zoomOutDuration)
+        transform.DOMove(_returnPosition, zoomOutDuration)
             .SetEase(Ease.InQuad)
             .SetUpdate(true);
 
@@ -90,7 +95,7 @@ public class DevourEffectPlayer : MonoBehaviour
             DOTween.To(
                 () => _mainCam.orthographicSize,
                 sz => _mainCam.orthographicSize = sz,
-                _originalOrthoSize,
+                _returnOrthoSize,
                 zoomOutDuration)
                 .SetEase(Ease.InQuad)
                 .SetUpdate(true);
@@ -107,9 +112,9 @@ public class DevourEffectPlayer : MonoBehaviour
         if (_mainCam != null)
         {
             DOTween.Kill(_mainCam);
-            _mainCam.orthographicSize = _originalOrthoSize;
+            _mainCam.orthographicSize = _returnOrthoSize;
         }
-        transform.position = _originalPosition;
+        transform.position = _returnPosition;
         if (_brain != null) _brain.enabled = true;
     }
 }

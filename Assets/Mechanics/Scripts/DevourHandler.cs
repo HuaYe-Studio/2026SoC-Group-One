@@ -49,6 +49,11 @@ public class DevourHandler : MonoBehaviour
     private readonly List<MonoBehaviour> _rangeCheckResults = new List<MonoBehaviour>();
     private readonly Collider2D[] _overlapBuffer = new Collider2D[32];
 
+    // Solid "player-target" collider pairs temporarily ignored during pounce,
+    // so solid devourables (e.g. HeavyStone) can be swooped through to trigger devour.
+    private readonly List<(Collider2D player, Collider2D target)> _pounceIgnoredColliders =
+        new List<(Collider2D, Collider2D)>();
+
     private static readonly int IsSwoopingHash = Animator.StringToHash("IsSwooping");
 
     private void Awake()
@@ -91,6 +96,7 @@ public class DevourHandler : MonoBehaviour
         _devourablesInRange.Clear();
 
         StopAllCoroutines();
+        SetPounceCollisionIgnore(false);
         _isPouncing = false;
         _devourSequenceRunning = false;
         _devourInitiatedSwitchPending = false;
@@ -188,6 +194,7 @@ public class DevourHandler : MonoBehaviour
     public void CancelAll()
     {
         SpitOutHeldObject();
+        SetPounceCollisionIgnore(false);
 
         StopAllCoroutines();
         _effectPlayer?.ResetAll();
@@ -274,11 +281,14 @@ public class DevourHandler : MonoBehaviour
         Vector2 toTarget = (_currentTarget.Transform.position - transform.root.position).normalized;
         _rb.velocity = toTarget * pounceSpeed;
 
+        SetPounceCollisionIgnore(true);
+
         AudioManager.Instance?.PlaySfx(pounceClip);
     }
 
     private void CancelPounce()
     {
+        SetPounceCollisionIgnore(false);
         _isPouncing = false;
         if (_currentTarget != null)
         {
@@ -291,11 +301,49 @@ public class DevourHandler : MonoBehaviour
         _cooldownEndTime = Time.time + cooldownSeconds;
     }
 
+    /// <summary>
+    /// Temporarily ignore "solid-solid" collision between the player and the target during
+    /// pounce, so solid devourables (e.g. HeavyStone) can be swooped through to reach the
+    /// dist&lt;0.5f success check. Trigger colliders are skipped, keeping the animal /
+    /// FireCrystal OnTriggerEnter2D path intact.
+    /// </summary>
+    private void SetPounceCollisionIgnore(bool ignore)
+    {
+        if (ignore)
+        {
+            if (_currentTarget == null) return;
+            Collider2D[] playerColliders = transform.root.GetComponentsInChildren<Collider2D>();
+            Collider2D[] targetColliders = _currentTarget.Transform.GetComponentsInChildren<Collider2D>();
+
+            _pounceIgnoredColliders.Clear();
+            foreach (Collider2D playerCol in playerColliders)
+            {
+                if (playerCol == null || playerCol.isTrigger) continue;
+                foreach (Collider2D targetCol in targetColliders)
+                {
+                    if (targetCol == null || targetCol.isTrigger) continue;
+                    Physics2D.IgnoreCollision(playerCol, targetCol, true);
+                    _pounceIgnoredColliders.Add((playerCol, targetCol));
+                }
+            }
+        }
+        else
+        {
+            foreach ((Collider2D player, Collider2D target) in _pounceIgnoredColliders)
+            {
+                if (player != null && target != null)
+                    Physics2D.IgnoreCollision(player, target, false);
+            }
+            _pounceIgnoredColliders.Clear();
+        }
+    }
+
     private IEnumerator RunDevourSequence(IDevourable target)
     {
         _devourSequenceRunning = true;
         _isPouncing = false;
         _rb.velocity = Vector2.zero;
+        SetPounceCollisionIgnore(false); // restore before target hides, else it would clip through the player when spat out
 
         Vector2 pointA = _pounceStartPos;
         Vector2 pointB = target.Transform.position;
