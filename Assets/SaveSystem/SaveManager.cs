@@ -10,6 +10,15 @@ public class SaveManager : MonoBehaviour
 
     private string SavePath => Path.Combine(Application.persistentDataPath, "save.json");
 
+    // ============================================================
+    // 数据加密（XOR 异或加密）
+    // ============================================================
+    // 作用：让存档文件变成乱码，防止玩家用记事本修改数据
+    // 原理：对每个字符与密钥进行按位异或（XOR），两次异或可还原原文
+    // 注意：密钥硬编码在代码中，只能防君子不防小人
+    // ============================================================
+    private const byte XOR_KEY = 0xAA;  // 加密密钥（0xAA = 170，可改）
+
     // 缓存读档数据，用于场景加载完成后恢复
     private SaveData _pendingSaveData = null;
 
@@ -57,32 +66,25 @@ public class SaveManager : MonoBehaviour
         }
     }
 
-    /*private void Update()
-    {
-        // 临时测试：按 L 键模拟死亡读档
-        if (Input.GetKeyDown(KeyCode.L))
-        {
-            LoadAndApplySave();
-            Debug.Log("手动触发读档（模拟死亡）");
-        }
-    }*/
-
     // ========== 核心方法1：存档 ==========
 
     // 由存档点调用，保存当前游戏状态
     public void SaveGame(Vector2 savePointPosition)
     {
-        // 1. 抓取玩家当前状态（组装数据盒子）
+        // 1. 抓取玩家当前状态
         SaveData data = CapturePlayerState();
 
         // 2. 存入存档点的坐标（复活位置）
         data.SetSavePointPosition(savePointPosition);
 
-        // 3. 转成 JSON 并写入硬盘
-        string json = JsonUtility.ToJson(data, true); 
-        File.WriteAllText(SavePath, json);
+        // 3. 转成 JSON 字符串
+        string json = JsonUtility.ToJson(data, true);
 
-        // ===== 新增：通知 UI 存档完成 =====
+        // ===== 新增：加密后再写入硬盘 =====
+        string encrypted = EncryptDecrypt(json);
+        File.WriteAllText(SavePath, encrypted);
+
+        // 4. 通知 UI 存档完成
         UIEventCenter.TriggerSaveCompleted();
     }
 
@@ -158,15 +160,75 @@ public class SaveManager : MonoBehaviour
         if (!File.Exists(SavePath))
             return null;
 
-        string json = File.ReadAllText(SavePath);
-        SaveData data = JsonUtility.FromJson<SaveData>(json);
-        return data;
+        try
+        {
+            // 读取文件内容（如果文件是空的，直接返回）
+            string encrypted = File.ReadAllText(SavePath);
+            if (string.IsNullOrWhiteSpace(encrypted))
+            {
+                Debug.LogWarning("存档文件为空，视为损坏");
+                return null;
+            }
+
+            // ===== 新增：解密后再解析 =====
+            string json = EncryptDecrypt(encrypted);
+
+            // 尝试解析 JSON（如果格式错乱，会抛出异常）
+            SaveData data = JsonUtility.FromJson<SaveData>(json);
+
+            // 检查解析结果是否有效
+            if (data == null || string.IsNullOrEmpty(data.currentForm))
+            {
+                Debug.LogWarning("存档数据不完整，视为损坏");
+                return null;
+            }
+
+            return data;
+        }
+        catch (IOException ex)
+        {
+            Debug.LogError($"读取存档时发生IO错误：{ex.Message}");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"读取存档时发生未知错误：{ex.Message}，存档可能已损坏");
+            // 备份损坏文件供调试
+            try
+            {
+                string backupPath = SavePath + ".corrupted";
+                if (File.Exists(SavePath))
+                    File.Copy(SavePath, backupPath, true);
+                Debug.Log($"已备份损坏存档至：{backupPath}");
+            }
+            catch { }
+            return null;
+        }
     }
 
     // 检查是否有存档文件
     public bool HasSave()
     {
         return File.Exists(SavePath);
+    }
+
+    //检查存档是否有效（文件存在 + 数据完整 + 场景可加载）
+    public bool HasValidSave()
+    {
+        if (!HasSave()) return false;
+
+        SaveData data = LoadRawData();
+        if (data == null) return false;
+
+        if (string.IsNullOrEmpty(data.sceneName)) return false;
+
+        if (!Application.CanStreamedLevelBeLoaded(data.sceneName))
+        {
+            Debug.LogWarning($"存档场景 {data.sceneName} 无法加载");
+            return false;
+        }
+
+        return true;
     }
 
     // ========== 数据抓取与恢复（占位区） ==========
@@ -296,5 +358,66 @@ public class SaveManager : MonoBehaviour
             hp.SetInvincible(1f);
             Debug.Log("生命值已恢复至3颗心，给予1秒无敌");
         }
+    }
+
+    //退出自动保存
+    private void OnApplicationQuit()
+    {
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null && HasSave())
+        {
+            SaveData data = LoadRawData();
+            if (data != null)
+            {
+                Vector2 pos = player.transform.position;
+                data.SetSavePointPosition(pos);
+                string json = JsonUtility.ToJson(data, true);
+                // ===== 改为加密写入 =====
+                string encrypted = EncryptDecrypt(json);
+                File.WriteAllText(SavePath, encrypted);
+                Debug.Log($"退出存档已保存：位置 {pos}");
+            }
+        }
+    }
+
+    //继续游戏
+    public bool ContinueFromMainMenu()
+    {
+        SaveData data = LoadRawData();
+        if (data == null || !HasValidSave())
+        {
+            Debug.LogWarning("没有有效的存档可供继续");
+            return false;
+        }
+
+        if (!Application.CanStreamedLevelBeLoaded(data.sceneName))
+        {
+            Debug.LogError($"场景 {data.sceneName} 不存在或无法加载");
+            return false;
+        }
+
+        _pendingSaveData = data;
+        SceneManager.LoadScene(data.sceneName);
+        Debug.Log($"继续游戏：加载场景 {data.sceneName}");
+        return true;
+    }
+
+    // ============================================================
+    // 加密/解密工具方法
+    // ============================================================
+    private string EncryptDecrypt(string input)
+    {
+        // 空字符串或 null 直接返回
+        if (string.IsNullOrEmpty(input))
+            return input;
+
+        // 将字符串转为字符数组，逐个字符与密钥异或
+        char[] chars = input.ToCharArray();
+        for (int i = 0; i < chars.Length; i++)
+        {
+            // char 与 byte 异或，结果隐式转为 int，再转回 char
+            chars[i] = (char)(chars[i] ^ XOR_KEY);
+        }
+        return new string(chars);
     }
 }
