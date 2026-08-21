@@ -580,42 +580,6 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   abilityBindings:
-  - abilityName: Spit Fire
-    inputSlot: 5
-    phase: 3
-    onAbilityActivated:
-      m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 7125327682567490769}
-          m_TargetAssemblyTypeName: SlimeForm, Assembly-CSharp
-          m_MethodName: SpitFire
-          m_Mode: 1
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument:
-            m_BoolArgument: 0
-          m_CallState: 2
-  - abilityName: Spit Fire Stop
-    inputSlot: 5
-    phase: 2
-    onAbilityActivated:
-      m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 7125327682567490769}
-          m_TargetAssemblyTypeName: SlimeForm, Assembly-CSharp
-          m_MethodName: StopSpitFire
-          m_Mode: 1
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument:
-            m_BoolArgument: 0
-          m_CallState: 2
   acceleration: 0.5
   deceleration: 0.5
   flamePrefab: {fileID: 6985371871358679056, guid: 5e894b5bc8f38e549b5ec40991f7a924, type: 3}
@@ -1054,9 +1018,41 @@ MonoBehaviour:
   elementDefinitions:
   - type: 0
     binding:
-      abilityName: 
-      inputSlot: 0
+      abilityName: Spit Fire Start
+      inputSlot: 5
       phase: 0
       onAbilityActivated:
         m_PersistentCalls:
-          m_Calls: []
+          m_Calls:
+          - m_Target: {fileID: 7125327682567490769}
+            m_TargetAssemblyTypeName: SlimeForm, Assembly-CSharp
+            m_MethodName: SpitFire
+            m_Mode: 1
+            m_Arguments:
+              m_ObjectArgument: {fileID: 0}
+              m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+              m_IntArgument: 0
+              m_FloatArgument: 0
+              m_StringArgument:
+              m_BoolArgument: 0
+            m_CallState: 2
+  - type: 0
+    binding:
+      abilityName: Spit Fire Stop
+      inputSlot: 5
+      phase: 2
+      onAbilityActivated:
+        m_PersistentCalls:
+          m_Calls:
+          - m_Target: {fileID: 7125327682567490769}
+            m_TargetAssemblyTypeName: SlimeForm, Assembly-CSharp
+            m_MethodName: StopSpitFire
+            m_Mode: 1
+            m_Arguments:
+              m_ObjectArgument: {fileID: 0}
+              m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+              m_IntArgument: 0
+              m_FloatArgument: 0
+              m_StringArgument:
+              m_BoolArgument: 0
+            m_CallState: 2
