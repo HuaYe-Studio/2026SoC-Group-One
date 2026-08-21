@@ -25,6 +25,7 @@ public class SceneTransition : UISingleton<SceneTransition>
     [SerializeField] private GameObject _loadingImage;//加载中UI的完整图片
     private float _doorWidth;//门的宽度
     private Vector2 _desiredSize;//加载中UI的完整图片的大小
+    public bool IsTransitioning { get; private set; }
 
     protected override void Awake()
     {
@@ -59,6 +60,7 @@ public class SceneTransition : UISingleton<SceneTransition>
     public void GoToScene(string sceneName)
     {
         OnRectTransformDimensionsChange();
+        IsTransitioning = true;
 
         //触发UI取消事件，防止在切换场景时UI还处于选中状态
         PlayerInputReader.Instance.OnUICancelTrigger();
@@ -157,5 +159,7 @@ public class SceneTransition : UISingleton<SceneTransition>
         openDoor.Join(_doorRight.DOAnchorPosX(_doorWidth, _duration).SetEase(_ease));
 
         yield return openDoor.WaitForCompletion();
+
+        IsTransitioning = false;
     }
 }

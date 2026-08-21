@@ -48,8 +48,19 @@ public class FormProgressController : MonoBehaviour
         RadialArrangement(50, 210, _radius, _roundBorader.transform.position, _progressImage);
         ProgressUpdate(true);//初始更新
 
-        //这里要和存档系统联动，读取开始的形态，目前默认slime
-        _formImage.sprite = _formIcons[(int)FormType.Slime];
+        PlayerController playerController = FindObjectOfType<PlayerController>();
+        if (playerController != null)
+        {
+            int iconIndex = (int)playerController.GetCurrentForm();
+            if (iconIndex >= 0 && iconIndex < _formIcons.Length)
+                _formImage.sprite = _formIcons[iconIndex];
+            else
+                _formImage.sprite = _formIcons[(int)FormType.Slime];
+        }
+        else
+        {
+            _formImage.sprite = _formIcons[(int)FormType.Slime];
+        }
     }
 
     // Update is called once per frame
@@ -83,7 +94,16 @@ public class FormProgressController : MonoBehaviour
 
     private void ProgressUpdate(bool isStart)
     {
-        _count = isStart ? FormWheelController.unlockedFormTypes.Count : _count + 1;
+        if (isStart)
+        {
+            PlayerController playerController = FindObjectOfType<PlayerController>();
+            _count = playerController != null ? playerController.GetUnlockedForms().Count : 1;
+        }
+        else
+        {
+            _count = _count + 1;
+        }
+
         for (int i = 0; i < _progressImage.Length; i++)
         {
             _progressImage[i].sprite = i < _count ? _onImage : _offImage;

@@ -4,6 +4,10 @@ using UnityEngine;
 [System.Serializable]
 public class SaveData
 {
+    // ---------- 0. 场景/存档基本信息 ----------
+    public string sceneName;
+    public string saveTime;
+
     // ---------- 1. 存档点位置 ----------
     public float savePointX;
     public float savePointY;
