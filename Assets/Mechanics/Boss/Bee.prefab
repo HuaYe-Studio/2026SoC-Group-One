@@ -159,7 +159,9 @@ MonoBehaviour:
   _guardPointJitter: 0.5
   _guardMinHeightOffset: -1
   _scatterMargin: 0.15
-  _debugLog: 1
+  _debugLog: 0
+  _enableCameraCulling: 1
+  _cullDistance: 16
   _scanInterval: 0.5
   _scanRadius: 8
   _scanLayers:

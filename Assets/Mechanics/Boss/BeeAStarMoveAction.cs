@@ -50,6 +50,10 @@ public class BeeAStarMoveAction : BTNode
         _repathInterval = repathInterval;
         _move = move;
         _onArrive = onArrive;
+
+        // 随机错峰：同批蜜蜂若都在同帧重算路径会瞬间集中 A*（掉帧），
+        // 给每只蜜蜂一个 0~repathInterval 的初始偏移，把重算分摊到不同帧。
+        _nextRepathTime = Time.time + Random.Range(0f, _repathInterval);
     }
 
     public override State Tick()
@@ -109,8 +113,8 @@ public class BeeAStarMoveAction : BTNode
     {
         _path = null;
         _pathIndex = 0;
-        _nextRepathTime = 0f;
         _target = Vector2.zero;
+        _nextRepathTime = Time.time + Random.Range(0f, _repathInterval);
     }
 
     private void Repath(Vector2 position, Vector2 desired)

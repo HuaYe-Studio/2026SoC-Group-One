@@ -18,7 +18,20 @@ public class FlockMember : MonoBehaviour
     public string FlockId => string.IsNullOrEmpty(_flockId) ? gameObject.tag : _flockId;
 
     /// <summary>运行时设置群 ID（蜜蜂等动态生成个体按巢成群用）。</summary>
-    public void SetFlockId(string flockId) => _flockId = flockId;
+    public void SetFlockId(string flockId)
+    {
+        if (_flockId == flockId) return;
+
+        // 已激活时按旧 ID 注销、新 ID 重新注册，保证对象池复用/跨巢换群后邻居查询与认领避让都落到正确群。
+        bool active = gameObject.activeInHierarchy;
+        if (active)
+            FlockManager.Unregister(this);
+
+        _flockId = flockId;
+
+        if (active)
+            FlockManager.Register(this);
+    }
 
     /// <summary>当前速度（Boids 对齐力输入）。</summary>
     public Vector2 Velocity => _rb != null ? _rb.velocity : Vector2.zero;

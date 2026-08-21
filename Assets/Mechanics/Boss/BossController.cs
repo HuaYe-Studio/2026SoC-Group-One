@@ -118,6 +118,20 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
     [Tooltip("最大追击距离（米）：超出此距离不追（防止追出场外）")]
     [SerializeField] private float _chaseMaxDistance = 20f;
 
+    [Header("台阶攀爬")]
+    [Tooltip("开启台阶攀爬：追击时自动检测前方台阶并上下爬升，越过台阶地形")]
+    [SerializeField] private bool _enableStepClimb = true;
+    [Tooltip("台阶检测地面层（台阶/地形所在层，通常为 Ground）")]
+    [SerializeField] private LayerMask _groundLayer = 1 << 3;
+    [Tooltip("身体底部相对根节点的 Y 偏移（米）：探测脚底高度，用于判断台阶顶面")]
+    [SerializeField] private float _footOffsetY = 0f;
+    [Tooltip("前方台阶探测距离（米）：从脚底向前打射线找台阶立面")]
+    [SerializeField] private float _stepProbeDistance = 1f;
+    [Tooltip("可攀爬最大台阶高度（米）：高于此值的台阶不爬")]
+    [SerializeField] private float _maxStepHeight = 0.6f;
+    [Tooltip("攀爬/下降垂直速度（米/秒）")]
+    [SerializeField] private float _stepClimbSpeed = 3f;
+
     [Header("威胁源（IHazardSource + 感知契约）")]
     [Tooltip("接触伤害值（BOSS 本体触碰动物/玩家，供 IHazardSource 消费方使用）")]
     [SerializeField] private int _contactDamage = 1;
@@ -419,10 +433,10 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
                 float dist = Vector2.Distance(transform.position, _player.position);
                 if (dist > _chaseStopDistance && dist <= _chaseMaxDistance)
                 {
-                    // 水平朝玩家逼近（位移方式由 MoveBoss 统一处理：Rigidbody2D 或直接 Transform）
-                    MoveBoss(new Vector3(
-                        Mathf.Sign(_player.position.x - transform.position.x) * _chaseSpeed * Time.deltaTime,
-                        0f, 0f));
+                    float dir = Mathf.Sign(_player.position.x - transform.position.x);
+                    // 水平朝玩家逼近 + 台阶自动爬升/下降（越过台阶地形）
+                    float climbY = ComputeStepClimbY(dir);
+                    MoveBoss(new Vector3(dir * _chaseSpeed * Time.deltaTime, climbY, 0f));
                 }
             }
             yield return null;
@@ -439,6 +453,49 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
             _rb.MovePosition(_rb.position + (Vector2)step);
         else
             transform.position += step;
+    }
+
+    /// <summary>
+    /// 台阶自动爬升/下降：朝移动方向探测前方台阶，返回本帧的垂直位移。
+    /// - 前方有立面（台阶墙）且台阶顶面高度在最大爬升高度内 → 返回正 Y（向上爬）
+    /// - 前方无立面且脚下地面低于当前脚底（下台阶/悬崖）→ 返回负 Y（向下）
+    /// 垂直位移按 _stepClimbSpeed 限速，逐帧平滑过渡；无台阶时返回 0。
+    /// </summary>
+    private float ComputeStepClimbY(float moveDir)
+    {
+        if (!_enableStepClimb || Mathf.Abs(moveDir) < 0.0001f)
+            return 0f;
+
+        Vector2 foot = (Vector2)transform.position + Vector2.up * _footOffsetY;
+        Vector2 dir = Vector2.right * moveDir;
+
+        // 1) 水平射线：探测前方台阶立面
+        RaycastHit2D wall = Physics2D.Raycast(foot, dir, _stepProbeDistance, _groundLayer);
+        if (wall.collider != null)
+        {
+            // 2) 从台阶顶端略上方一点向下打射线，求台阶顶面高度
+            Vector2 topOrigin = wall.point + Vector2.up * (_maxStepHeight + 0.2f);
+            RaycastHit2D top = Physics2D.Raycast(topOrigin, Vector2.down, _maxStepHeight + 0.4f, _groundLayer);
+            if (top.collider != null)
+            {
+                float rise = top.point.y - foot.y;
+                if (rise > 0.01f && rise <= _maxStepHeight)
+                    return Mathf.Min(rise, _stepClimbSpeed * Time.deltaTime); // 向上爬升
+            }
+        }
+        else
+        {
+            // 3) 前方无立面：检测下台阶（前方脚底地面低于当前脚底）
+            Vector2 aheadFoot = foot + dir * _stepProbeDistance;
+            RaycastHit2D ground = Physics2D.Raycast(aheadFoot, Vector2.down, _maxStepHeight + 0.4f, _groundLayer);
+            if (ground.collider != null)
+            {
+                float drop = foot.y - ground.point.y;
+                if (drop > 0.01f && drop <= _maxStepHeight)
+                    return -Mathf.Min(drop, _stepClimbSpeed * Time.deltaTime); // 向下下降
+            }
+        }
+        return 0f;
     }
 
     // ===================== 血条 / 阶段 =====================
