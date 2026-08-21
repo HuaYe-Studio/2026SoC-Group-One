@@ -16,151 +16,64 @@ public class AbilityUIController : MonoBehaviour
 
     private PlayerController _playerController;//玩家控制器
     private FrogForm _frogForm;//青蛙形态
-    private bool _subscribedToFormChanged;//是否已订阅形态变化事件
-    private bool _subscribedToChargeModeChanged;//是否已订阅跳跃模式变化事件
-    private bool _warned;//是否已输出缺少引用警告
-
-    void Awake()
-    {
-        EnsureReferences();
-    }
-
-    void OnEnable()
-    {
-        EnsureReferences();
-        SubscribeEvents();
-    }
 
     void Start()
     {
-        EnsureReferences();
-        SubscribeEvents();
-
-        if (!TryInitialize())
-            return;
-
-        RefreshAbilityUI();
-    }
-
-    void OnDisable()
-    {
-        UnsubscribeEvents();
-    }
-
-    private void SubscribeEvents()
-    {
-        if (!_subscribedToFormChanged)
-        {
-            MockEventCenter.OnFormChanged += OnFormChanged;
-            _subscribedToFormChanged = true;
-        }
-
-        if (_frogForm != null && !_subscribedToChargeModeChanged)
-        {
-            _frogForm.OnChargeModeChanged += OnChargeModeChanged;
-            _subscribedToChargeModeChanged = true;
-        }
-    }
-
-    private void UnsubscribeEvents()
-    {
-        if (_subscribedToFormChanged)
-        {
-            MockEventCenter.OnFormChanged -= OnFormChanged;
-            _subscribedToFormChanged = false;
-        }
-
-        if (_subscribedToChargeModeChanged)
-        {
-            if (_frogForm != null)
-                _frogForm.OnChargeModeChanged -= OnChargeModeChanged;
-            _subscribedToChargeModeChanged = false;
-        }
-    }
-
-    private void EnsureReferences()
-    {
-        if (_playerController == null)
-        {
-            PlayerController[] playerControllers = FindObjectsOfType<PlayerController>(true);
-            if (playerControllers != null && playerControllers.Length > 0)
-                _playerController = playerControllers[0];
-        }
-
-        if (_playerController != null && _frogForm == null)
+        _playerController = FindObjectOfType<PlayerController>(true);
+        if (_playerController != null)
             _frogForm = _playerController.GetForm(FormType.Frog) as FrogForm;
 
-        if (_frogForm == null)
-        {
-            FrogForm[] frogForms = FindObjectsOfType<FrogForm>(true);
-            if (frogForms != null && frogForms.Length > 0)
-                _frogForm = frogForms[0];
-        }
-    }
-
-    private bool TryInitialize()
-    {
         if (_playerController == null || _frogForm == null ||
             _abilityCanvas == null || _abilityImage == null ||
             _simpleJumpIcon == null || _poiseJumpIcon == null)
         {
-            WarnOnceAndHide();
-            return false;
+            if (_abilityCanvas != null)
+                _abilityCanvas.enabled = false;
+            Debug.LogWarning("AbilityUIController: 缺少 Player/Frog/序列化引用，能力图标已隐藏。");
+            return;
         }
 
-        return true;
+        MockEventCenter.OnFormChanged += OnFormChanged;
+        _frogForm.OnChargeModeChanged += OnChargeModeChanged;
+
+        RefreshAbilityUI();
     }
 
-    private void WarnOnceAndHide()
+    void OnDestroy()
     {
-        if (_warned)
-            return;
-
-        _warned = true;
-        if (_abilityCanvas != null)
-            _abilityCanvas.gameObject.SetActive(false);
-        Debug.LogWarning("AbilityUIController: 缺少 Player/Frog/序列化引用，能力图标已隐藏。");
+        MockEventCenter.OnFormChanged -= OnFormChanged;
+        if (_frogForm != null)
+            _frogForm.OnChargeModeChanged -= OnChargeModeChanged;
     }
 
     private void OnFormChanged(FormType formType)
     {
-        EnsureReferences();
-        SubscribeEvents();
-
-        if (!TryInitialize())
-            return;
-
         if (formType == FormType.Frog)
         {
-            _abilityCanvas.gameObject.SetActive(true);
+            _abilityCanvas.enabled = true;
             RefreshIcon();
         }
         else
         {
-            _abilityCanvas.gameObject.SetActive(false);
+            _abilityCanvas.enabled = false;
         }
     }
 
     private void OnChargeModeChanged(bool chargeModeEnabled)
     {
-        EnsureReferences();
-
-        if (!TryInitialize())
-            return;
-
-        RefreshIcon();
+        _abilityImage.sprite = chargeModeEnabled ? _poiseJumpIcon : _simpleJumpIcon;
     }
 
     private void RefreshAbilityUI()
     {
         if (_playerController.GetCurrentForm() == FormType.Frog)
         {
-            _abilityCanvas.gameObject.SetActive(true);
+            _abilityCanvas.enabled = true;
             RefreshIcon();
         }
         else
         {
-            _abilityCanvas.gameObject.SetActive(false);
+            _abilityCanvas.enabled = false;
         }
     }
 
