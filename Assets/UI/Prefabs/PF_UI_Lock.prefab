@@ -227,5 +227,5 @@ MonoBehaviour:
   _canvas: {fileID: 3727036624082545099}
   _worldPadding: 0.25
   _blinkAccelerationDuration: 0.5
-  _initialBlinkInterval: 0.2
-  _finalBlinkInterval: 0.05
+  _initialBlinkInterval: 0.12
+  _finalBlinkInterval: 0.04
