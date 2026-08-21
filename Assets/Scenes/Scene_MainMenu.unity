@@ -1129,6 +1129,122 @@ MonoBehaviour:
   m_FirstSelected: {fileID: 0}
   m_sendNavigationEvents: 1
   m_DragThreshold: 10
+--- !u!1 &1789484054
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1789484055}
+  - component: {fileID: 1789484057}
+  - component: {fileID: 1789484056}
+  - component: {fileID: 1789484058}
+  m_Layer: 0
+  m_Name: AudioManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1789484055
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1789484054}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -107.16369, y: -9.222271, z: 0.06708708}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1789484056
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1789484054}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 95b4dc2f369f5024c8eee4df33797bc7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  bgmKey: mainmenu
+  delay: 0
+--- !u!114 &1789484057
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1789484054}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b55380c2c3f42ac46b0e6ab9dcebb238, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  bgmSource: {fileID: 0}
+  bgmSourceSecondary: {fileID: 0}
+  library: {fileID: 11400000, guid: e8a9f303d107fe94e85bd6dc129cbde0, type: 2}
+  mixer: {fileID: 24100000, guid: 76b2979416aaaea45a1ac257e783bbbd, type: 2}
+  bgmGroup: {fileID: 5072601794937784794, guid: 76b2979416aaaea45a1ac257e783bbbd, type: 2}
+  sfxGroup: {fileID: -957184350001987912, guid: 76b2979416aaaea45a1ac257e783bbbd, type: 2}
+  uiGroup: {fileID: 742123984092588714, guid: 76b2979416aaaea45a1ac257e783bbbd, type: 2}
+  bgmVolume: 1
+  sfxVolume: 1
+  uiVolume: 1
+  defaultMaxDistance: 18
+  falloffCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: -1
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: -1
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  bgmVolumeParam: BGMVolume
+  sfxVolumeParam: SFXVolume
+  uiVolumeParam: UIVolume
+--- !u!114 &1789484058
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1789484054}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 53ec0b54a3647f449b6591962c5bb760, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mapping:
+  - sceneName: Scene_MainMenu
+    bgmKey: mainmenu
+  - sceneName: WetLand_Main
+    bgmKey: wetland
+  fadeTime: 2
 --- !u!1 &2071453012
 GameObject:
   m_ObjectHideFlags: 0
@@ -1250,3 +1366,4 @@ SceneRoots:
   - {fileID: 2071453014}
   - {fileID: 105839937}
   - {fileID: 1184120157}
+  - {fileID: 1789484055}

@@ -60,6 +60,9 @@ public class AudioManager : MonoBehaviour
 
     public static AudioManager Instance { get; private set; }
 
+    /// <summary>AudioManager 是否已初始化（供其他模块安全判断，避免触发空引用）。</summary>
+    public static bool HasInstance => Instance != null;
+
     public float BgmVolume => bgmVolume;
     public float SfxVolume => sfxVolume;
     public float UiVolume => uiVolume;

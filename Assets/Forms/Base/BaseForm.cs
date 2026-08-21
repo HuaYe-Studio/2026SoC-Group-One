@@ -495,6 +495,12 @@ public abstract class BaseForm : MonoBehaviour
         AudioManager.Instance?.PlaySfx(clip, volume);
     }
 
+    /// <summary>按 key 播放音效（key 对应 AudioLibrary 的 sfxEntries）。</summary>
+    protected void PlaySfxByKey(string key, float volume = 1f)
+    {
+        AudioManager.Instance?.PlaySfxByKey(key, volume);
+    }
+
 #if UNITY_EDITOR
     protected void DrawWallCheckGizmos(Collider2D col, float checkDistance, float checkInset, int rayCount)
     {
