@@ -10,10 +10,28 @@ public static class AStarPathfinder
 {
     private struct Node
     {
-        public Vector2Int Cell;
+        public int Index;   // 扁平化格子索引（y * width + x）
         public float G;
         public float F;
     }
+
+    // 池化扁平数组：避免每次寻路 new 三块 width×height 大数组（蜜蜂等每 0.5s 重算一次路径，GC 压力大）。
+    // Unity 主线程顺序调用、无并发，静态复用安全；网格变大时自动扩容。
+    private static float[] _gScore;
+    private static bool[] _closed;
+    private static int[] _cameFrom;
+
+    // 8 方向与代价：静态缓存，避免每次寻路重复分配小数组
+    private static readonly Vector2Int[] _dirs =
+    {
+        new Vector2Int(1, 0), new Vector2Int(-1, 0), new Vector2Int(0, 1), new Vector2Int(0, -1),
+        new Vector2Int(1, 1), new Vector2Int(1, -1), new Vector2Int(-1, 1), new Vector2Int(-1, -1)
+    };
+    private static readonly float[] _dirCosts = { 1f, 1f, 1f, 1f, 1.4142f, 1.4142f, 1.4142f, 1.4142f };
+
+    // 复用开放列表（二叉堆）与路径回溯列表，避免每次寻路分配 List 造成 GC。
+    private static readonly List<Node> _open = new List<Node>();
+    private static readonly List<Vector2> _reversed = new List<Vector2>();
 
     /// <summary>
     /// 在网格上寻找 start→end 的路径（8 方向）。
@@ -47,78 +65,73 @@ public static class AStarPathfinder
 
         int width = grid.Width;
         int height = grid.Height;
+        int cellCount = width * height;
 
-        float[,] gScore = new float[width, height];
-        bool[,] closed = new bool[width, height];
-        Vector2Int[,] cameFrom = new Vector2Int[width, height];
-        for (int x = 0; x < width; x++)
-            for (int y = 0; y < height; y++)
-                gScore[x, y] = float.PositiveInfinity;
+        EnsureArrays(cellCount);
+        for (int i = 0; i < cellCount; i++)
+            _gScore[i] = float.PositiveInfinity;
+        System.Array.Clear(_closed, 0, cellCount);
 
-        // 8 方向：水平/垂直 1.0，对角 sqrt2
-        Vector2Int[] dirs =
-        {
-            new Vector2Int(1, 0), new Vector2Int(-1, 0), new Vector2Int(0, 1), new Vector2Int(0, -1),
-            new Vector2Int(1, 1), new Vector2Int(1, -1), new Vector2Int(-1, 1), new Vector2Int(-1, -1)
-        };
-        float[] dirCosts = { 1f, 1f, 1f, 1f, 1.4142f, 1.4142f, 1.4142f, 1.4142f };
+        int startIdx = startCell.y * width + startCell.x;
+        int endIdx = endCell.y * width + endCell.x;
 
-        List<Node> open = new List<Node>();
-        gScore[startCell.x, startCell.y] = 0f;
-        open.Add(new Node { Cell = startCell, G = 0f, F = Heuristic(startCell, endCell) });
+        _open.Clear();
+        _gScore[startIdx] = 0f;
+        HeapPush(new Node { Index = startIdx, G = 0f, F = Heuristic(startCell, endCell) });
 
         const int maxIterations = 20000; // 安全上限，防止意外死循环
         int iterations = 0;
 
-        while (open.Count > 0 && iterations++ < maxIterations)
+        while (_open.Count > 0 && iterations++ < maxIterations)
         {
-            // 取 F 最小的节点
-            int bestIdx = 0;
-            for (int i = 1; i < open.Count; i++)
-                if (open[i].F < open[bestIdx].F) bestIdx = i;
+            Node current = HeapPop();
 
-            Node current = open[bestIdx];
-            open.RemoveAt(bestIdx);
-
-            if (current.Cell == endCell)
+            if (current.Index == endIdx)
             {
-                ReconstructPath(grid, cameFrom, startCell, endCell, outPath);
+                ReconstructPath(grid, startIdx, endIdx, width, outPath);
                 return true;
             }
 
-            if (closed[current.Cell.x, current.Cell.y])
+            if (_closed[current.Index])
                 continue;
-            closed[current.Cell.x, current.Cell.y] = true;
+            _closed[current.Index] = true;
 
-            for (int d = 0; d < dirs.Length; d++)
+            int cx = current.Index % width;
+            int cy = current.Index / width;
+
+            for (int d = 0; d < _dirs.Length; d++)
             {
-                Vector2Int n = current.Cell + dirs[d];
-                if (grid.IsBlockedFor(n.x, n.y, ignoreGroundSupport))
+                int nx = cx + _dirs[d].x;
+                int ny = cy + _dirs[d].y;
+                if (nx < 0 || ny < 0 || nx >= width || ny >= height)
+                    continue;
+                if (grid.IsBlockedFor(nx, ny, ignoreGroundSupport))
                     continue;
 
                 // 对角线穿角检查：斜向移动时相邻两直角格都须可通行，防止穿墙角
-                if (dirs[d].x != 0 && dirs[d].y != 0)
+                if (_dirs[d].x != 0 && _dirs[d].y != 0)
                 {
-                    if (grid.IsBlockedFor(current.Cell.x + dirs[d].x, current.Cell.y, ignoreGroundSupport) ||
-                        grid.IsBlockedFor(current.Cell.x, current.Cell.y + dirs[d].y, ignoreGroundSupport))
+                    if (grid.IsBlockedFor(cx + _dirs[d].x, cy, ignoreGroundSupport) ||
+                        grid.IsBlockedFor(cx, cy + _dirs[d].y, ignoreGroundSupport))
                         continue;
                 }
 
-                if (closed[n.x, n.y])
+                int nIdx = ny * width + nx;
+                if (_closed[nIdx])
                     continue;
 
                 // 额外代价（空气/玩家惩罚），中心点采样
                 float extra = 0f;
                 if (costAt != null)
-                    extra = Mathf.Max(0f, costAt(grid.CellToWorld(n.x, n.y)));
+                    extra = Mathf.Max(0f, costAt(grid.CellToWorld(nx, ny)));
 
-                float tentativeG = current.G + dirCosts[d] + extra;
-                if (tentativeG >= gScore[n.x, n.y])
+                float tentativeG = current.G + _dirCosts[d] + extra;
+                if (tentativeG >= _gScore[nIdx])
                     continue;
 
-                gScore[n.x, n.y] = tentativeG;
-                cameFrom[n.x, n.y] = current.Cell;
-                open.Add(new Node { Cell = n, G = tentativeG, F = tentativeG + Heuristic(n, endCell) });
+                _gScore[nIdx] = tentativeG;
+                _cameFrom[nIdx] = current.Index;
+                HeapPush(new Node { Index = nIdx, G = tentativeG, F = tentativeG + Heuristic(new Vector2Int(nx, ny), endCell) });
             }
         }
 
@@ -169,18 +182,72 @@ public static class AStarPathfinder
         return cell;
     }
 
-    private static void ReconstructPath(NavGrid2D grid, Vector2Int[,] cameFrom,
-        Vector2Int start, Vector2Int end, List<Vector2> outPath)
+    private static void ReconstructPath(NavGrid2D grid, int startIdx, int endIdx, int width, List<Vector2> outPath)
     {
-        List<Vector2> reversed = new List<Vector2>();
-        Vector2Int cur = end;
+        _reversed.Clear();
+        int cur = endIdx;
         int guard = 0;
-        while (cur != start && guard++ < 10000)
+        while (cur != startIdx && guard++ < 10000)
         {
-            reversed.Add(grid.CellToWorld(cur.x, cur.y));
-            cur = cameFrom[cur.x, cur.y];
+            int x = cur % width;
+            int y = cur / width;
+            _reversed.Add(grid.CellToWorld(x, y));
+            cur = _cameFrom[cur];
         }
-        for (int i = reversed.Count - 1; i >= 0; i--)
-            outPath.Add(reversed[i]);
+        for (int i = _reversed.Count - 1; i >= 0; i--)
+            outPath.Add(_reversed[i]);
+    }
+
+    /// <summary>确保池化数组容量足够当前网格大小（网格变大时自动扩容，避免每次寻路重复分配）。</summary>
+    private static void EnsureArrays(int cellCount)
+    {
+        if (_gScore == null || _gScore.Length < cellCount)
+        {
+            _gScore = new float[cellCount];
+            _closed = new bool[cellCount];
+            _cameFrom = new int[cellCount];
+        }
+    }
+
+    /// <summary>小顶堆入堆（按 F 值升序）。</summary>
+    private static void HeapPush(Node node)
+    {
+        _open.Add(node);
+        int i = _open.Count - 1;
+        while (i > 0)
+        {
+            int parent = (i - 1) / 2;
+            if (_open[parent].F <= _open[i].F) break;
+            Node tmp = _open[parent];
+            _open[parent] = _open[i];
+            _open[i] = tmp;
+            i = parent;
+        }
+    }
+
+    /// <summary>小顶堆出堆：弹出 F 最小的节点。</summary>
+    private static Node HeapPop()
+    {
+        Node top = _open[0];
+        int last = _open.Count - 1;
+        _open[0] = _open[last];
+        _open.RemoveAt(last);
+
+        int i = 0;
+        int n = _open.Count;
+        while (true)
+        {
+            int left = i * 2 + 1;
+            int right = left + 1;
+            int smallest = i;
+            if (left < n && _open[left].F < _open[smallest].F) smallest = left;
+            if (right < n && _open[right].F < _open[smallest].F) smallest = right;
+            if (smallest == i) break;
+            Node tmp = _open[smallest];
+            _open[smallest] = _open[i];
+            _open[i] = tmp;
+            i = smallest;
+        }
+        return top;
     }
 }

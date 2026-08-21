@@ -59,8 +59,14 @@ public class BeeAI : MonoBehaviour
     [SerializeField] private float _scatterMargin = 0.15f;
 
     [Header("调试")]
-    [Tooltip("调试日志开关：输出寻路结果/巡游停歇/换点/状态切换日志，便于定位蜜蜂卡住问题")]
-    [SerializeField] private bool _debugLog = true;
+    [Tooltip("调试日志开关：输出寻路结果/巡游停歇/换点/状态切换日志，便于定位蜜蜂卡住问题（默认关，避免多蜜蜂日志刷屏拖慢性能）")]
+    [SerializeField] private bool _debugLog = false;
+
+    [Header("性能（镜头剔除）")]
+    [Tooltip("开启镜头距离剔除：离镜头中心超过 _cullDistance 的蜜蜂跳过 AI（A*/Boids/扫描），回到范围内自动恢复。用于排除镜头外蜜蜂的计算量")]
+    [SerializeField] private bool _enableCameraCulling = true;
+    [Tooltip("剔除距离（米）：蜜蜂到镜头中心距离超过此值即跳过 AI")]
+    [SerializeField] private float _cullDistance = 20f;
 
     // ---- 区域限定（A* costAt）：由 Hive 生成时注入，不在 Inspector 逐只配置 ----
     private AnimalRegion _region; // null = 不限制（只受 NavGrid2D 网格边界约束）
@@ -101,6 +107,17 @@ public class BeeAI : MonoBehaviour
     /// <summary>调试日志开关（BeeAStarMoveAction 等外部也读取此标志控制日志输出）。</summary>
     public bool DebugLog => _debugLog;
 
+    /// <summary>是否离镜头中心过远（镜头剔除用：离远跳过 AI，回近恢复）。未开启剔除或无主镜头时恒为 false。</summary>
+    public bool IsFarFromCamera
+    {
+        get
+        {
+            if (!_enableCameraCulling || _mainCamera == null) return false;
+            return ((Vector2)transform.position - (Vector2)_mainCamera.transform.position).sqrMagnitude
+                   > _cullDistance * _cullDistance;
+        }
+    }
+
     private void Awake()
     {
         _rb = GetComponent<Rigidbody2D>();
@@ -113,6 +130,10 @@ public class BeeAI : MonoBehaviour
         if (softPush == null)
             softPush = gameObject.AddComponent<AnimalSoftPush>();
         softPush.Dimension = AnimalSoftPush.PushDimension.Omnidirectional;
+        // 性能：软推开按 10Hz 节流 + 镜头外剔除，降低大量蜜蜂时的物理查询开销
+        softPush.PushInterval = 0.1f;
+        softPush.EnableCameraCulling = true;
+        softPush.CullDistance = _cullDistance;
     }
 
     private void OnDestroy()
@@ -126,6 +147,19 @@ public class BeeAI : MonoBehaviour
     }
 
     /// <summary>
+    /// 对象池回收前的清理（BeePool.Release 调用）：退订目标事件、重置飞散标志、停飞并释放巡游点认领。
+    /// 注意：这里只清理"回收前必须清掉"的状态；复用时的重新初始化在 Init 里完成。
+    /// </summary>
+    public void OnPoolRelease()
+    {
+        SetTarget(null);
+        _scatterRequested = false;
+        _scatterStartTime = -1f;
+        Hover();
+        FlockManager.ReleaseClaimedPoint(_flock);
+    }
+
+    /// <summary>
     /// 初始化（由 Hive 常驻生成时调用）：设置守护锚点、初始目标与活动区域。
     /// 初始处于守护态（_hiveDestroyed=false），蜂巢被破坏时由 Hive 调 SetHiveDestroyed 切入攻击态。
     /// target 可为空：届时靠轻量自检感知自动索敌（见 ScanForTarget）。
@@ -135,8 +169,17 @@ public class BeeAI : MonoBehaviour
     {
         _hiveAnchor = hiveAnchor;
         _region = region;
+
+        // 对象池复用：重置上一次生命周期残留的运行时状态
+        _scatterRequested = false;
+        _scatterStartTime = -1f;
+        _nextStingTime = 0f;
+        _nextScanTime = 0f;
+        _nextStatusLogTime = 0f;
+
         SetTarget(target);
         _hiveDestroyed = false; // 常驻守护态；破坏后切攻击
+        if (_rb != null) _rb.velocity = Vector2.zero;
 
         // 出生点防嵌套：若生成位置在障碍/悬空格内，向上抬升到最近可通行格，避免一出生就卡地形
         ResolveSpawnPosition();
@@ -190,6 +233,11 @@ public class BeeAI : MonoBehaviour
 
     private void Update()
     {
+        // 镜头剔除：离镜头中心过远且非飞散态时跳过扫描/状态日志（A*/Boids 在 BeeBT 里统一剔除）。
+        // 飞散态不剔除：飞散要背离目标飞出屏幕后销毁，跳过会导致蜜蜂卡在屏外不消失。
+        if (IsFarFromCamera && !_scatterRequested)
+            return;
+
         ScanForTarget();
         LogStatus();
     }
@@ -412,7 +460,7 @@ public class BeeAI : MonoBehaviour
     /// <summary>守护巡游到达半径（BeeBT 守护分支 A* 到达半径，与此一致）。</summary>
     public float GuardArriveRadius => _guardArriveRadius;
 
-    /// <summary>飞散：背离目标飞出屏幕后销毁（被驱散的表现）。</summary>
+    /// <summary>飞散：背离目标飞出屏幕后回收进对象池（被驱散的表现）。</summary>
     public void Scatter()
     {
         if (_scatterStartTime < 0f)
@@ -429,7 +477,7 @@ public class BeeAI : MonoBehaviour
         if (_rb != null)
             _rb.velocity = away * _flySpeed * 1.5f;
 
-        // 出屏销毁
+        // 出屏回收
         bool outOfScreen = false;
         if (_mainCamera != null)
         {
@@ -438,9 +486,9 @@ public class BeeAI : MonoBehaviour
                           view.y < -_scatterMargin || view.y > 1f + _scatterMargin;
         }
 
-        // 出屏 或 超时兜底（3 秒仍未出屏，防无相机/方向受阻导致永不销毁）→ 销毁
+        // 出屏 或 超时兜底（3 秒仍未出屏，防无相机/方向受阻导致永不回收）→ 回池
         if (outOfScreen || Time.time - _scatterStartTime > 3f)
-            Destroy(gameObject);
+            BeePool.Release(gameObject);
     }
 
     // ===================== 移动与伤害 =====================
@@ -476,7 +524,7 @@ public class BeeAI : MonoBehaviour
                     new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
                 if (_guardPointJitter > 0f)
                     candidate += Random.insideUnitCircle * _guardPointJitter; // 额外随机抖动，轨迹更错开
-                if (candidate.y < minY) candidate.y = minY;
+                if (candidate.y < minY) continue; // 底部点不再抬升，直接丢弃
 
                 if (_region != null && !_region.Contains(candidate)) { rejRegion++; continue; }
                 if (!IsCellFree(candidate)) { if (cellOutsideGrid(candidate)) rejOutsideGrid++; else rejBlocked++; continue; }
@@ -502,18 +550,22 @@ public class BeeAI : MonoBehaviour
             Vector2 fallback = basePos;
             if (_guardPointJitter > 0f)
                 fallback += Random.insideUnitCircle * _guardPointJitter;
-            if (fallback.y < minY) fallback.y = minY;
+            if (fallback.y < minY) continue; // 底部点不再抬升，直接丢弃
             _guardPoints.Add(fallback);
         }
 
-        // 诊断：输出每个巡游点的坐标 + 拒绝原因计数（判断"点没铺满"是区域/网格/间距哪个导致的）
-        string pts = "";
-        for (int i = 0; i < _guardPoints.Count; i++)
+        // 诊断：输出每个巡游点的坐标 + 拒绝原因计数（判断"点没铺满"是区域/网格/间距哪个导致的）。
+        // 仅调试开启时拼字符串并输出，避免每只蜜蜂生成时都拼长串拖慢性能。
+        if (_debugLog)
         {
-            Vector2 p = _guardPoints[i];
-            pts += $" #{i}({p.x:F1},{p.y:F1})";
+            string pts = "";
+            for (int i = 0; i < _guardPoints.Count; i++)
+            {
+                Vector2 p = _guardPoints[i];
+                pts += $" #{i}({p.x:F1},{p.y:F1})";
+            }
+            Debug.Log($"[BeeAI] {name} 巡游点{_guardPoints.Count}/{_guardPointCount}个（拒绝:区域{rejRegion}/网格{rejBlocked}+越界{rejOutsideGrid}/间距{rejSpacing}）{pts}", this);
         }
-        Debug.Log($"[BeeAI] {name} 巡游点{_guardPoints.Count}/{_guardPointCount}个（拒绝:区域{rejRegion}/网格{rejBlocked}+越界{rejOutsideGrid}/间距{rejSpacing}）{pts}", this);
     }
 
     /// <summary>间距约束（兜底）：候选点与所有已选巡游点的距离都 ≥ _minPointSeparation 才通过，防收缩后重叠。</summary>

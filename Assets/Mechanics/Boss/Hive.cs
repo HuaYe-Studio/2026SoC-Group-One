@@ -95,7 +95,7 @@ public class Hive : MonoBehaviour
         for (int i = 0; i < _beeCount; i++)
         {
             Vector2 spawnPos = (Vector2)transform.position + Random.insideUnitCircle * _beeSpawnRadius;
-            GameObject beeGo = Instantiate(_beePrefab, spawnPos, Quaternion.identity);
+            GameObject beeGo = BeePool.Get(_beePrefab, spawnPos, Quaternion.identity);
 
             BeeAI bee = beeGo.GetComponent<BeeAI>();
             if (bee != null)

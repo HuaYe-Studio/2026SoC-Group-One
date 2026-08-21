@@ -36,9 +36,19 @@ public class AnimalSoftPush : MonoBehaviour
     [Tooltip("参与推开的层：0=自身所在层（同类动物）。玩家层绝不应包含在内")]
     [SerializeField] private LayerMask _pushLayers;
 
+    [Header("性能（可选）")]
+    [Tooltip("推开检测间隔（秒）：0=每物理帧都跑。软推开是慢速修正，可调大到 0.1 左右降低大量个体的查询开销")]
+    [SerializeField] private float _pushInterval = 0f;
+    [Tooltip("镜头距离剔除：离镜头中心超过 _cullDistance 的个体跳过推开检测")]
+    [SerializeField] private bool _enableCameraCulling = false;
+    [Tooltip("镜头剔除距离（米）")]
+    [SerializeField] private float _cullDistance = 20f;
+
     private Rigidbody2D _rb;
     private FlockMember _flockMember;
     private float _radius;
+    private Camera _camera;
+    private float _nextPushTime;
 
     // GC 优化：NonAlloc 预分配缓冲（复用，同 EnvironmentMonitor 规范）
     private readonly Collider2D[] _hits = new Collider2D[8];
@@ -49,6 +59,15 @@ public class AnimalSoftPush : MonoBehaviour
     /// <summary>身体半径（估算或配置值），供对方计算最小间距。</summary>
     public float BodyRadius => _radius;
 
+    /// <summary>推开检测间隔（秒）。0=每物理帧都跑。</summary>
+    public float PushInterval { get => _pushInterval; set => _pushInterval = value; }
+
+    /// <summary>镜头距离剔除开关。</summary>
+    public bool EnableCameraCulling { get => _enableCameraCulling; set => _enableCameraCulling = value; }
+
+    /// <summary>镜头剔除距离（米）。</summary>
+    public float CullDistance { get => _cullDistance; set => _cullDistance = value; }
+
     private void Awake()
     {
         _rb = GetComponent<Rigidbody2D>();
@@ -56,6 +75,7 @@ public class AnimalSoftPush : MonoBehaviour
         if (_pushLayers.value == 0)
             _pushLayers = 1 << gameObject.layer; // 默认只查同层动物（玩家层天然排除）
         _radius = _bodyRadius > 0f ? _bodyRadius : EstimateRadius();
+        _camera = Camera.main;
     }
 
     /// <summary>从首个非触发器碰撞体估算身体半径（取较大半边，保证推开距离 ≥ 体宽）。</summary>
@@ -73,6 +93,20 @@ public class AnimalSoftPush : MonoBehaviour
 
     private void FixedUpdate()
     {
+        // 性能：按间隔节流（软推开是慢速修正，不必每物理帧都查）
+        if (_pushInterval > 0f)
+        {
+            if (Time.time < _nextPushTime) return;
+            _nextPushTime = Time.time + _pushInterval;
+        }
+
+        // 性能：镜头外个体跳过推开检测（回近自动恢复）
+        if (_enableCameraCulling && _camera != null)
+        {
+            if (((Vector2)_rb.position - (Vector2)_camera.transform.position).sqrMagnitude > _cullDistance * _cullDistance)
+                return;
+        }
+
         Vector2 selfPos = _rb.position;
         int count = Physics2D.OverlapCircleNonAlloc(selfPos, _queryRadius, _hits, _pushLayers);
         if (count == 0)

@@ -62,7 +62,21 @@ public class BeeBT : MonoBehaviour
             _root = BuildTree();
         }
 
+        // 镜头距离剔除：离镜头中心过远的蜜蜂整棵行为树跳过（A*/Boids 全免），冻结在原地。
+        // 飞散态不剔除：飞散要背离目标飞出屏幕后销毁，跳过会导致蜜蜂卡在屏外不消失。
+        if (_bee.IsFarFromCamera && !_bee.ShouldScatter)
+        {
+            _bee.StopFly();
+            return;
+        }
+
         _root.Tick();
+    }
+
+    /// <summary>对象池复用时调用：置空行为树，下次 Update 重建，从而重置内部寻路节点的路径/重算计时等状态。</summary>
+    public void ResetForReuse()
+    {
+        _root = null;
     }
 
     private BTSelector BuildTree()
