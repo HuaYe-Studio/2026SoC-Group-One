@@ -11,9 +11,8 @@ GameObject:
   - component: {fileID: 4937530317302539365}
   - component: {fileID: 3737089347627640276}
   - component: {fileID: 6547251942202158273}
-  - component: {fileID: 616116803088921975}
   - component: {fileID: 7653443250370298805}
-  m_Layer: 7
+  m_Layer: 0
   m_Name: PF_Mech_FireCrystal
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -29,7 +28,7 @@ Transform:
   m_GameObject: {fileID: 4605857512317871253}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -16.48, y: 1.48, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -76,8 +75,8 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
-  m_Color: {r: 0.8930817, g: 0.33281407, b: 0.14322995, a: 0.79607844}
+  m_Sprite: {fileID: 21300000, guid: 789a22773d68d6b418646a53c818a33c, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 0.79607844}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -117,19 +116,6 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
   devourSound: {fileID: 0}
---- !u!114 &616116803088921975
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4605857512317871253}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d73b520d2290dbc498e6598088d79ee6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  isHeavy: 1
 --- !u!61 &7653443250370298805
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -159,7 +145,7 @@ BoxCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_UsedByEffector: 0
   m_UsedByComposite: 0
   m_Offset: {x: 0, y: 0}

@@ -16,6 +16,8 @@ public class FlameThrower : MonoBehaviour
     public GameObject flamePrefab;
     [Tooltip("喷射点（火焰生成位置）")]
     public Transform firePoint;
+    [Tooltip("中心点（火焰从喷射点向远离中心点的方向喷射）")]
+    public Transform centerPoint;  // 改为中心点
     [Tooltip("火焰喷射速度（单位/秒）")]
     public float flameSpeed = 5f;
     [Tooltip("每个火焰团的生命周期（秒）")]
@@ -44,7 +46,7 @@ public class FlameThrower : MonoBehaviour
     public float flameHeight = 1f;
 
     [Header("喷射方向")]
-    [Tooltip("喷射方向")]
+    [Tooltip("喷射方向（如果设置了中心点，此值将被动态覆盖）")]
     public Vector2 sprayDirection = Vector2.right;
 
     [Header("自动启动")]
@@ -55,7 +57,6 @@ public class FlameThrower : MonoBehaviour
 
     // 内部状态
     private bool isSpraying = false;
-    private float pulseTimer = 0f;
     private Coroutine sprayCoroutine = null;
 
     void Start()
@@ -69,6 +70,21 @@ public class FlameThrower : MonoBehaviour
         if (firePoint == null)
         {
             firePoint = transform;
+        }
+
+        // 如果未设置中心点，自动查找
+        if (centerPoint == null)
+        {
+            GameObject centerObj = GameObject.FindGameObjectWithTag("Center");
+            if (centerObj != null)
+            {
+                centerPoint = centerObj.transform;
+                //Debug.Log("自动找到中心点: " + centerPoint.name);
+            }
+            else
+            {
+                //Debug.LogWarning("未设置中心点，将使用sprayDirection的固定方向");
+            }
         }
 
         if (autoStart)
@@ -86,7 +102,21 @@ public class FlameThrower : MonoBehaviour
 
     void Update()
     {
-        // 脉冲模式由协程处理
+        // 动态更新喷射方向：从中心点指向喷射点（即远离中心点的方向）
+        if (centerPoint != null && firePoint != null)
+        {
+            Vector3 direction = firePoint.position - centerPoint.position;
+            // 如果喷射点就在中心点位置，使用默认方向
+            if (direction.magnitude > 0.001f)
+            {
+                sprayDirection = direction.normalized;
+            }
+            else
+            {
+                // 如果重合，使用默认方向
+                sprayDirection = Vector2.right;
+            }
+        }
     }
 
     public void StartSpraying()
@@ -95,13 +125,12 @@ public class FlameThrower : MonoBehaviour
             return;
 
         isSpraying = true;
-        pulseTimer = 0f;
 
         if (sprayCoroutine != null)
             StopCoroutine(sprayCoroutine);
 
         sprayCoroutine = StartCoroutine(SprayFlames());
-        Debug.Log(gameObject.name + " 火焰喷射器开始喷射");
+        //Debug.Log(gameObject.name + " 火焰喷射器开始喷射");
     }
 
     public void StopSpraying()
@@ -142,7 +171,10 @@ public class FlameThrower : MonoBehaviour
         if (flamePrefab == null || firePoint == null)
             return;
 
-        for (int i = 0; i < count; i++)
+        // 如果是脉冲模式，只生成指定数量的火焰团
+        int actualCount = sprayMode == SprayMode.Pulse ? flamesPerPulse : count;
+
+        for (int i = 0; i < actualCount; i++)
         {
             SpawnSingleFlame();
         }
@@ -150,7 +182,15 @@ public class FlameThrower : MonoBehaviour
 
     private void SpawnSingleFlame()
     {
+        // 动态获取当前方向（在Update中已更新）
         Vector2 baseDirection = sprayDirection.normalized;
+
+        // 如果方向为零向量，使用默认方向
+        if (baseDirection == Vector2.zero)
+        {
+            baseDirection = Vector2.right;
+        }
+
         float angleOffset = Random.Range(-spreadAngle, spreadAngle) * 0.5f;
         Vector2 direction = Quaternion.Euler(0, 0, angleOffset) * baseDirection;
 
@@ -189,6 +229,11 @@ public class FlameThrower : MonoBehaviour
         sprayDirection = newDirection.normalized;
     }
 
+    public void SetCenter(Transform newCenter)
+    {
+        centerPoint = newCenter;
+    }
+
     public void ToggleSpray()
     {
         if (isSpraying)
@@ -206,8 +251,12 @@ public class FlameThrower : MonoBehaviour
     {
         if (firePoint != null)
         {
+            // 绘制当前喷射方向
             Gizmos.color = Color.red;
             Vector3 direction = sprayDirection.normalized;
+            if (direction == Vector3.zero)
+                direction = Vector3.right;
+
             float angleStep = spreadAngle / 10f;
             for (int i = 0; i <= 10; i++)
             {
@@ -221,6 +270,22 @@ public class FlameThrower : MonoBehaviour
 
             Gizmos.color = Color.cyan;
             Gizmos.DrawWireSphere(firePoint.position, 0.2f);
+
+            // 绘制从中心点到喷射点的连线（表示喷射方向来源）
+            if (centerPoint != null)
+            {
+                Gizmos.color = Color.green;
+                Gizmos.DrawLine(centerPoint.position, firePoint.position);
+                Gizmos.DrawWireSphere(centerPoint.position, 0.3f);
+
+                // 在中心点绘制箭头指向喷射点
+                Vector3 dirToFire = (firePoint.position - centerPoint.position).normalized;
+                if (dirToFire.magnitude > 0.1f)
+                {
+                    Gizmos.color = Color.green;
+                    Gizmos.DrawRay(centerPoint.position, dirToFire * 0.5f);
+                }
+            }
 
             // 绘制最远距离
             if (flameMaxDistance > 0)

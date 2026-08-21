@@ -6,10 +6,13 @@ public class PlayerHP : MonoBehaviour
     [SerializeField] private int maxHP = 3;
     [SerializeField] private float invincibilityDuration = 1.5f;
     [SerializeField] private float flashInterval = 0.1f;
+    [SerializeField] private float respawnDelay = 1.5f;
+    [SerializeField] private float respawnInvincibility = 1f;
 
     private int _currentHP;
     private float _invincibilityEndTime;
     private Coroutine _flashCoroutine;
+    private Coroutine _respawnCoroutine;
     private bool _isDead;
 
     public int CurrentHP => _currentHP;
@@ -76,18 +79,47 @@ public class PlayerHP : MonoBehaviour
 
     public void Respawn()
     {
+        if (_respawnCoroutine != null)
+        {
+            StopCoroutine(_respawnCoroutine);
+            _respawnCoroutine = null;
+        }
+
         _isDead = false;
         _currentHP = maxHP;
-        _invincibilityEndTime = 0f;
+        _invincibilityEndTime = Time.time + respawnInvincibility;
         if (_flashCoroutine != null)
         {
             StopCoroutine(_flashCoroutine);
             _flashCoroutine = null;
         }
+        _flashCoroutine = StartCoroutine(FlashRoutine());
         if (PlayerInputReader.HasInstance)
             PlayerInputReader.Instance.enabled = true;
+
+        MoveToLastSavePoint();
+
         MockEventCenter.TriggerPlayerRespawn();
         MockEventCenter.TriggerCheckPlayerHP(_currentHP, maxHP);
+    }
+
+    private void MoveToLastSavePoint()
+    {
+        if (SaveManager.Instance == null) return;
+        SaveData data = SaveManager.Instance.LoadRawData();
+        if (data == null) return; // no save yet → respawn in place
+
+        // 传送前抑制存档点自动保存，避免复活落地立即重写存档和截图
+        SaveManager.Instance.SuppressSavePointForRespawn();
+
+        transform.position = data.GetSavePointPosition();
+
+        Rigidbody2D rb = GetComponent<Rigidbody2D>();
+        if (rb != null)
+        {
+            rb.velocity = Vector2.zero;
+            rb.angularVelocity = 0f;
+        }
     }
 
     private void Die()
@@ -98,6 +130,17 @@ public class PlayerHP : MonoBehaviour
 
         if (PlayerInputReader.HasInstance)
             PlayerInputReader.Instance.enabled = false;
+
+        if (_respawnCoroutine != null)
+            StopCoroutine(_respawnCoroutine);
+        _respawnCoroutine = StartCoroutine(RespawnAfterDelay());
+    }
+
+    private IEnumerator RespawnAfterDelay()
+    {
+        yield return new WaitForSeconds(respawnDelay);
+        _respawnCoroutine = null;
+        Respawn();
     }
 
     private IEnumerator FlashRoutine()

@@ -24,6 +24,14 @@ public class FrogForm : BaseForm
     [SerializeField] private float wallJumpHorizontalForce = 10f;
     [SerializeField] private float wallJumpVerticalForce = 12f;
     [SerializeField] private float wallJumpCoyoteTime = 0.15f;
+    [SerializeField] private float wallJumpInputLockTime = 0.15f;
+
+    [Header("Jump Correct")]
+    [SerializeField] private float ceilingCheckDistance = 0.1f;
+    [SerializeField] private float ceilingCheckWidth = 0.8f;
+    [SerializeField] private float ceilingCornerEjectSpeed = 3f;
+    [SerializeField] private float ceilingEjectDuration = 0.12f;
+    [SerializeField] private float ceilingEjectRiseFloor = 2f;
 
     [Header("Air Control")]
     [SerializeField] private float airControlSpeed = 4f;
@@ -53,7 +61,13 @@ public class FrogForm : BaseForm
     private int _lastWallJumpSide;
     private int _wallContactSide;
     private float _wallMemoryTimer;
+    private float _wallJumpInputLockTimer;
     private bool _pendingWallJumpAnim;
+    private bool _isWallJump;
+
+    private int _ceilingEjectDir;
+    private float _ceilingEjectTimer;
+    private float _ceilingEjectRiseVelocity;
 
     public override void Initialize(PlayerController ctrl)
     {
@@ -67,6 +81,7 @@ public class FrogForm : BaseForm
     public override void Die()
     {
         _chargeStartTime = -1f;
+        _ceilingEjectTimer = 0f;
         base.Die();
     }
 
@@ -127,14 +142,14 @@ public class FrogForm : BaseForm
     {
         if (!_chargeModeEnabled)
         {
-            if (currentState == ActionState.Jumping && rb.velocity.y > 0)
+            if (currentState == ActionState.Jumping && rb.velocity.y > 0 && !_isWallJump)
                 ApplyJumpCut();
             return;
         }
 
         if (_chargeStartTime < 0f)
         {
-            if (currentState == ActionState.Jumping && rb.velocity.y > 0)
+            if (currentState == ActionState.Jumping && rb.velocity.y > 0 && !_isWallJump)
                 ApplyJumpCut();
             return;
         }
@@ -169,6 +184,8 @@ public class FrogForm : BaseForm
 
         _coyoteTimer = 0f;
         _jumpBufferTimer = 0f;
+        _ceilingEjectTimer = 0f;
+        _isWallJump = false;
 
         rb.velocity = new Vector2(rb.velocity.x, force);
         currentState = ActionState.Jumping;
@@ -184,7 +201,8 @@ public class FrogForm : BaseForm
 
         if (currentState == ActionState.Jumping && !IsGrounded)
         {
-            rb.velocity = new Vector2(horizontal * airControlSpeed, rb.velocity.y);
+            if (_wallJumpInputLockTimer <= 0f)
+                rb.velocity = new Vector2(horizontal * airControlSpeed, rb.velocity.y);
             return;
         }
 
@@ -209,6 +227,8 @@ public class FrogForm : BaseForm
     {
         _coyoteTimer = 0f;
         _jumpBufferTimer = 0f;
+        _ceilingEjectTimer = 0f;
+        _isWallJump = false;
 
         rb.velocity = new Vector2(rb.velocity.x, normalJumpForce);
         currentState = ActionState.Jumping;
@@ -239,7 +259,10 @@ public class FrogForm : BaseForm
         base.HandleLanding();
 
         if (landingThisFrame)
+        {
+            _ceilingEjectTimer = 0f;
             PlaySfx(landClip);
+        }
     }
 
     protected override void UpdateAirState()
@@ -258,6 +281,32 @@ public class FrogForm : BaseForm
 
         base.FixedUpdate();
 
+        // Ceiling-corner correction: a sustained window re-applies the eject velocity each fixed
+        // step so the frog wins over the physics solver's head-bonk response and keeps rising.
+        if (_ceilingEjectTimer > 0f)
+        {
+            _ceilingEjectTimer -= Time.fixedDeltaTime;
+            rb.velocity = new Vector2(_ceilingEjectDir * ceilingCornerEjectSpeed, _ceilingEjectRiseVelocity);
+            currentState = ActionState.Jumping;
+        }
+        else if (currentState == ActionState.Jumping && rb.velocity.y > 0f)
+        {
+            var (ceilingLeft, ceilingRight) = DetectCeiling(ceilingCheckDistance, ceilingCheckWidth, wallLayer);
+
+            if (ceilingLeft != ceilingRight)
+            {
+                _ceilingEjectDir = ceilingLeft ? 1 : -1;
+                _ceilingEjectRiseVelocity = Mathf.Max(rb.velocity.y, ceilingEjectRiseFloor);
+                _ceilingEjectTimer = ceilingEjectDuration;
+                rb.velocity = new Vector2(_ceilingEjectDir * ceilingCornerEjectSpeed, _ceilingEjectRiseVelocity);
+            }
+            else if (ceilingLeft && ceilingRight)
+            {
+                rb.velocity = new Vector2(rb.velocity.x, 0f);
+                currentState = ActionState.Falling;
+            }
+        }
+
         var (wallLeft, wallRight) = DetectWalls(wallCheckDistance, wallCheckInset, wallRayCount, wallLayer);
 
         if (wallRight) _wallContactSide = 1;
@@ -275,6 +324,10 @@ public class FrogForm : BaseForm
         else if (_wallMemoryTimer > 0f)
             _wallMemoryTimer -= Time.fixedDeltaTime;
 
+        // Consume the buffered jump as a wall jump as soon as the wall becomes available.
+        if (_jumpBufferTimer > 0f)
+            TryWallJump();
+
         if (_chargeStartTime >= 0f && !CanJump())
         {
             _chargeStartTime = -1f;
@@ -283,6 +336,7 @@ public class FrogForm : BaseForm
 
         if (_coyoteTimer > 0f) _coyoteTimer -= Time.fixedDeltaTime;
         if (_jumpBufferTimer > 0f) _jumpBufferTimer -= Time.fixedDeltaTime;
+        if (_wallJumpInputLockTimer > 0f) _wallJumpInputLockTimer -= Time.fixedDeltaTime;
 
         SyncAnimator();
     }
@@ -296,6 +350,14 @@ public class FrogForm : BaseForm
         int side = _wallContactSide != 0 ? _wallContactSide : -_lastWallJumpSide;
         if (side == 0 || side == _lastWallJumpSide) return false;
 
+        // Require horizontal input away from the wall so the jump always separates from it.
+        if (PlayerInputReader.HasInstance)
+        {
+            float awayDir = side > 0 ? -1f : 1f;
+            if (PlayerInputReader.Instance.MoveValue.x * awayDir <= 0f)
+                return false;
+        }
+
         DoWallJump(side);
         return true;
     }
@@ -307,6 +369,9 @@ public class FrogForm : BaseForm
         _wallMemoryTimer = 0f;
         _coyoteTimer = 0f;
         _jumpBufferTimer = 0f;
+        _wallJumpInputLockTimer = wallJumpInputLockTime;
+        _ceilingEjectTimer = 0f;
+        _isWallJump = true;
         _pendingWallJumpAnim = true;
 
         float awayDir = wallSide > 0 ? -1f : 1f;
@@ -344,7 +409,10 @@ public class FrogForm : BaseForm
     {
         base.OnDrawGizmosSelected();
         if (GetComponent<Collider2D>() is { } col)
+        {
             DrawWallCheckGizmos(col, wallCheckDistance, wallCheckInset, wallRayCount);
+            DrawCeilingCheckGizmos(col, ceilingCheckDistance, ceilingCheckWidth);
+        }
     }
 #endif
 }

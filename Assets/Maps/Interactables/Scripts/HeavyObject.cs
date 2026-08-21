@@ -15,13 +15,18 @@ public class HeavyObject : MonoBehaviour, IHeavy
     {
         isHeavy = !isHeavy;
     }
-    public void SetPlayerHeavy(GameObject player)
+    public void SetPlayerHeavy()
     {
-        player.AddComponent<HeavyObject>();
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null && player.GetComponent<HeavyObject>() == null)
+            player.AddComponent<HeavyObject>();
     }
-    public void RemovePlayerHeavy(GameObject player)
+    public void RemovePlayerHeavy()
     {
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player == null) return;
         HeavyObject heavy = player.GetComponent<HeavyObject>();
-        Destroy(heavy);
+        if (heavy != null)
+            Destroy(heavy);
     }
 }

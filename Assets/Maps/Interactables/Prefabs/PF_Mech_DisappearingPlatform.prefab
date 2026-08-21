@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 5335937308866993425}
   - component: {fileID: 6532058560732875182}
   - component: {fileID: 7801959032206774648}
+  - component: {fileID: 1087237129643054620}
   m_Layer: 0
   m_Name: PF_Mech_DisappearingPlatform
   m_TagString: Untagged
@@ -130,3 +131,19 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 1, y: 0.16840777}
   m_EdgeRadius: 0
+--- !u!114 &1087237129643054620
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2047741038217859831}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: edd0013cc147e9948879d999f4ea1015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  delayBeforeDisappear: 0.5
+  delayBeforeReappear: 0.5
+  spriteRenderer: {fileID: 0}
+  platformCollider: {fileID: 0}

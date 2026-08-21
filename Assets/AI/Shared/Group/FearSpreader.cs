@@ -75,6 +75,8 @@ public class FearSpreader : MonoBehaviour, IFearReceiver
     private bool _isLeader;            // 自己是否就是领头
     private float _nextLeaderCheckTime;
 
+    private static readonly Collider2D[] _hitBuffer = new Collider2D[16];
+
     /// <summary>自己是否为群内威胁最高者（领头）。</summary>
     public bool IsLeader => _isLeader;
 
@@ -127,9 +129,10 @@ public class FearSpreader : MonoBehaviour, IFearReceiver
         Transform best = null;
         float bestThreat = _bb.ThreatLevel;
 
-        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, _spreadRadius, _fellowLayers);
-        foreach (Collider2D hit in hits)
+        int hitCount = Physics2D.OverlapCircleNonAlloc(transform.position, _spreadRadius, _hitBuffer, _fellowLayers);
+        for (int i = 0; i < hitCount; i++)
         {
+            Collider2D hit = _hitBuffer[i];
             if (hit.transform == transform) continue;
             if (_speciesTag.Length > 0 && !hit.CompareTag(_speciesTag)) continue;
 
@@ -182,9 +185,10 @@ public class FearSpreader : MonoBehaviour, IFearReceiver
             ? _bb.AnimalPosition + _bb.PlayerDirection * _bb.PlayerDistance
             : _bb.LastKnownPlayerPos;
 
-        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, _spreadRadius, _fellowLayers);
-        foreach (Collider2D hit in hits)
+        int hitCount = Physics2D.OverlapCircleNonAlloc(transform.position, _spreadRadius, _hitBuffer, _fellowLayers);
+        for (int i = 0; i < hitCount; i++)
         {
+            Collider2D hit = _hitBuffer[i];
             if (hit.transform == transform) continue;
 
             bool isFellow = _speciesTag.Length > 0 && hit.CompareTag(_speciesTag);

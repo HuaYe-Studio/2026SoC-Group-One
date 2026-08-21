@@ -598,8 +598,35 @@ MonoBehaviour:
             m_StringArgument:
             m_BoolArgument: 0
           m_CallState: 2
+  - abilityName: Spit Fire Stop
+    inputSlot: 5
+    phase: 2
+    onAbilityActivated:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 7125327682567490769}
+          m_TargetAssemblyTypeName: SlimeForm, Assembly-CSharp
+          m_MethodName: StopSpitFire
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument:
+            m_BoolArgument: 0
+          m_CallState: 2
   acceleration: 0.5
   deceleration: 0.5
+  flamePrefab: {fileID: 6985371871358679056, guid: 5e894b5bc8f38e549b5ec40991f7a924, type: 3}
+  firePointOffset: {x: 0.7, y: 0.4}
+  sprayInterval: 0.1
+  flamesPerBatch: 1
+  spreadAngle: 30
+  speedVariance: 1.5
+  flameSpeed: 5
+  flameLifeTime: 2
+  flameMaxDistance: 0
   devourHandler: {fileID: 2091084545104360566}
   slimePhysicsMaterial: {fileID: 6200000, guid: a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6, type: 2}
   wallLayer:
@@ -632,7 +659,7 @@ MonoBehaviour:
   detectionRadius: 2
   devourableLayer:
     serializedVersion: 2
-    m_Bits: 128
+    m_Bits: 129
   pounceSpeed: 14
   pounceMaxDuration: 0.6
   cooldownSeconds: 0.5
@@ -852,8 +879,8 @@ MonoBehaviour:
             m_StringArgument: 
             m_BoolArgument: 0
           m_CallState: 2
-  normalJumpForce: 5
-  maxChargedJumpForce: 7
+  normalJumpForce: 5.5
+  maxChargedJumpForce: 7.5
   jumpStaminaCost: 20
   chargeTimeToMax: 0.5
   jumpCutMultiplier: 0.5
@@ -862,12 +889,18 @@ MonoBehaviour:
   wallLayer:
     serializedVersion: 2
     m_Bits: 8
-  wallCheckDistance: 0.4
+  wallCheckDistance: 0.3
   wallCheckInset: 0.05
   wallRayCount: 3
-  wallJumpHorizontalForce: 10
-  wallJumpVerticalForce: 12
+  wallJumpHorizontalForce: 5
+  wallJumpVerticalForce: 7
   wallJumpCoyoteTime: 0.15
+  wallJumpInputLockTime: 0.2
+  ceilingCheckDistance: 0.1
+  ceilingCheckWidth: 0.8
+  ceilingCornerEjectSpeed: 3
+  ceilingEjectDuration: 0.12
+  ceilingEjectRiseFloor: 2
   airControlSpeed: 4
   jumpClip: {fileID: 0}
   landClip: {fileID: 0}
@@ -957,7 +990,7 @@ Rigidbody2D:
     m_Bits: 0
   m_Interpolate: 1
   m_SleepingMode: 1
-  m_CollisionDetection: 0
+  m_CollisionDetection: 1
   m_Constraints: 4
 --- !u!114 &8139496476503272819
 MonoBehaviour:
