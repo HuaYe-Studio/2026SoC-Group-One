@@ -308,6 +308,8 @@ public abstract class BaseForm : MonoBehaviour
 
         foreach (var binding in abilityBindings)
         {
+            // Empty binding (no UnityEvent callbacks) grants nothing — skip it.
+            if (binding.onAbilityActivated == null || binding.onAbilityActivated.GetPersistentEventCount() == 0) continue;
             System.Action handler = () => binding.onAbilityActivated.Invoke();
             _bindingHandlers[binding] = handler;
             SubscribeToSlot(binding.inputSlot, binding.phase, handler);
@@ -379,8 +381,13 @@ public abstract class BaseForm : MonoBehaviour
                 }
                 break;
             case InputActionSlot.SpitFire:
-                if (phase == InputPhase.Triggered) { if (add) reader.OnSpitFire += handler; else reader.OnSpitFire -= handler; }
-                else if (add) Debug.LogWarning($"AbilitySystem: Invalid phase [{phase}] for SpitFire, only Triggered is supported.");
+                switch (phase)
+                {
+                    case InputPhase.Started:
+                    case InputPhase.Triggered: if (add) reader.OnSpitFire += handler; else reader.OnSpitFire -= handler; break;
+                    case InputPhase.Canceled: if (add) reader.OnSpitFireCanceled += handler; else reader.OnSpitFireCanceled -= handler; break;
+                    default: if (add) Debug.LogWarning($"AbilitySystem: Invalid phase [{phase}] for SpitFire."); break;
+                }
                 break;
         }
     }
@@ -434,7 +441,10 @@ public abstract class BaseForm : MonoBehaviour
         fallGravityMultiplier = _originalFallGravityMultiplier;
         if (rb != null) rb.mass = _originalMass;
 
-        if (spriteRenderer != null)
+        // Only restore the tint if one was actually applied during equip.
+        // Otherwise _originalTint is never set (stays Color(0,0,0,0)) and would
+        // make the form's sprite fully transparent on unequip.
+        if (spriteRenderer != null && m.tintColor.a > 0f)
             spriteRenderer.color = _originalTint;
 
         if (_overlaySpriteObject != null)
@@ -456,6 +466,9 @@ public abstract class BaseForm : MonoBehaviour
     public void AddAbilityBinding(AbilityInputBinding binding)
     {
         if (binding == null || abilityBindings.Contains(binding)) return;
+        // Empty binding (no UnityEvent callbacks) grants nothing — skip it so
+        // SubscribeToSlot never warns about unsupported slots for dead bindings.
+        if (binding.onAbilityActivated == null || binding.onAbilityActivated.GetPersistentEventCount() == 0) return;
         abilityBindings.Add(binding);
         if (PlayerInputReader.HasInstance)
         {

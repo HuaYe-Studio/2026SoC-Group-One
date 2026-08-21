@@ -41,6 +41,7 @@ public class PlayerInputReader : MonoBehaviour
     public event System.Action OnAnimalWheel;
     public event System.Action OnSpit;
     public event System.Action OnSpitFire;
+    public event System.Action OnSpitFireCanceled;
     public event System.Action OnMenu;
     public event System.Action OnUICancel;
 
@@ -99,6 +100,7 @@ public class PlayerInputReader : MonoBehaviour
         controls.Slime.Menu.performed += OnMenuHandler;
         controls.Slime.Spit.performed += OnSpitHandler;
         controls.Slime.SpitFire.performed += OnSpitFireHandler;
+        controls.Slime.SpitFire.canceled += OnSpitFireCanceledHandler;
 
         // Slime Map — Ability1 细粒度
         controls.Slime.Ability1.started += OnAbility1StartedHandler;
@@ -130,6 +132,7 @@ public class PlayerInputReader : MonoBehaviour
         controls.Slime.Menu.performed -= OnMenuHandler;
         controls.Slime.Spit.performed -= OnSpitHandler;
         controls.Slime.SpitFire.performed -= OnSpitFireHandler;
+        controls.Slime.SpitFire.canceled -= OnSpitFireCanceledHandler;
 
         controls.Slime.Ability1.started -= OnAbility1StartedHandler;
         controls.Slime.Ability1.performed -= OnAbility1PerformedHandler;
@@ -183,6 +186,7 @@ public class PlayerInputReader : MonoBehaviour
     private void OnMenuHandler(InputAction.CallbackContext ctx) => OnMenu?.Invoke();
     private void OnSpitHandler(InputAction.CallbackContext ctx) => OnSpit?.Invoke();
     private void OnSpitFireHandler(InputAction.CallbackContext ctx) => OnSpitFire?.Invoke();
+    private void OnSpitFireCanceledHandler(InputAction.CallbackContext ctx) => OnSpitFireCanceled?.Invoke();
     public void OnMenuTrigger()=>OnMenu?.Invoke();
     private void OnUICancelHandler(InputAction.CallbackContext ctx) => OnUICancel?.Invoke();
     public void OnUICancelTrigger()=>OnUICancel?.Invoke();

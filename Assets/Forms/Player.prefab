@@ -595,11 +595,38 @@ MonoBehaviour:
             m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
             m_IntArgument: 0
             m_FloatArgument: 0
-            m_StringArgument: 
+            m_StringArgument:
+            m_BoolArgument: 0
+          m_CallState: 2
+  - abilityName: Spit Fire Stop
+    inputSlot: 5
+    phase: 2
+    onAbilityActivated:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 7125327682567490769}
+          m_TargetAssemblyTypeName: SlimeForm, Assembly-CSharp
+          m_MethodName: StopSpitFire
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument:
             m_BoolArgument: 0
           m_CallState: 2
   acceleration: 0.5
   deceleration: 0.5
+  flamePrefab: {fileID: 6985371871358679056, guid: 5e894b5bc8f38e549b5ec40991f7a924, type: 3}
+  firePointOffset: {x: 0.7, y: 0.4}
+  sprayInterval: 0.1
+  flamesPerBatch: 1
+  spreadAngle: 30
+  speedVariance: 1.5
+  flameSpeed: 5
+  flameLifeTime: 2
+  flameMaxDistance: 0
   devourHandler: {fileID: 2091084545104360566}
   slimePhysicsMaterial: {fileID: 6200000, guid: a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6, type: 2}
   wallLayer:
