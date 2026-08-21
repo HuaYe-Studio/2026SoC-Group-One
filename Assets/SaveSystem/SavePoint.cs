@@ -10,6 +10,17 @@ public class SavePoint : MonoBehaviour
         // 只有玩家触碰时才触发存档
         if (other.CompareTag("Player"))
         {
+            // 场景转场中不触发存档，避免读档落地立即重新保存
+            if (SceneTransition.Instance != null && SceneTransition.Instance.IsTransitioning)
+                return;
+
+            // SaveManager未初始化时给出明确错误并返回
+            if (SaveManager.Instance == null)
+            {
+                Debug.LogError("SaveManager.Instance 为空，无法保存存档！");
+                return;
+            }
+
             // 获取存档坐标：如果有指定spawnPoint就用它的位置，否则用自身位置
             Vector2 pos = spawnPoint != null ? (Vector2)spawnPoint.position : (Vector2)transform.position;
 

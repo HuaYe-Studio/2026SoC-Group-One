@@ -26,23 +26,29 @@ public class FormWheelController : MonoBehaviour
     void Awake()
     {
         _formWheelView = GetComponent<FormWheelView>();
-
-        // 初始化已解锁形态列表和排序后的选项数组
-        // 此处需要和存档模块联动，以读取目前已解锁动物列表，暂时简略处理
-        Debug.Log("UI:存档系统暂时未接入，暂时使用默认解锁形态列表");
-
-        if (unlockedFormTypes.Count == 0)
-        {
-            unlockedFormTypes.Add(FormType.Slime);
-        }
     }
 
     void Start()
     {
+        _playerController = FindObjectOfType<PlayerController>();
+
+        // 用玩家真实解锁列表覆盖静态列表，保持接口返回顺序并去重
+        unlockedFormTypes.Clear();
+        if (_playerController != null)
+        {
+            List<FormType> playerUnlockedForms = _playerController.GetUnlockedForms();
+            foreach (FormType form in playerUnlockedForms)
+            {
+                if (!unlockedFormTypes.Contains(form))
+                    unlockedFormTypes.Add(form);
+            }
+        }
+        if (unlockedFormTypes.Count == 0)
+            unlockedFormTypes.Add(FormType.Slime);
+
         _formWheelView.RebuildOptions(unlockedFormTypes);
 
         _screenCenter = new Vector2(Screen.width / 2f, Screen.height / 2f);
-        _playerController = FindObjectOfType<PlayerController>();
     }
 
     void OnEnable()
