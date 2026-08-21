@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 2698408973274465834}
   - component: {fileID: 4670522009570192737}
   - component: {fileID: 8665883185476409654}
-  m_Layer: 3
+  m_Layer: 10
   m_Name: PF_Mech_Platform
   m_TagString: Untagged
   m_Icon: {fileID: 0}

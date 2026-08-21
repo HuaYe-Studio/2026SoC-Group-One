@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 450246239380228197}
   - component: {fileID: 3265826626029599896}
   - component: {fileID: 2017713552411086284}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: PF_Mech_Land
   m_TagString: Untagged
   m_Icon: {fileID: 0}

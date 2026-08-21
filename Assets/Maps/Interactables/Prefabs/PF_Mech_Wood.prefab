@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 6667400324737680729}
   - component: {fileID: 6801415024426915538}
   - component: {fileID: 176645878576080359}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: PF_Mech_Wood
   m_TagString: Untagged
   m_Icon: {fileID: 0}

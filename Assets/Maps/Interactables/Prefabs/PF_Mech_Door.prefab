@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 1504781620973540006}
   - component: {fileID: 2942930023464056513}
   - component: {fileID: 7921209222932673749}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: PF_Mech_Door
   m_TagString: Untagged
   m_Icon: {fileID: 0}

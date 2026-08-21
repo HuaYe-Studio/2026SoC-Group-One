@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 2253652548588937461}
   - component: {fileID: 3093123411936236456}
   - component: {fileID: 7360948955740394244}
-  m_Layer: 3
+  m_Layer: 10
   m_Name: Platform
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -246,7 +246,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3869265413434195914}
-  m_Layer: 3
+  m_Layer: 10
   m_Name: End
   m_TagString: Untagged
   m_Icon: {fileID: 5132851093641282708, guid: 0000000000000000d000000000000000, type: 0}
@@ -277,7 +277,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8739218918603711872}
-  m_Layer: 3
+  m_Layer: 10
   m_Name: PF_Mech_MovingPlatform
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -311,7 +311,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8487064560450790428}
-  m_Layer: 3
+  m_Layer: 10
   m_Name: Start
   m_TagString: Untagged
   m_Icon: {fileID: 5721338939258241955, guid: 0000000000000000d000000000000000, type: 0}

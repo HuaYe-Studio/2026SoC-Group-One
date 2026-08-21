@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 7883342141200850176}
   - component: {fileID: 8497307538384837327}
   - component: {fileID: 1011668502168228245}
-  m_Layer: 3
+  m_Layer: 10
   m_Name: PF_Mech_Stone
   m_TagString: Untagged
   m_Icon: {fileID: 0}

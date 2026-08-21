@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 6464180581974310331}
   - component: {fileID: 365095310744916715}
   - component: {fileID: 4671543279699651032}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: PF_Mech_Axle
   m_TagString: Untagged
   m_Icon: {fileID: 0}

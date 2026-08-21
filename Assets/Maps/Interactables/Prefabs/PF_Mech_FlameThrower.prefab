@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8700467445596213619}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Center
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -40,7 +40,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8277650720498689278}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: point
   m_TagString: Untagged
   m_Icon: {fileID: -5442936267250999957, guid: 0000000000000000d000000000000000, type: 0}
@@ -74,7 +74,7 @@ GameObject:
   - component: {fileID: 6018760353711311004}
   - component: {fileID: 7218044562952076941}
   - component: {fileID: 7432500187387056602}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: PF_Mech_FlameThrower
   m_TagString: Untagged
   m_Icon: {fileID: 0}

@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 6532058560732875182}
   - component: {fileID: 7801959032206774648}
   - component: {fileID: 1087237129643054620}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: PF_Mech_DisappearingPlatform
   m_TagString: Untagged
   m_Icon: {fileID: 0}

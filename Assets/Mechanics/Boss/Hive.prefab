@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 1790575130043679316}
   - component: {fileID: 3122400668705353764}
   - component: {fileID: 7280081718892980518}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Area
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -137,7 +137,9 @@ GameObject:
   - component: {fileID: 78333397402794399}
   - component: {fileID: 2334232270425586723}
   - component: {fileID: 5044903911473160958}
-  m_Layer: 0
+  - component: {fileID: 5890428488887966285}
+  - component: {fileID: 7229310685788311808}
+  m_Layer: 9
   m_Name: Hive
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -231,3 +233,81 @@ MonoBehaviour:
   _beeSpawnRadius: 1
   _targetComponent: {fileID: 0}
   _region: {fileID: 3122400668705353764}
+--- !u!114 &5890428488887966285
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1103149349431986724}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f108df238141aa64ea915319b645e83d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  devourableOnce: 1
+  priority: 0
+  onDevourEffect:
+    m_PersistentCalls:
+      m_Calls: []
+  devourSound: {fileID: 0}
+  canVoluntarySpit: 1
+  onEquipEffect:
+    m_PersistentCalls:
+      m_Calls: []
+  onUnequipEffect:
+    m_PersistentCalls:
+      m_Calls: []
+  statModifier:
+    moveSpeedMultiplier: 1
+    gravityScaleMultiplier: 1
+    fallGravityMultiplier: 1
+    massMultiplier: 1
+    climbSpeedMultiplier: 1
+    slideDownSpeedMultiplier: 1
+    climbStaminaCostMultiplier: 1
+    clingStaminaCostMultiplier: 1
+    tintColor: {r: 0, g: 0, b: 0, a: 0}
+    overlaySprite: {fileID: 0}
+    grantedAbility:
+      abilityName: 
+      inputSlot: 0
+      phase: 0
+      onAbilityActivated:
+        m_PersistentCalls:
+          m_Calls: []
+--- !u!70 &7229310685788311808
+CapsuleCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1103149349431986724}
+  m_Enabled: 1
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_UsedByComposite: 0
+  m_Offset: {x: -0.037424088, y: -0.096054494}
+  m_Size: {x: 0.7006092, y: 0.807891}
+  m_Direction: 0
