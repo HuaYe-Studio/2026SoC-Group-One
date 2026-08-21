@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 3602032154313912005}
   - component: {fileID: 4083231508024243536}
   - component: {fileID: 7292484121187077518}
-  - component: {fileID: 903929235135451230}
+  - component: {fileID: 5668796234408458515}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -85,7 +85,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   menuPanel: {fileID: 0}
---- !u!114 &903929235135451230
+--- !u!114 &5668796234408458515
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

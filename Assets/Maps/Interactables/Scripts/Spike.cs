@@ -24,7 +24,7 @@ public class Spike : MonoBehaviour
     }
     private void Update()
     {
-        if (isPlayerOnSpike)
+        if (isPlayerOnSpike && col != null)
         {
             TryDamagePlayer(col);
         }
@@ -34,6 +34,7 @@ public class Spike : MonoBehaviour
         if (collision.gameObject.CompareTag("Player"))
         {
             isPlayerOnSpike = true;
+            col = collision;
             TryDamagePlayer(collision);
         }
     }
