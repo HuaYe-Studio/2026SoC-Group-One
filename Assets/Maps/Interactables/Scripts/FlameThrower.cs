@@ -79,11 +79,11 @@ public class FlameThrower : MonoBehaviour
             if (centerObj != null)
             {
                 centerPoint = centerObj.transform;
-                Debug.Log("自动找到中心点: " + centerPoint.name);
+                //Debug.Log("自动找到中心点: " + centerPoint.name);
             }
             else
             {
-                Debug.LogWarning("未设置中心点，将使用sprayDirection的固定方向");
+                //Debug.LogWarning("未设置中心点，将使用sprayDirection的固定方向");
             }
         }
 
@@ -130,7 +130,7 @@ public class FlameThrower : MonoBehaviour
             StopCoroutine(sprayCoroutine);
 
         sprayCoroutine = StartCoroutine(SprayFlames());
-        Debug.Log(gameObject.name + " 火焰喷射器开始喷射");
+        //Debug.Log(gameObject.name + " 火焰喷射器开始喷射");
     }
 
     public void StopSpraying()

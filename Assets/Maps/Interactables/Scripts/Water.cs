@@ -39,7 +39,11 @@ public class Water : MonoBehaviour
     }
     private void TryDamagePlayer(Collider2D other)
     {
+        if (other == null || other.gameObject == null) return;
         PlayerHP playerHP = other.gameObject.GetComponentInParent<PlayerHP>();
-        playerHP.TakeDamage(damage);
+        if (playerHP != null)
+        {
+            playerHP.TakeDamage(damage);
+        }
     }
 }

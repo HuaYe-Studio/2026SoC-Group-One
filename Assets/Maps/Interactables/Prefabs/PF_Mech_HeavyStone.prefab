@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 8994984889152877311}
   - component: {fileID: 9018258015243149455}
   - component: {fileID: 657917843520997258}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: PF_Mech_HeavyStone
   m_TagString: Untagged
   m_Icon: {fileID: 0}
