@@ -45,13 +45,23 @@ public class SaveManager : MonoBehaviour
     //场景加载完成后自动调用
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        // 如果有待恢复的存档数据，就应用它
-        if (_pendingSaveData != null)
+        // 没有待恢复的存档数据，直接返回
+        if (_pendingSaveData == null)
+            return;
+
+        // 待应用存档的目标场景必须与当前加载场景一致，
+        // 否则说明转场被中断/偏离，丢弃残留数据，避免误应用到错误场景
+        if (scene.name != _pendingSaveData.sceneName)
         {
-            ApplySaveData(_pendingSaveData);
-            Debug.Log($"场景重载完成，玩家已恢复至存档点位置");
-            _pendingSaveData = null; // 清空缓存
+            Debug.LogWarning($"待应用存档目标场景 {_pendingSaveData.sceneName} 与当前场景 {scene.name} 不符，已丢弃残留存档数据");
+            _pendingSaveData = null;
+            return;
         }
+
+        // 有匹配的待恢复存档数据，应用它
+        ApplySaveData(_pendingSaveData);
+        Debug.Log($"场景重载完成，玩家已恢复至存档点位置");
+        _pendingSaveData = null; // 清空缓存
     }
 
     /*private void Update()
@@ -101,6 +111,9 @@ public class SaveManager : MonoBehaviour
     // 读取存档并恢复到游戏中（用于死亡复活 / 继续游戏）
     public bool LoadAndApplySave()
     {
+        // 0. 清掉上一次转场中断可能残留的待应用存档
+        _pendingSaveData = null;
+
         // 1. 从硬盘读取文件
         SaveData data = LoadRawData();
 
@@ -124,15 +137,22 @@ public class SaveManager : MonoBehaviour
         Time.timeScale = 1f; // 恢复游戏
 
         // 5. 优先使用场景转场，保证输入状态和转场UI
-        if (SceneTransition.Instance != null)
+        if (SceneTransition.Instance != null && PlayerInputReader.HasInstance)
         {
-            SceneTransition.Instance.GoToScene(data.sceneName);
-            Debug.Log($"正在通过场景转场加载存档场景：{data.sceneName}");
-            return true;
+            try
+            {
+                SceneTransition.Instance.GoToScene(data.sceneName);
+                Debug.Log($"正在通过场景转场加载存档场景：{data.sceneName}");
+                return true;
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"场景转场加载存档失败：{e.Message}，改用无转场回退");
+            }
         }
 
-        // 6. SceneTransition缺失时使用无转场回退
-        Debug.LogWarning("SceneTransition.Instance 为空，使用无转场回退加载存档场景");
+        // 6. SceneTransition缺失或转场失败时使用无转场回退
+        Debug.LogWarning("SceneTransition 缺失或不可用，使用无转场回退加载存档场景");
         if (PlayerInputReader.HasInstance)
         {
             PlayerInputReader.Instance.OnUICancelTrigger();
@@ -398,20 +418,20 @@ public class SaveManager : MonoBehaviour
             }
 
             Debug.Log($"玩家已移动到：{data.GetSavePointPosition()}");
+
+            // 2. 恢复形态（PlayerController 挂在玩家根节点，复用已找到的 player）
+            PlayerController playerController = player.GetComponent<PlayerController>();
+            if (playerController != null)
+            {
+                List<FormType> unlockedForms = ParseFormTypes(data.unlockedForms);
+                FormType current = ParseCurrentForm(data.currentForm, unlockedForms);
+                playerController.RestoreForms(current, unlockedForms);
+                Debug.Log($"恢复形态：当前={current}，已解锁={string.Join(", ", unlockedForms)}");
+            }
         }
         else
         {
             Debug.LogError("场景中没有找到 Tag 为 'Player' 的游戏对象！");
-        }
-
-        // 2. 恢复形态
-        PlayerController playerController = FindObjectOfType<PlayerController>();
-        if (playerController != null)
-        {
-            List<FormType> unlockedForms = ParseFormTypes(data.unlockedForms);
-            FormType current = ParseCurrentForm(data.currentForm, unlockedForms);
-            playerController.RestoreForms(current, unlockedForms);
-            Debug.Log($"恢复形态：当前={current}，已解锁={string.Join(", ", unlockedForms)}");
         }
 
         // 3. 恢复收集数据（变更）
