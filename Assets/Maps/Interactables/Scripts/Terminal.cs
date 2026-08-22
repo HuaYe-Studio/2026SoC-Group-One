@@ -1,10 +1,14 @@
 ﻿using UnityEngine;
 using UnityEngine.Events;
+using System.Collections.Generic;
 
 public class Terminal : MonoBehaviour
 {
-    [Header("Signal Source")]
-    [SerializeField] private SignalSource _signalSource;
+    [Header("Signal Sources")]
+    [SerializeField] private List<SignalSource> _signalSources = new List<SignalSource>();
+
+    [Header("Trigger Mode")]
+    [SerializeField] private TriggerMode _triggerMode = TriggerMode.Any;
 
     [Header("Events")]
     public UnityEvent<bool> OnStateChanged;
@@ -15,35 +19,85 @@ public class Terminal : MonoBehaviour
 
     public bool IsActive => _isActive;
 
+    public enum TriggerMode
+    {
+        Any,        // 任意一个信号源激活即可触发
+        All,        // 所有信号源都必须激活
+        Majority    // 超过一半的信号源激活
+    }
+
     private void Start()
     {
-        if (_signalSource != null)
-        {
-            OnSignalReceived(_signalSource.GetSignal());
-        }
+        UpdateState();
     }
 
     private void Update()
     {
-        if (_signalSource != null && _signalSource.IsActive != _isActive)
+        bool newState = CalculateState();
+        if (newState != _isActive)
         {
-            OnSignalReceived(_signalSource.IsActive);
+            SetState(newState);
         }
     }
 
-    public void SetSignalSource(SignalSource source)
+    public void SetSignalSources(List<SignalSource> sources)
     {
-        _signalSource = source;
+        _signalSources = sources ?? new List<SignalSource>();
+        UpdateState();
+    }
 
-        if (_signalSource != null)
+    public void AddSignalSource(SignalSource source)
+    {
+        if (source != null && !_signalSources.Contains(source))
         {
-            OnSignalReceived(_signalSource.GetSignal());
+            _signalSources.Add(source);
+            UpdateState();
         }
     }
 
-    private void OnSignalReceived(bool signalState)
+    public void RemoveSignalSource(SignalSource source)
     {
-        SetState(signalState);
+        if (_signalSources.Remove(source))
+        {
+            UpdateState();
+        }
+    }
+
+    public void ClearSignalSources()
+    {
+        _signalSources.Clear();
+        UpdateState();
+    }
+
+    private bool CalculateState()
+    {
+        if (_signalSources.Count == 0) return false;
+
+        int activeCount = 0;
+        foreach (var source in _signalSources)
+        {
+            if (source != null && source.IsActive)
+            {
+                activeCount++;
+            }
+        }
+
+        switch (_triggerMode)
+        {
+            case TriggerMode.Any:
+                return activeCount > 0;
+            case TriggerMode.All:
+                return activeCount == _signalSources.Count;
+            case TriggerMode.Majority:
+                return activeCount > _signalSources.Count / 2f;
+            default:
+                return false;
+        }
+    }
+
+    private void UpdateState()
+    {
+        SetState(CalculateState());
     }
 
     private void SetState(bool state)
