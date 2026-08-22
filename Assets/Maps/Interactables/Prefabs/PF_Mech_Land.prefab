@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 450246239380228197}
   - component: {fileID: 3265826626029599896}
   - component: {fileID: 2017713552411086284}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: PF_Mech_Land
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -71,8 +71,8 @@ SpriteRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
+  m_SortingLayerID: -1303260157
+  m_SortingLayer: 5
   m_SortingOrder: 0
   m_Sprite: {fileID: 21300000, guid: 30a30c2e5b7ab964681c54b590488867, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
