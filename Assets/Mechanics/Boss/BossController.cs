@@ -69,6 +69,10 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
     [Tooltip("战斗结束后恢复的摄像机正交尺寸")]
     [SerializeField] private float _idleCameraSize = 5f;
 
+    [Header("自动激活（兜底）")]
+    [Tooltip("玩家进入该距离后自动激活 BOSS 战（未配置 BossArenaTrigger 时的兜底）")]
+    [SerializeField] private float _autoActivateRadius = 8f;
+
     [Header("血条 3 段")]
     [Tooltip("血条段数（3 段，打空触发狂暴升级）")]
     [SerializeField] private int _segmentCount = 3;
@@ -284,12 +288,36 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
 
     private void Update()
     {
-        if (!_isActive) return;
+        if (!_isActive)
+        {
+            // 未激活时：玩家进入警戒范围 → 自动激活 BOSS 战（兜底，保证大蛇战能触发）
+            TryAutoActivate();
+            return;
+        }
 
         if (_pending != PendingType.None)
             UpdatePending();
 
         UpdateEnrageTimer();
+    }
+
+    private void TryAutoActivate()
+    {
+        if (_player == null)
+        {
+            GameObject playerGo = GameObject.FindGameObjectWithTag("Player");
+            if (playerGo != null)
+            {
+                _player = playerGo.transform;
+                _playerHP = playerGo.GetComponent<PlayerHP>();
+            }
+        }
+        if (_player == null) return;
+        if (Vector2.Distance(_player.position, transform.position) <= _autoActivateRadius)
+        {
+            Debug.Log($"[BossController] {name} 玩家进入警戒范围，自动激活 BOSS 战", this);
+            EnterArena();
+        }
     }
 
     /// <summary>固定时长狂暴计时：到点自动恢复普通状态（Enrage3 最终狂暴由 duration=0 禁用）。</summary>
@@ -667,7 +695,28 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
 
         // 全毁 → 胜利
         if (_winOnAllHives && RemainingActiveHives() <= 0)
+        {
             BeginPending(PendingType.Victory);
+            return;
+        }
+
+        // 设计（大蛇BOSS战 v1.0）：每破坏一个蜂巢 → 进入下一档狂暴（Normal→Enrage1→Enrage2→Enrage3），
+        // 狂暴持续结束后由 StartEnrageTimer/UpdateEnrageTimer 自动恢复普通状态。
+        if (_isActive && _pending == PendingType.None)
+        {
+            BossPhase next = _hiveDestroyedCount switch
+            {
+                1 => BossPhase.Enrage1,
+                2 => BossPhase.Enrage2,
+                _ => BossPhase.Enrage3,
+            };
+            if (next != _phase)
+            {
+                SetPhase(next);
+                StartEnrageTimer(next);
+                BeginPending(PendingType.Enrage);
+            }
+        }
     }
 
     private int RemainingActiveHives()

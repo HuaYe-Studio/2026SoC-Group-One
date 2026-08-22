@@ -43,7 +43,8 @@ public class BossArenaTrigger : MonoBehaviour
     {
         if (_autoEnterOnStart) return; // 自动挡下忽略触发区
 
-        if (other.CompareTag("Player"))
+        // 玩家碰撞体在形态子物体上，标签在根节点，取 root 判定更稳
+        if (other.transform.root.CompareTag("Player"))
             TriggerArena();
     }
 

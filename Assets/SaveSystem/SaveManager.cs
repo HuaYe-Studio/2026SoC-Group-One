@@ -211,11 +211,18 @@ public class SaveManager : MonoBehaviour
                 return null;
             }
 
-            // ===== 新增：解密后再解析 =====
+            // ===== 解密后再解析 =====
             string json = EncryptDecrypt(encrypted);
+            SaveData data = null;
+            try { data = JsonUtility.FromJson<SaveData>(json); }
+            catch { data = null; }
 
-            // 尝试解析 JSON（如果格式错乱，会抛出异常）
-            SaveData data = JsonUtility.FromJson<SaveData>(json);
+            // 旧版未加密存档兼容：若解密后解析失败，再尝试直接按明文 JSON 解析
+            if (data == null || string.IsNullOrEmpty(data.currentForm))
+            {
+                try { data = JsonUtility.FromJson<SaveData>(encrypted); }
+                catch { data = null; }
+            }
 
             // 检查解析结果是否有效
             if (data == null || string.IsNullOrEmpty(data.currentForm))
@@ -239,7 +246,10 @@ public class SaveManager : MonoBehaviour
             {
                 string backupPath = SavePath + ".corrupted";
                 if (File.Exists(SavePath))
-                    File.Copy(SavePath, backupPath, true);
+                {
+                    if (File.Exists(backupPath)) File.Delete(backupPath);
+                    File.Move(SavePath, backupPath);
+                }
                 Debug.Log($"已备份损坏存档至：{backupPath}");
             }
             catch { }

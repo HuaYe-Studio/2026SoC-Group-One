@@ -4,6 +4,7 @@ public class InputEventTester : MonoBehaviour
 {
     private void OnEnable()
     {
+        if (!PlayerInputReader.HasInstance) return; // 输入读取器未就绪时跳过，避免空引用刷屏
         var reader = PlayerInputReader.Instance;
         reader.OnInteract += () => Debug.Log("【事件】按下 E (Interact)");
         reader.OnInput_Space += () => Debug.Log("【事件】按下 Space (Input_Space)");
