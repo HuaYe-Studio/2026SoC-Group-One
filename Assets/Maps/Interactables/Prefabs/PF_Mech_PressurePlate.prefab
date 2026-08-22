@@ -101,11 +101,11 @@ MonoBehaviour:
   isActive: 0
   detectHeavyObject: 1
   detectionShape: 0
-  detectionSize: {x: 1.5, y: 2.5}
-  detectionRadius: 1.5
+  detectionSize: {x: 1, y: 2}
+  detectionRadius: 1
   detectionLayer:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 72
   onSignalChanged:
     m_PersistentCalls:
       m_Calls: []

@@ -101,7 +101,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d155e0cf96006b24f92d8c3ad07a4722, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _signalSource: {fileID: 0}
+  _signalSources: []
+  _triggerMode: 0
   OnStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -223,7 +224,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3382698882636331628}
-  m_Layer: 9
+  m_Layer: 0
   m_Name: End
   m_TagString: Untagged
   m_Icon: {fileID: 5132851093641282708, guid: 0000000000000000d000000000000000, type: 0}
@@ -254,7 +255,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 9105745204915322161}
-  m_Layer: 9
+  m_Layer: 0
   m_Name: Start
   m_TagString: Untagged
   m_Icon: {fileID: 5721338939258241955, guid: 0000000000000000d000000000000000, type: 0}
