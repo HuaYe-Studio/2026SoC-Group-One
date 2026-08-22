@@ -151,7 +151,7 @@ MonoBehaviour:
   PosStart: {x: 0, y: 0}
   PosEnd: {x: 0, y: 0}
   movespeed: 2
-  pausetime: 0
+  pausetime: 0.5
 --- !u!61 &2253652548588937461
 BoxCollider2D:
   m_ObjectHideFlags: 0

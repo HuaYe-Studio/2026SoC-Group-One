@@ -222,7 +222,7 @@ public class Flammable : MonoBehaviour
     /// </summary>
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        Debug.Log($"触发器进入: {collision.gameObject.name}, Tag: {collision.gameObject.tag}");
+        //Debug.Log($"触发器进入: {collision.gameObject.name}, Tag: {collision.gameObject.tag}");
         if (isBurning || isExtinguished)
             return;
 
