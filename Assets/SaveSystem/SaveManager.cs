@@ -12,6 +12,15 @@ public class SaveManager : MonoBehaviour
     private string SavePath => Path.Combine(Application.persistentDataPath, "save.json");
     private string PreviewPath => Path.Combine(Application.persistentDataPath, "save_preview.jpg");
 
+    // ============================================================
+    // 数据加密（XOR 异或加密）
+    // ============================================================
+    // 作用：让存档文件变成乱码，防止玩家用记事本修改数据
+    // 原理：对每个字符与密钥进行按位异或（XOR），两次异或可还原原文
+    // 注意：密钥硬编码在代码中，只能防君子不防小人
+    // ============================================================
+    private const byte XOR_KEY = 0xAA;  // 加密密钥（0xAA = 170，可改）
+
     // 缓存读档数据，用于场景加载完成后恢复
     private SaveData _pendingSaveData = null;
     private Coroutine _screenshotCoroutine;
@@ -19,12 +28,14 @@ public class SaveManager : MonoBehaviour
 
     private void Awake()
     {
-        // 单例初始化：如果不存在就创建，存在就销毁多余的
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject); // 切换场景时不销毁
-            SceneManager.sceneLoaded += OnSceneLoaded;// 监听场景加载完成事件
+            DontDestroyOnLoad(gameObject);
+            SceneManager.sceneLoaded += OnSceneLoaded;
+
+            // ===== 新增：订阅玩家死亡事件 =====
+            MockEventCenter.OnPlayerDeath += HandlePlayerDeath;
         }
         else
         {
@@ -32,14 +43,20 @@ public class SaveManager : MonoBehaviour
         }
     }
 
+    // ===== 新增：玩家死亡处理函数 =====
+    private void HandlePlayerDeath()
+    {
+        Debug.Log("玩家死亡，触发读档");
+        LoadAndApplySave();
+    }
+
     private void OnDestroy()
     {
-        // 只有真正的单例销毁时才退订并清空Instance
         if (Instance == this)
-        {
+          {
             SceneManager.sceneLoaded -= OnSceneLoaded;
-            Instance = null;
-        }
+            MockEventCenter.OnPlayerDeath -= HandlePlayerDeath;
+          }
     }
 
     //场景加载完成后自动调用
@@ -50,26 +67,18 @@ public class SaveManager : MonoBehaviour
         {
             ApplySaveData(_pendingSaveData);
             Debug.Log($"场景重载完成，玩家已恢复至存档点位置");
+            // ===== 新增：通知 UI 读档完成 =====
+            UIEventCenter.TriggerLoadCompleted();
             _pendingSaveData = null; // 清空缓存
         }
     }
-
-    /*private void Update()
-    {
-        // 临时测试：按 L 键模拟死亡读档
-        if (Input.GetKeyDown(KeyCode.L))
-        {
-            LoadAndApplySave();
-            Debug.Log("手动触发读档（模拟死亡）");
-        }
-    }*/
 
     // ========== 核心方法1：存档 ==========
 
     // 由存档点调用，保存当前游戏状态
     public void SaveGame(Vector2 savePointPosition)
     {
-        // 1. 抓取玩家当前状态（组装数据盒子）
+        // 1. 抓取玩家当前状态
         SaveData data = CapturePlayerState();
         if (data == null)
             return;
@@ -79,9 +88,10 @@ public class SaveManager : MonoBehaviour
 
         // 3. 转成 JSON 并写入硬盘
         string json = JsonUtility.ToJson(data, true); 
+        string encrypted = EncryptDecrypt(json);
         try
         {
-            File.WriteAllText(SavePath, json);
+             File.WriteAllText(SavePath, encrypted);
         }
         catch (System.Exception e)
         {
@@ -91,7 +101,7 @@ public class SaveManager : MonoBehaviour
 
         // 4. 控制台提示（方便调试）
         Debug.Log($"游戏已存档！位置：{savePointPosition}  文件路径：{SavePath}");
-
+        UIEventCenter.TriggerSaveCompleted();
         // 5. JSON已成功写入，开始生成截图预览
         StartScreenshotCapture();
     }
@@ -101,46 +111,61 @@ public class SaveManager : MonoBehaviour
     // 读取存档并恢复到游戏中（用于死亡复活 / 继续游戏）
     public bool LoadAndApplySave()
     {
-        // 1. 从硬盘读取文件
+        // ===== 新增：通知 UI 读档开始 =====
+        UIEventCenter.TriggerLoadStarted();
+
         SaveData data = LoadRawData();
 
-        // 2. 如果没有存档，返回失败
         if (data == null)
         {
-            Debug.LogWarning("没有找到存档文件！请检查是否已触碰存档点。");
-            // TODO: 这里以后接入 "回到关卡起点" 的逻辑
-            return false;
+            Debug.LogWarning("没有找到存档文件，将玩家传送至起点");
+
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null)
+            {
+                // 传送到起点 (0,0)
+                player.transform.position = Vector3.zero;
+
+                // 重置刚体速度
+                Rigidbody2D rb = player.GetComponent<Rigidbody2D>();
+                if (rb != null)
+                {
+                    rb.velocity = Vector2.zero;
+                    rb.angularVelocity = 0f;
+                }
+
+                // 重置形态为史莱姆
+                PlayerController pc = player.GetComponent<PlayerController>();
+                if (pc != null)
+                {
+                    pc.SwitchToFormByType(FormType.Slime);
+                }
+
+                // 恢复生命值到3颗心
+                PlayerHP hp = player.GetComponent<PlayerHP>();
+                if (hp != null)
+                {
+                    hp.Heal(3);
+                    hp.SetInvincible(1f);
+                }
+
+                Debug.Log("玩家已重置到起点 (0, 0)，形态恢复为史莱姆，生命值恢复至3颗心");
+            }
+            else
+            {
+                Debug.LogError("找不到玩家，无法重置到起点！");
+            }
+            // ===== 新增：通知 UI 回到起点 =====
+            UIEventCenter.TriggerRespawnAtStart();
+            return false ;
         }
 
-        // 3. 校验目标场景
-        if (!Application.CanStreamedLevelBeLoaded(data.sceneName))
-        {
-            Debug.LogWarning($"存档场景无效：{data.sceneName}");
-            return false;
-        }
-
-        // 4. 把数据存起来，然后加载存档场景
+        // 有存档的正常读档流程
         _pendingSaveData = data;
-        Time.timeScale = 1f; // 恢复游戏
+        string currentScene = SceneManager.GetActiveScene().name;
+        SceneManager.LoadScene(currentScene);
+        Debug.Log($"正在重载场景：{currentScene}，完成后将恢复存档数据");
 
-        // 5. 优先使用场景转场，保证输入状态和转场UI
-        if (SceneTransition.Instance != null)
-        {
-            SceneTransition.Instance.GoToScene(data.sceneName);
-            Debug.Log($"正在通过场景转场加载存档场景：{data.sceneName}");
-            return true;
-        }
-
-        // 6. SceneTransition缺失时使用无转场回退
-        Debug.LogWarning("SceneTransition.Instance 为空，使用无转场回退加载存档场景");
-        if (PlayerInputReader.HasInstance)
-        {
-            PlayerInputReader.Instance.OnUICancelTrigger();
-            PlayerInputReader.Instance.SwitchToGameplay();
-        }
-        SceneManager.LoadScene(data.sceneName);
-
-        Debug.Log($"正在加载存档场景：{data.sceneName}，完成后将恢复存档数据");
         return true;
     }
 
@@ -155,34 +180,46 @@ public class SaveManager : MonoBehaviour
 
         try
         {
-            string json = File.ReadAllText(SavePath);
-            if (string.IsNullOrWhiteSpace(json))
-                return null;
-
-            SaveData data = JsonUtility.FromJson<SaveData>(json);
-            if (data == null)
-                return null;
-
-            // 旧存档没有saveTime时，用文件最后修改时间作为本次显示回退值
-            if (string.IsNullOrEmpty(data.saveTime))
+            // 读取文件内容（如果文件是空的，直接返回）
+            string encrypted = File.ReadAllText(SavePath);
+            if (string.IsNullOrWhiteSpace(encrypted))
             {
-                try
-                {
-                    data.saveTime = new System.DateTimeOffset(File.GetLastWriteTime(SavePath)).ToString("O", System.Globalization.CultureInfo.InvariantCulture);
-                }
-                catch (System.Exception e)
-                {
-                    Debug.LogWarning($"读取存档时间失败：{e.Message}");
-                    data.saveTime = "";
-                }
+                Debug.LogWarning("存档文件为空，视为损坏");
+                return null;
             }
 
-            NormalizeSaveData(data);
+            // ===== 新增：解密后再解析 =====
+            string json = EncryptDecrypt(encrypted);
+
+            // 尝试解析 JSON（如果格式错乱，会抛出异常）
+            SaveData data = JsonUtility.FromJson<SaveData>(json);
+
+            // 检查解析结果是否有效
+            if (data == null || string.IsNullOrEmpty(data.currentForm))
+            {
+                Debug.LogWarning("存档数据不完整，视为损坏");
+                return null;
+            }
+
             return data;
         }
-        catch (System.Exception e)
+        catch (IOException ex)
         {
-            Debug.LogError($"读取存档失败：{e.Message}");
+            Debug.LogError($"读取存档时发生IO错误：{ex.Message}");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"读取存档时发生未知错误：{ex.Message}，存档可能已损坏");
+            // 备份损坏文件供调试
+            try
+            {
+                string backupPath = SavePath + ".corrupted";
+                if (File.Exists(SavePath))
+                    File.Copy(SavePath, backupPath, true);
+                Debug.Log($"已备份损坏存档至：{backupPath}");
+            }
+            catch { }
             return null;
         }
     }
@@ -193,12 +230,26 @@ public class SaveManager : MonoBehaviour
         return File.Exists(SavePath);
     }
 
-    // 检查存档是否有效：文件可读且目标场景可加载
+    //检查存档是否有效（文件存在 + 数据完整 + 场景可加载）
     public bool HasValidSave()
     {
+        if (!HasSave()) return false;
+
         SaveData data = LoadRawData();
-        if (data == null)
+        if (data == null) return false;
+
+        if (string.IsNullOrEmpty(data.sceneName)) return false;
+
+        if (!Application.CanStreamedLevelBeLoaded(data.sceneName))
+        {
+            Debug.LogWarning($"存档场景 {data.sceneName} 无法加载");
             return false;
+        }
+
+        return true;
+    }
+
+    // ========== 数据抓取与恢复（占位区） ==========
 
         return Application.CanStreamedLevelBeLoaded(data.sceneName);
     }
@@ -356,169 +407,185 @@ public class SaveManager : MonoBehaviour
             return null;
         }
 
-        ElementAbilityManager element = FindObjectOfType<ElementAbilityManager>();
-        if (element == null)
+        // ===== 0. 元数据 =====
+        data.sceneName = SceneManager.GetActiveScene().name;
+        data.saveTime = System.DateTimeOffset.Now.ToString("O");
+
+        // ===== 1. 获取形态数据 =====
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null)
         {
-            Debug.LogError("保存存档失败：场景中没有 ElementAbilityManager");
-            return null;
+            PlayerController pc = player.GetComponent<PlayerController>();
+            if (pc != null)
+            {
+                // 当前形态
+                data.currentForm = pc.GetCurrentForm().ToString();
+
+                // 已解锁形态列表
+                List<FormType> forms = pc.GetUnlockedForms();
+                data.unlockedForms = new List<string>();
+                foreach (FormType ft in forms)
+                {
+                    data.unlockedForms.Add(ft.ToString());
+                }
+            }
+            else
+            {
+                // 降级：找不到 PlayerController 时用默认值
+                data.currentForm = "Slime";
+                data.unlockedForms = new List<string> { "Slime" };
+                Debug.LogWarning("未找到 PlayerController，使用默认形态数据");
+            }
+        }
+        else
+        {
+            data.currentForm = "Slime";
+            data.unlockedForms = new List<string> { "Slime" };
+            Debug.LogWarning("未找到 Player 对象，使用默认形态数据");
         }
 
-        SaveData data = new SaveData();
-        data.sceneName = SceneManager.GetActiveScene().name;
-        data.saveTime = System.DateTimeOffset.Now.ToString("O", System.Globalization.CultureInfo.InvariantCulture);
-        data.currentForm = player.GetCurrentForm().ToString();
-        data.unlockedForms = player.GetUnlockedForms().ConvertAll(f => f.ToString());
-        data.coinCount = coin.GetCoinCount();
-        data.coinAccumulatedCount = coin.GetCoinAccumulatedCount();
-        data.unlockedElements = element.GetUnlockedElements().ConvertAll(e => e.ToString());
+        // ===== 2. 获取元素能力 =====
+        if (ElementAbilityManager.Instance != null)
+        {
+            List<ElementType> elements = ElementAbilityManager.Instance.GetUnlockedElements();
+            data.unlockedElements = new List<string>();
+            foreach (ElementType et in elements)
+            {
+                data.unlockedElements.Add(et.ToString());
+            }
+        }
+        else
+        {
+            data.unlockedElements = new List<string>();
+            Debug.LogWarning("未找到 ElementAbilityManager，元素能力使用空列表");
+        }
 
-        // 捕获后同样保证 Slime 解锁不变量
-        NormalizeSaveData(data);
-
-        // 注意：玩家的坐标我们不需要在这里抓取，因为存档点的位置会由 SavePoint 传进来
         return data;
     }
 
     // 把存档数据恢复到游戏中
     private void ApplySaveData(SaveData data)
     {
-        // 1. 恢复玩家位置（最重要！）
+        // ===== 1. 找到玩家 =====
         GameObject player = GameObject.FindGameObjectWithTag("Player");
-        if (player != null)
+        if (player == null)
         {
-            // 把玩家移动到存档点位置
-            player.transform.position = data.GetSavePointPosition();
+            Debug.LogError("场景中没有找到 Tag 为 'Player' 的游戏对象！");
+            return;
+        }
 
-            // 重置刚体速度，防止复活后乱飞
-            Rigidbody2D rb = player.GetComponent<Rigidbody2D>();
-            if (rb != null)
+        // ===== 2. 恢复玩家位置 =====
+        player.transform.position = data.GetSavePointPosition();
+        Rigidbody2D rb = player.GetComponent<Rigidbody2D>();
+        if (rb != null)
+        {
+            rb.velocity = Vector2.zero;
+            rb.angularVelocity = 0f;
+        }
+        Debug.Log($"玩家已移动到：{data.GetSavePointPosition()}");
+
+        // ===== 3. 恢复形态 =====
+        PlayerController pc = player.GetComponent<PlayerController>();
+        if (pc != null)
+        {
+            FormType current = (FormType)System.Enum.Parse(typeof(FormType), data.currentForm);
+            List<FormType> unlocked = new List<FormType>();
+            foreach (string s in data.unlockedForms)
             {
-                rb.velocity = Vector2.zero;
-                rb.angularVelocity = 0f;
+                unlocked.Add((FormType)System.Enum.Parse(typeof(FormType), s));
             }
-
-            Debug.Log($"玩家已移动到：{data.GetSavePointPosition()}");
+            pc.RestoreForms(current, unlocked);
+            Debug.Log($"恢复形态：当前={current}，已解锁={string.Join(", ", unlocked)}");
         }
         else
         {
-            Debug.LogError("场景中没有找到 Tag 为 'Player' 的游戏对象！");
+            Debug.LogWarning("玩家身上没有 PlayerController，形态恢复失败");
         }
 
-        // 2. 恢复形态
-        PlayerController playerController = FindObjectOfType<PlayerController>();
-        if (playerController != null)
+        // ===== 4. 恢复元素能力 =====
+        if (ElementAbilityManager.Instance != null)
         {
-            List<FormType> unlockedForms = ParseFormTypes(data.unlockedForms);
-            FormType current = ParseCurrentForm(data.currentForm, unlockedForms);
-            playerController.RestoreForms(current, unlockedForms);
-            Debug.Log($"恢复形态：当前={current}，已解锁={string.Join(", ", unlockedForms)}");
-        }
-
-        // 3. 恢复收集数据（变更）
-        CoinManager coinManager = FindObjectOfType<CoinManager>();
-        if (coinManager != null)
-        {
-            coinManager.RestoreCoinData(data.coinCount, data.coinAccumulatedCount);
-            Debug.Log($"恢复金币：当前={data.coinCount}，累计={data.coinAccumulatedCount}");
-        }
-
-        // 4. 恢复元素能力（新增）
-        ElementAbilityManager elementManager = FindObjectOfType<ElementAbilityManager>();
-        if (elementManager != null)
-        {
-            List<ElementType> elements = ParseElementTypes(data.unlockedElements);
-            elementManager.RestoreElements(elements);
+            List<ElementType> elements = new List<ElementType>();
+            foreach (string s in data.unlockedElements)
+            {
+                elements.Add((ElementType)System.Enum.Parse(typeof(ElementType), s));
+            }
+            ElementAbilityManager.Instance.RestoreElements(elements);
             Debug.Log($"恢复元素：{string.Join(", ", elements)}");
         }
-    }
-
-    // 读取存档时做兼容归一化
-    private void NormalizeSaveData(SaveData data)
-    {
-        if (string.IsNullOrEmpty(data.sceneName))
-            data.sceneName = "WetLand_Main";
-
-        if (data.unlockedForms == null)
-            data.unlockedForms = new List<string>();
-        if (data.unlockedElements == null)
-            data.unlockedElements = new List<string>();
-
-        List<FormType> unlockedForms = ParseFormTypes(data.unlockedForms);
-        if (!unlockedForms.Contains(FormType.Slime))
-            unlockedForms.Insert(0, FormType.Slime);
-
-        FormType current = ParseCurrentForm(data.currentForm, unlockedForms);
-
-        data.currentForm = current.ToString();
-        data.unlockedForms = unlockedForms.ConvertAll(f => f.ToString());
-        data.unlockedElements = ParseElementTypes(data.unlockedElements).ConvertAll(e => e.ToString());
-    }
-
-    // 解析已解锁形态列表，非法值直接跳过
-    private List<FormType> ParseFormTypes(List<string> rawList)
-    {
-        List<FormType> result = new List<FormType>();
-        if (rawList == null)
-            return result;
-
-        foreach (string raw in rawList)
+        else
         {
-            if (TryParseFormType(raw, out FormType form) && !result.Contains(form))
-                result.Add(form);
+            Debug.LogWarning("未找到 ElementAbilityManager，元素恢复失败");
         }
-        return result;
-    }
 
-    // 解析当前形态，非法或未解锁时回退Slime
-    private FormType ParseCurrentForm(string raw, List<FormType> unlockedForms)
-    {
-        if (TryParseFormType(raw, out FormType form) && unlockedForms.Contains(form))
-            return form;
-        return FormType.Slime;
-    }
-
-    // 解析元素列表，非法值直接跳过
-    private List<ElementType> ParseElementTypes(List<string> rawList)
-    {
-        List<ElementType> result = new List<ElementType>();
-        if (rawList == null)
-            return result;
-
-        foreach (string raw in rawList)
+        // ===== 5. 恢复生命值（固定为3颗心） =====
+        PlayerHP hp = player.GetComponent<PlayerHP>();
+        if (hp != null)
         {
-            if (TryParseElementType(raw, out ElementType element) && !result.Contains(element))
-                result.Add(element);
+            hp.Heal(3);
+            hp.SetInvincible(1f);
+            Debug.Log("生命值已恢复至3颗心，给予1秒无敌");
         }
-        return result;
     }
 
-    // 兼容旧FORM_占位值
-    private bool TryParseFormType(string raw, out FormType result)
+    //退出自动保存
+    private void OnApplicationQuit()
     {
-        result = default;
-        if (string.IsNullOrEmpty(raw))
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null && HasSave())
+        {
+            SaveData data = LoadRawData();
+            if (data != null)
+            {
+                Vector2 pos = player.transform.position;
+                data.SetSavePointPosition(pos);
+                string json = JsonUtility.ToJson(data, true);
+                // ===== 改为加密写入 =====
+                string encrypted = EncryptDecrypt(json);
+                File.WriteAllText(SavePath, encrypted);
+                Debug.Log($"退出存档已保存：位置 {pos}");
+            }
+        }
+    }
+
+    //继续游戏
+    public bool ContinueFromMainMenu()
+    {
+        SaveData data = LoadRawData();
+        if (data == null || !HasValidSave())
+        {
+            Debug.LogWarning("没有有效的存档可供继续");
             return false;
-
-        if (raw == "FORM_SLIME")
-        {
-            result = FormType.Slime;
-            return true;
-        }
-        if (raw == "FORM_FROG")
-        {
-            result = FormType.Frog;
-            return true;
         }
 
-        return System.Enum.TryParse<FormType>(raw, true, out result) && System.Enum.IsDefined(typeof(FormType), result);
+        if (!Application.CanStreamedLevelBeLoaded(data.sceneName))
+        {
+            Debug.LogError($"场景 {data.sceneName} 不存在或无法加载");
+            return false;
+        }
+
+        _pendingSaveData = data;
+        SceneManager.LoadScene(data.sceneName);
+        Debug.Log($"继续游戏：加载场景 {data.sceneName}");
+        return true;
     }
 
-    private bool TryParseElementType(string raw, out ElementType result)
+    // ============================================================
+    // 加密/解密工具方法
+    // ============================================================
+    private string EncryptDecrypt(string input)
     {
-        result = default;
-        if (string.IsNullOrEmpty(raw))
-            return false;
+        // 空字符串或 null 直接返回
+        if (string.IsNullOrEmpty(input))
+            return input;
 
-        return System.Enum.TryParse<ElementType>(raw, true, out result) && System.Enum.IsDefined(typeof(ElementType), result);
+        // 将字符串转为字符数组，逐个字符与密钥异或
+        char[] chars = input.ToCharArray();
+        for (int i = 0; i < chars.Length; i++)
+        {
+            // char 与 byte 异或，结果隐式转为 int，再转回 char
+            chars[i] = (char)(chars[i] ^ XOR_KEY);
+        }
+        return new string(chars);
     }
 }
