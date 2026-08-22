@@ -67,8 +67,6 @@ public class SignalSource : MonoBehaviour
     {
         int hitCount = Physics2D.OverlapBoxNonAlloc(transform.position, detectionSize, 0f, _hitBuffer, detectionLayer);
 
-        if (hitCount > 0) LogDetectionResult(hitCount, "Box");
-
         for (int i = 0; i < hitCount; i++)
         {
             IHeavy heavy = FindHeavy(_hitBuffer[i]);
@@ -85,8 +83,6 @@ public class SignalSource : MonoBehaviour
     {
         int hitCount = Physics2D.OverlapCircleNonAlloc(transform.position, detectionRadius, _hitBuffer, detectionLayer);
 
-        if (hitCount > 0) LogDetectionResult(hitCount, "Circle");
-
         for (int i = 0; i < hitCount; i++)
         {
             IHeavy heavy = FindHeavy(_hitBuffer[i]);
@@ -97,19 +93,6 @@ public class SignalSource : MonoBehaviour
         }
 
         return false;
-    }
-
-    // 诊断：打印检测框内找到的碰撞体与 IHeavy，便于定位压力板检测断点
-    private void LogDetectionResult(int hitCount, string shape)
-    {
-        string info = $"[SignalSource] {name} {shape} hits={hitCount}:";
-        for (int i = 0; i < hitCount && i < _hitBuffer.Length; i++)
-        {
-            if (_hitBuffer[i] == null) continue;
-            IHeavy heavy = FindHeavy(_hitBuffer[i]);
-            info += $" [{_hitBuffer[i].name}|{(_hitBuffer[i].gameObject.layer)}|heavy={heavy?.IsHeavy}]";
-        }
-        Debug.Log(info);
     }
 
     public void SetSignal(bool state)
