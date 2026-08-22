@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -391,19 +392,7 @@ public class SaveManager : MonoBehaviour
     // 从游戏中抓取当前玩家的所有状态
     private SaveData CapturePlayerState()
     {
-        PlayerController player = FindObjectOfType<PlayerController>();
-        if (player == null)
-        {
-            Debug.LogError("保存存档失败：场景中没有 PlayerController");
-            return null;
-        }
-
-        CoinManager coin = FindObjectOfType<CoinManager>();
-        if (coin == null)
-        {
-            Debug.LogError("保存存档失败：场景中没有 CoinManager");
-            return null;
-        }
+        SaveData data = new SaveData();
 
         // ===== 0. 元数据 =====
         data.sceneName = SceneManager.GetActiveScene().name;
