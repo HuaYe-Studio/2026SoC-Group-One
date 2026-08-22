@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -33,9 +34,6 @@ public class SaveManager : MonoBehaviour
             Instance = this;
             DontDestroyOnLoad(gameObject);
             SceneManager.sceneLoaded += OnSceneLoaded;
-
-            // ===== 新增：订阅玩家死亡事件 =====
-            MockEventCenter.OnPlayerDeath += HandlePlayerDeath;
         }
         else
         {
@@ -43,19 +41,11 @@ public class SaveManager : MonoBehaviour
         }
     }
 
-    // ===== 新增：玩家死亡处理函数 =====
-    private void HandlePlayerDeath()
-    {
-        Debug.Log("玩家死亡，触发读档");
-        LoadAndApplySave();
-    }
-
     private void OnDestroy()
     {
         if (Instance == this)
           {
             SceneManager.sceneLoaded -= OnSceneLoaded;
-            MockEventCenter.OnPlayerDeath -= HandlePlayerDeath;
           }
     }
 
@@ -111,6 +101,9 @@ public class SaveManager : MonoBehaviour
     // 读取存档并恢复到游戏中（用于死亡复活 / 继续游戏）
     public bool LoadAndApplySave()
     {
+        // 清掉上一次读档转场中断可能残留的待应用存档，避免误应用到下次场景加载
+        _pendingSaveData = null;
+
         // ===== 新增：通知 UI 读档开始 =====
         UIEventCenter.TriggerLoadStarted();
 
@@ -160,11 +153,41 @@ public class SaveManager : MonoBehaviour
             return false ;
         }
 
-        // 有存档的正常读档流程
+        // 有存档的正常读档流程：加载存档里的场景（而非当前所在场景，
+        // 否则从主菜单读档会错误地重载主菜单场景）
+        if (!Application.CanStreamedLevelBeLoaded(data.sceneName))
+        {
+            Debug.LogWarning($"存档场景无效：{data.sceneName}");
+            return false;
+        }
+
         _pendingSaveData = data;
-        string currentScene = SceneManager.GetActiveScene().name;
-        SceneManager.LoadScene(currentScene);
-        Debug.Log($"正在重载场景：{currentScene}，完成后将恢复存档数据");
+        Time.timeScale = 1f; // 读档面板把游戏暂停了，加载存档场景前恢复时间
+
+        // 优先通过场景转场加载（播放开门/加载动画），与主菜单开始游戏一致
+        if (SceneTransition.Instance != null && PlayerInputReader.HasInstance)
+        {
+            try
+            {
+                SceneTransition.Instance.GoToScene(data.sceneName);
+                Debug.Log($"正在通过场景转场加载存档场景：{data.sceneName}");
+                return true;
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"场景转场加载存档失败：{e.Message}，改用无转场回退");
+            }
+        }
+
+        // 无转场回退
+        Debug.LogWarning("SceneTransition 缺失或不可用，使用无转场回退加载存档场景");
+        if (PlayerInputReader.HasInstance)
+        {
+            PlayerInputReader.Instance.OnUICancelTrigger();
+            PlayerInputReader.Instance.SwitchToGameplay();
+        }
+        SceneManager.LoadScene(data.sceneName);
+        Debug.Log($"正在加载存档场景：{data.sceneName}，完成后将恢复存档数据");
 
         return true;
     }
@@ -249,11 +272,6 @@ public class SaveManager : MonoBehaviour
         return true;
     }
 
-    // ========== 数据抓取与恢复（占位区） ==========
-
-        return Application.CanStreamedLevelBeLoaded(data.sceneName);
-    }
-
     // 读取存档截图；没有存档、没有截图、空截图或读取异常时返回false
     public bool TryLoadPreview(out byte[] imageBytes)
     {
@@ -286,6 +304,10 @@ public class SaveManager : MonoBehaviour
             StopCoroutine(_screenshotCoroutine);
             _screenshotCoroutine = null;
         }
+
+        // 删档同时清空记忆碎片，保持单一存档一致性
+        if (MemoryCollectionManager.Instance != null)
+            MemoryCollectionManager.Instance.Reset();
 
         try
         {
@@ -393,19 +415,7 @@ public class SaveManager : MonoBehaviour
     // 从游戏中抓取当前玩家的所有状态
     private SaveData CapturePlayerState()
     {
-        PlayerController player = FindObjectOfType<PlayerController>();
-        if (player == null)
-        {
-            Debug.LogError("保存存档失败：场景中没有 PlayerController");
-            return null;
-        }
-
-        CoinManager coin = FindObjectOfType<CoinManager>();
-        if (coin == null)
-        {
-            Debug.LogError("保存存档失败：场景中没有 CoinManager");
-            return null;
-        }
+        SaveData data = new SaveData();
 
         // ===== 0. 元数据 =====
         data.sceneName = SceneManager.GetActiveScene().name;
@@ -459,6 +469,24 @@ public class SaveManager : MonoBehaviour
             data.unlockedElements = new List<string>();
             Debug.LogWarning("未找到 ElementAbilityManager，元素能力使用空列表");
         }
+
+        // ===== 3. 获取金币 =====
+        if (CoinManager.Instance != null)
+        {
+            data.coinCount = CoinManager.Instance.GetCoinCount();
+            data.coinAccumulatedCount = CoinManager.Instance.GetCoinAccumulatedCount();
+        }
+        else
+        {
+            data.coinCount = 0;
+            data.coinAccumulatedCount = 0;
+            Debug.LogWarning("未找到 CoinManager，金币使用默认值");
+        }
+
+        // ===== 4. 获取记忆碎片 =====
+        data.memoryFragments = MemoryCollectionManager.Instance != null
+            ? MemoryCollectionManager.Instance.GetCollectedList()
+            : new List<string>();
 
         return data;
     }
@@ -518,13 +546,31 @@ public class SaveManager : MonoBehaviour
             Debug.LogWarning("未找到 ElementAbilityManager，元素恢复失败");
         }
 
-        // ===== 5. 恢复生命值（固定为3颗心） =====
+        // ===== 5. 恢复金币 =====
+        if (CoinManager.Instance != null)
+        {
+            CoinManager.Instance.RestoreCoinData(data.coinCount, data.coinAccumulatedCount);
+            Debug.Log($"恢复金币：当前={data.coinCount}，累计={data.coinAccumulatedCount}");
+        }
+        else
+        {
+            Debug.LogWarning("未找到 CoinManager，金币恢复失败");
+        }
+
+        // ===== 6. 恢复生命值（固定为3颗心） =====
         PlayerHP hp = player.GetComponent<PlayerHP>();
         if (hp != null)
         {
             hp.Heal(3);
             hp.SetInvincible(1f);
             Debug.Log("生命值已恢复至3颗心，给予1秒无敌");
+        }
+
+        // ===== 7. 恢复记忆碎片 =====
+        if (MemoryCollectionManager.Instance != null)
+        {
+            MemoryCollectionManager.Instance.RestoreCollected(data.memoryFragments);
+            Debug.Log($"恢复记忆碎片：{data.memoryFragments?.Count ?? 0} 个");
         }
     }
 
