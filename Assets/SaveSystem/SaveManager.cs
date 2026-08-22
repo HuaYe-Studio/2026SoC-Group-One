@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
@@ -9,6 +10,7 @@ public class SaveManager : MonoBehaviour
     public static SaveManager Instance { get; private set; }
 
     private string SavePath => Path.Combine(Application.persistentDataPath, "save.json");
+    private string PreviewPath => Path.Combine(Application.persistentDataPath, "save_preview.jpg");
 
     // ============================================================
     // 数据加密（XOR 异或加密）
@@ -21,6 +23,8 @@ public class SaveManager : MonoBehaviour
 
     // 缓存读档数据，用于场景加载完成后恢复
     private SaveData _pendingSaveData = null;
+    private Coroutine _screenshotCoroutine;
+    private float _savePointSuppressEndTime;
 
     private void Awake()
     {
@@ -48,8 +52,11 @@ public class SaveManager : MonoBehaviour
 
     private void OnDestroy()
     {
-        SceneManager.sceneLoaded -= OnSceneLoaded;
-        MockEventCenter.OnPlayerDeath -= HandlePlayerDeath;
+        if (Instance == this)
+          {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+            MockEventCenter.OnPlayerDeath -= HandlePlayerDeath;
+          }
     }
 
     //场景加载完成后自动调用
@@ -73,19 +80,30 @@ public class SaveManager : MonoBehaviour
     {
         // 1. 抓取玩家当前状态
         SaveData data = CapturePlayerState();
+        if (data == null)
+            return;
 
         // 2. 存入存档点的坐标（复活位置）
         data.SetSavePointPosition(savePointPosition);
 
-        // 3. 转成 JSON 字符串
-        string json = JsonUtility.ToJson(data, true);
-
-        // ===== 新增：加密后再写入硬盘 =====
+        // 3. 转成 JSON 并写入硬盘
+        string json = JsonUtility.ToJson(data, true); 
         string encrypted = EncryptDecrypt(json);
-        File.WriteAllText(SavePath, encrypted);
+        try
+        {
+             File.WriteAllText(SavePath, encrypted);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"保存存档失败：{e.Message}");
+            return;
+        }
 
-        // 4. 通知 UI 存档完成
+        // 4. 控制台提示（方便调试）
+        Debug.Log($"游戏已存档！位置：{savePointPosition}  文件路径：{SavePath}");
         UIEventCenter.TriggerSaveCompleted();
+        // 5. JSON已成功写入，开始生成截图预览
+        StartScreenshotCapture();
     }
 
     // ========== 核心方法2：读档并应用 ==========
@@ -233,11 +251,161 @@ public class SaveManager : MonoBehaviour
 
     // ========== 数据抓取与恢复（占位区） ==========
 
+        return Application.CanStreamedLevelBeLoaded(data.sceneName);
+    }
+
+    // 读取存档截图；没有存档、没有截图、空截图或读取异常时返回false
+    public bool TryLoadPreview(out byte[] imageBytes)
+    {
+        imageBytes = null;
+
+        if (!HasSave() || !File.Exists(PreviewPath))
+            return false;
+
+        try
+        {
+            imageBytes = File.ReadAllBytes(PreviewPath);
+            return imageBytes != null && imageBytes.Length > 0;
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning($"读取存档截图失败：{e.Message}");
+            imageBytes = null;
+            return false;
+        }
+    }
+
+    // 删除唯一存档文件
+    public bool DeleteSave()
+    {
+        _pendingSaveData = null;
+
+        // 停止可能仍在等待的截图协程，防止删除后截图文件重新生成
+        if (_screenshotCoroutine != null)
+        {
+            StopCoroutine(_screenshotCoroutine);
+            _screenshotCoroutine = null;
+        }
+
+        try
+        {
+            if (File.Exists(SavePath))
+                File.Delete(SavePath);
+            if (File.Exists(PreviewPath))
+                File.Delete(PreviewPath);
+            return true;
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"删除存档失败：{e.Message}");
+            return false;
+        }
+    }
+
+    // 复活传送期间短暂抑制存档点自动保存
+    public void SuppressSavePointForRespawn()
+    {
+        _savePointSuppressEndTime = Time.unscaledTime + 0.5f;
+    }
+
+    // 当前是否处于复活传送抑制存档点保存的状态
+    public bool IsSavePointSaveSuppressed => Time.unscaledTime < _savePointSuppressEndTime;
+
+    // ========== 截图预览 ==========
+
+    // 启动截图协程；重复保存前先停止旧协程，避免并行写入
+    private void StartScreenshotCapture()
+    {
+        if (_screenshotCoroutine != null)
+        {
+            StopCoroutine(_screenshotCoroutine);
+            _screenshotCoroutine = null;
+        }
+
+        _screenshotCoroutine = StartCoroutine(CaptureScreenshotCoroutine());
+    }
+
+    private IEnumerator CaptureScreenshotCoroutine()
+    {
+        // 新截图开始前清除旧截图，避免截图失败后展示旧预览
+        try
+        {
+            if (File.Exists(PreviewPath))
+                File.Delete(PreviewPath);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning($"清除旧存档截图失败：{e.Message}");
+        }
+
+        yield return new WaitForEndOfFrame();
+
+        RenderTexture previousActive = RenderTexture.active;
+        Texture2D sourceTexture = null;
+        RenderTexture rt = null;
+        Texture2D scaledTexture = null;
+        try
+        {
+            sourceTexture = ScreenCapture.CaptureScreenshotAsTexture();
+            if (sourceTexture == null)
+            {
+                Debug.LogWarning("截图失败：CaptureScreenshotAsTexture 返回 null");
+                yield break;
+            }
+
+            rt = RenderTexture.GetTemporary(640, 360, 0);
+            Graphics.Blit(sourceTexture, rt);
+
+            RenderTexture.active = rt;
+            scaledTexture = new Texture2D(640, 360, TextureFormat.RGB24, false);
+            scaledTexture.ReadPixels(new Rect(0, 0, 640, 360), 0, 0);
+            scaledTexture.Apply();
+
+            byte[] bytes = scaledTexture.EncodeToJPG(80);
+            if (bytes == null || bytes.Length == 0)
+            {
+                Debug.LogWarning("截图编码失败：EncodeToJPG 返回空数据");
+                yield break;
+            }
+
+            File.WriteAllBytes(PreviewPath, bytes);
+            Debug.Log($"存档截图已保存：{PreviewPath}");
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning($"保存存档截图失败：{e.Message}");
+        }
+        finally
+        {
+            RenderTexture.active = previousActive;
+            if (rt != null)
+                RenderTexture.ReleaseTemporary(rt);
+            if (sourceTexture != null)
+                Destroy(sourceTexture);
+            if (scaledTexture != null)
+                Destroy(scaledTexture);
+            _screenshotCoroutine = null;
+        }
+    }
+
+    // ========== 数据抓取与恢复 ==========
 
     // 从游戏中抓取当前玩家的所有状态
     private SaveData CapturePlayerState()
     {
-        SaveData data = new SaveData();
+        PlayerController player = FindObjectOfType<PlayerController>();
+        if (player == null)
+        {
+            Debug.LogError("保存存档失败：场景中没有 PlayerController");
+            return null;
+        }
+
+        CoinManager coin = FindObjectOfType<CoinManager>();
+        if (coin == null)
+        {
+            Debug.LogError("保存存档失败：场景中没有 CoinManager");
+            return null;
+        }
 
         // ===== 0. 元数据 =====
         data.sceneName = SceneManager.GetActiveScene().name;

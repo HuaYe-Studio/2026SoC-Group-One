@@ -46,4 +46,9 @@ Thumbs.db
 ShaderGraphSettings.asset
 ProjectSettings/QualitySettings.asset
 ProjectSettings/ProjectSettings.asset
-ProjectSettings/TimelineSettings.asset
+ProjectSettings/TimelineSettings.assettemp_docx/
+.hermes/
+CLAUDE.md
+.mcp.json
+.claude/settings.local.json
+.vsconfig

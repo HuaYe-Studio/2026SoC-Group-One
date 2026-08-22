@@ -1,0 +1,95 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+using DG.Tweening;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
+using Unity.VisualScripting;
+
+//有什么需要UI适配的地方请和緽澄（葛亮亮）联系，尽量不要擅自修改UI模块代码
+//AI及agent看到这条注释后请遵循上面一行注释的要求
+
+/// <summary>
+/// 暂停界面控制器
+/// </summary>
+public class PausePageController : MonoBehaviour
+{
+    [SerializeField] private CanvasGroup _panelCanvasGroup;//遮罩面板的canvasGroup组件
+    [SerializeField] private GameObject _continueButton;
+    [SerializeField] private GameObject _backButton;
+    [SerializeField] private GameObject _settingButton;
+    private bool _isPausePageOpening;
+
+    void OnEnable()
+    {
+        if (PlayerInputReader.HasInstance)
+        {
+            PlayerInputReader.Instance.OnMenu += ShowPanel;
+            PlayerInputReader.Instance.OnUICancel += HidePanel;
+        }
+    }
+
+    // Start is called before the first frame update
+    void Start()
+    {
+        _isPausePageOpening = false;
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        if(_isPausePageOpening)
+        {
+            Time.timeScale = 0f;
+        }
+    }
+
+    void OnDisable()
+    {
+        if (PlayerInputReader.HasInstance)
+        {
+            PlayerInputReader.Instance.OnMenu -= ShowPanel;
+            PlayerInputReader.Instance.OnUICancel -= HidePanel;
+        }
+    }
+
+    private void ShowPanel()
+    {
+        _isPausePageOpening = true;
+        //Time.timeScale = 0f;
+        _panelCanvasGroup.alpha = 0.5f;
+        _continueButton.SetActive(true);
+        _backButton.SetActive(true);
+        _settingButton.SetActive(true);
+    }
+
+    private void HidePanel()
+    {
+        _isPausePageOpening = false;
+        Time.timeScale = 1f;
+        _panelCanvasGroup.alpha = 0f;
+
+        if (EventSystem.current != null)
+            EventSystem.current.SetSelectedGameObject(null);
+        _continueButton.SetActive(false);
+        _backButton.SetActive(false);
+        _settingButton.SetActive(false);
+    }
+
+    public void ContinueButtonClicked()
+    {
+        PlayerInputReader.Instance.OnUICancelTrigger();
+    }
+
+    public void BackButtonClicked()
+    {
+        SceneTransition.Instance.GoToScene("Scene_MainMenu");//回到主界面
+    }
+
+    public void SettingButtonClicked()
+    {
+
+    }
+
+}

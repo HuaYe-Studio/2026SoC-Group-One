@@ -1,12 +1,9 @@
-using System.Collections;
 using UnityEngine;
 
 /// <summary>
 /// 青蛙AI：继承 AnimalBase，以跳跃方式移动。
-/// 使用 Forage / Rest 状态替代默认的 Patrol 状态，
 /// 覆写 PerformMove 实现跳跃式移动。
 /// </summary>
-[RequireComponent(typeof(FSM))]
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(EnvironmentMonitor))]
 public class FrogAI : AnimalBase
@@ -20,40 +17,27 @@ public class FrogAI : AnimalBase
     [SerializeField] private float _groundCheckHeight = 0.08f;
     [SerializeField] private LayerMask _groundLayer;
 
-    [Header("Idle Fidget")]
-    [SerializeField] private float _idleHopForce = 5f;
-    [SerializeField] private float _idleHopSpeed = 1.5f;
-    [SerializeField] private float _idleHopIntervalMin = 1.5f;
-    [SerializeField] private float _idleHopIntervalMax = 4f;
-
     [Header("Animation")]
     [SerializeField] private Animator _animator;
 
     // Animator 参数：Int 枚举，0=Idle 1=Jump 2=Rest 3=Flee 4=Prey
-    private const string AnimStateParam = "AnimState";
+    private const string AnimStateParam = "FROG_AnimState";
 
-    private EnvironmentMonitor _monitor;
-    private float _nextIdleHopTime;
-    private bool _hasIdleHopped;
+    private Collider2D _collider;
+    private readonly RaycastHit2D[] _groundHits = new RaycastHit2D[4];
 
-    /// <summary>
-    /// 当前是否着地。
-    /// </summary>
-    public override bool IsGrounded { get; protected set; } = true;
-
-    /// <summary>
-    /// 环境监视器引用，供外部查询地形、同类等信息。
-    /// </summary>
-    public EnvironmentMonitor Monitor => _monitor;
-
-    // 覆写基类食物属性，数据来源于 EnvironmentMonitor
-    public override bool IsFoodDetected => _monitor != null && _monitor.IsFoodDetected;
-    public override Vector2 FoodDirection => _monitor != null ? _monitor.FoodDirection : Vector2.zero;
-    public override float FoodDistance => _monitor != null ? _monitor.FoodDistance : 0f;
+    // 覆写基类食物属性，数据来源于 Blackboard（由 EnvironmentMonitor 写入）
+    public override bool IsFoodDetected => Board.IsFoodDetected;
+    public override Vector2 FoodDirection => Board.FoodDirection;
+    public override float FoodDistance => Board.FoodDistance;
 
     protected override void Awake()
     {
-        _monitor = GetComponent<EnvironmentMonitor>();
+        _collider = GetComponent<Collider2D>();
+
+        // 暴露 Animator 给基类，供吞噬系统等外部调用
+        if (_animator != null)
+            Animator = _animator;
 
         base.Awake();
     }
@@ -63,22 +47,39 @@ public class FrogAI : AnimalBase
         PerformGroundCheck();
     }
 
+    /// <summary>
+    /// 地面检测：从碰撞体底部向下做 BoxCast。
+    /// 排除自身碰撞体和触发器，防止 GroundLayer 配置失误（如勾了自身层）导致"着地"恒真。
+    /// </summary>
     private void PerformGroundCheck()
     {
-        Collider2D col = GetComponent<Collider2D>();
-        float width = col != null ? col.bounds.size.x * _groundCheckWidth : 0.4f;
+        float width = _collider != null ? _collider.bounds.size.x * _groundCheckWidth : 0.4f;
 
         Vector2 origin = new Vector2(transform.position.x,
-            col != null ? col.bounds.min.y : transform.position.y - 0.5f);
+            _collider != null ? _collider.bounds.min.y : transform.position.y - 0.5f);
 
         Vector2 size = new Vector2(width, _groundCheckHeight);
-        RaycastHit2D hit = Physics2D.BoxCast(origin, size, 0f, Vector2.down, 0.05f, _groundLayer);
 
-        IsGrounded = hit.collider != null;
+        ContactFilter2D filter = new ContactFilter2D();
+        filter.SetLayerMask(_groundLayer);
+        filter.useTriggers = false;
+
+        int count = Physics2D.BoxCast(origin, size, 0f, Vector2.down, filter, _groundHits, 0.05f);
+
+        IsGrounded = false;
+        for (int i = 0; i < count; i++)
+        {
+            if (_groundHits[i].collider != _collider)
+            {
+                IsGrounded = true;
+                break;
+            }
+        }
     }
 
     /// <summary>
     /// 青蛙以跳跃方式移动：着地时朝目标方向跳跃，空中不施加额外水平力。
+    /// 逃跑/捕食动画由对应行为树节点通过 PerformHop 指定 animName 驱动。
     /// </summary>
     public override void PerformMove(float direction, float speedMultiplier = 1f)
     {
@@ -93,8 +94,11 @@ public class FrogAI : AnimalBase
     /// </summary>
     /// <param name="direction">跳跃水平方向（正=右，负=左）</param>
     /// <param name="speedMultiplier">速度倍率</param>
-    public void PerformHop(float direction, float speedMultiplier = 1f)
+    /// <param name="animName">跳跃期间播放的动画状态名，默认 Jump</param>
+    public void PerformHop(float direction, float speedMultiplier = 1f, string animName = "Jump")
     {
+        NotifyMoveCommand();
+
         Rb.velocity = new Vector2(
             direction * _hopForwardSpeed * speedMultiplier,
             _hopForce
@@ -103,7 +107,7 @@ public class FrogAI : AnimalBase
         if (SpriteRenderer != null && Mathf.Abs(direction) > 0.05f)
             SpriteRenderer.flipX = direction < 0;
 
-        PlayAnimation("Jump");
+        PlayAnimation(animName);
     }
 
     /// <summary>
@@ -116,75 +120,13 @@ public class FrogAI : AnimalBase
         int state = 0;
         switch (stateName)
         {
-            case "Jump": state = 1; break;
-            case "Rest": state = 2; break;
-            case "Flee": state = 3; break;
-            case "Prey": state = 4; break;
+            case AnimalAnimNames.Jump: state = 1; break;
+            case AnimalAnimNames.Rest: state = 2; break;
+            case AnimalAnimNames.Flee: state = 3; break;
+            case AnimalAnimNames.Prey: state = 4; break;
         }
 
         _animator.SetInteger(AnimStateParam, state);
-    }
-
-    /// <summary>
-    /// 青蛙使用觅食+休息+捕食+逃跑状态，不使用默认的巡逻状态。
-    /// 闲置时会随机小幅跳跃。
-    /// </summary>
-    protected override void RegisterStates()
-    {
-        ResetIdleHopTimer();
-        Fsm.RegisterState(new IdleState(Fsm, this, () => Fsm.ChangeState<ForageState>(),
-            TryIdleHop, ResetIdleHopTimer));
-        Fsm.RegisterState(new ForageState(Fsm, this));
-        Fsm.RegisterState(new RestState(Fsm, this));
-        Fsm.RegisterState(new PounceState(Fsm, this));
-        Fsm.RegisterState(new FleeState(Fsm, this));
-    }
-
-    /// <summary>
-    /// 重置闲置跳跃计时器和标记（每次进入闲置时调用）。
-    /// </summary>
-    private void ResetIdleHopTimer()
-    {
-        _hasIdleHopped = false;
-        _nextIdleHopTime = Time.time + Random.Range(_idleHopIntervalMin, _idleHopIntervalMax);
-    }
-
-    /// <summary>
-    /// 闲置时的随机小跳。由 IdleState 每帧回调触发。每次闲置期只跳一次。
-    /// </summary>
-    private void TryIdleHop()
-    {
-        if (_hasIdleHopped || !IsGrounded)
-            return;
-
-        if (Time.time < _nextIdleHopTime)
-            return;
-
-        // 随机方向小幅跳跃
-        float direction = Random.value < 0.5f ? -1f : 1f;
-        Rb.velocity = new Vector2(direction * _idleHopSpeed, _idleHopForce);
-
-        if (SpriteRenderer != null)
-            SpriteRenderer.flipX = direction < 0;
-
-        PlayAnimation("Jump");
-        _hasIdleHopped = true;
-
-        // 跳完后切回 Idle 动画，防止 AnimState 卡在 Jump
-        StartCoroutine(ResetToIdleAnimation());
-    }
-
-    /// <summary>
-    /// 等待落地后切回 Idle 动画，保证空中全程显示跳跃动画。
-    /// </summary>
-    private System.Collections.IEnumerator ResetToIdleAnimation()
-    {
-        // 等青蛙落地再切动画
-        while (!IsGrounded)
-            yield return null;
-
-        if (Fsm.CurrentStateType == typeof(IdleState))
-            PlayAnimation("Idle");
     }
 
 #if UNITY_EDITOR
