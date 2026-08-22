@@ -312,7 +312,7 @@ public class SlimeForm : BaseForm
         rb.gravityScale = 0f;
     }
 
-    private void ExitWallCling()
+    public void ExitWallCling()
     {
         _staminaExhaustedTime = -1f;
         _wallClingExitTime = Time.time;

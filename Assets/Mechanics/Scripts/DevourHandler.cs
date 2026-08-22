@@ -177,7 +177,6 @@ public class DevourHandler : MonoBehaviour
     private void TryHandleDevourInput()
     {
         if (_baseForm.CurrentState == ActionState.SpecialAction) return;
-        if (_baseForm.CurrentState == ActionState.WallCling) return;
         if (_isPouncing) return;
         if (_devourSequenceRunning) return;
         if (_heldObject != null) return;
@@ -185,6 +184,10 @@ public class DevourHandler : MonoBehaviour
 
         IDevourable target = FindNearestDevourable();
         if (target == null) return;
+
+        // 贴墙吸附时先退出贴墙再扑出，否则无法吞噬贴在墙上的可吞噬物（如 HeavyStone）
+        if (_baseForm.CurrentState == ActionState.WallCling)
+            _slimeForm.ExitWallCling();
 
         _currentTarget = target;
         _currentTarget.IsTargeted = true;
