@@ -32,6 +32,17 @@ public static class MockEventCenter
         OnFormChanged?.Invoke(formType);
     }
 
+    /// <summary>
+    /// 玩家是否持有“可主动吐出”的物体（false=未持有或不可主动吐出）。
+    /// 由 DevourHandler 在持有状态变化后广播。
+    /// </summary>
+    public static event Action<bool> OnHeldObjectChanged;
+
+    public static void TriggerHeldObjectChanged(bool canVoluntarySpit)
+    {
+        OnHeldObjectChanged?.Invoke(canVoluntarySpit);
+    }
+
     public static event Action<int, int> OnCheckPlayerHP;
 
     public static void TriggerCheckPlayerHP(int currentHP, int maxHP)
