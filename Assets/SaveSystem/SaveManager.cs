@@ -34,9 +34,6 @@ public class SaveManager : MonoBehaviour
             Instance = this;
             DontDestroyOnLoad(gameObject);
             SceneManager.sceneLoaded += OnSceneLoaded;
-
-            // ===== 新增：订阅玩家死亡事件 =====
-            MockEventCenter.OnPlayerDeath += HandlePlayerDeath;
         }
         else
         {
@@ -44,19 +41,11 @@ public class SaveManager : MonoBehaviour
         }
     }
 
-    // ===== 新增：玩家死亡处理函数 =====
-    private void HandlePlayerDeath()
-    {
-        Debug.Log("玩家死亡，触发读档");
-        LoadAndApplySave();
-    }
-
     private void OnDestroy()
     {
         if (Instance == this)
           {
             SceneManager.sceneLoaded -= OnSceneLoaded;
-            MockEventCenter.OnPlayerDeath -= HandlePlayerDeath;
           }
     }
 
