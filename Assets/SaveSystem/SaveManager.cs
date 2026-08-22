@@ -305,6 +305,10 @@ public class SaveManager : MonoBehaviour
             _screenshotCoroutine = null;
         }
 
+        // 删档同时清空记忆碎片，保持单一存档一致性
+        if (MemoryCollectionManager.Instance != null)
+            MemoryCollectionManager.Instance.Reset();
+
         try
         {
             if (File.Exists(SavePath))
@@ -479,6 +483,11 @@ public class SaveManager : MonoBehaviour
             Debug.LogWarning("未找到 CoinManager，金币使用默认值");
         }
 
+        // ===== 4. 获取记忆碎片 =====
+        data.memoryFragments = MemoryCollectionManager.Instance != null
+            ? MemoryCollectionManager.Instance.GetCollectedList()
+            : new List<string>();
+
         return data;
     }
 
@@ -555,6 +564,13 @@ public class SaveManager : MonoBehaviour
             hp.Heal(3);
             hp.SetInvincible(1f);
             Debug.Log("生命值已恢复至3颗心，给予1秒无敌");
+        }
+
+        // ===== 7. 恢复记忆碎片 =====
+        if (MemoryCollectionManager.Instance != null)
+        {
+            MemoryCollectionManager.Instance.RestoreCollected(data.memoryFragments);
+            Debug.Log($"恢复记忆碎片：{data.memoryFragments?.Count ?? 0} 个");
         }
     }
 

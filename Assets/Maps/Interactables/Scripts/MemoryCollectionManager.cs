@@ -7,16 +7,14 @@ using UnityEngine.UI;
 public class MemoryCollectionManager : MonoBehaviour
 {
     public static MemoryCollectionManager Instance;
-    private HashSet<string> CollectedIDs = new HashSet<string>();
-    private const string SAVE_KEY = "CollectedMemoryIDs";
+    private readonly HashSet<string> CollectedIDs = new HashSet<string>();
+
     void Awake()
     {
-        //Reset();
         if (Instance == null)
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
-            LoadData();
         }
         else
             Destroy(gameObject);
@@ -30,7 +28,6 @@ public class MemoryCollectionManager : MonoBehaviour
         }
         CollectedIDs.Add(id);
         Debug.Log($" 收集到: ID: {id}");
-        SaveData();
     }
     public bool IsMemoryCollected(string memoryID)
     {
@@ -39,34 +36,20 @@ public class MemoryCollectionManager : MonoBehaviour
     public void Reset()
     {
         CollectedIDs.Clear();
-        SaveData();
     }
     public List<string> GetCollectedList()
     {
         return new List<string>(CollectedIDs);
     }
-    private void SaveData()
+    // 从存档恢复已收集的记忆碎片（读档时由 SaveManager.ApplySaveData 调用）
+    public void RestoreCollected(IEnumerable<string> ids)
     {
-        string data = string.Join(",", CollectedIDs);
-        PlayerPrefs.SetString(SAVE_KEY, data);
-        PlayerPrefs.Save();
-        // Debug.Log("数据已保存");
-    }
-    private void LoadData()
-    {
-        if (PlayerPrefs.HasKey(SAVE_KEY))
+        CollectedIDs.Clear();
+        if (ids == null) return;
+        foreach (string id in ids)
         {
-            string data = PlayerPrefs.GetString(SAVE_KEY);
-            if (!string.IsNullOrEmpty(data))
-            {
-                string[] ids = data.Split(',');
-                foreach (string id in ids)
-                {
-                    if (!string.IsNullOrEmpty(id))
-                        CollectedIDs.Add(id);
-                }
-                //Debug.Log($"加载了 {CollectedIDs.Count} 个收集项");
-            }
+            if (!string.IsNullOrEmpty(id))
+                CollectedIDs.Add(id);
         }
     }
 }

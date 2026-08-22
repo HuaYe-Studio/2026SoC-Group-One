@@ -23,6 +23,9 @@ public class SaveData
     public int coinCount;
     public int coinAccumulatedCount;
 
+    // ---------- 5. 记忆碎片 ----------
+    public List<string> memoryFragments;
+
     // ---------- 辅助方法 ----------
     public void SetSavePointPosition(Vector2 pos)
     {
