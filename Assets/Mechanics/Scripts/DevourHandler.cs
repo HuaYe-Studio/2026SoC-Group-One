@@ -101,6 +101,7 @@ public class DevourHandler : MonoBehaviour
         _devourSequenceRunning = false;
         _devourInitiatedSwitchPending = false;
         _currentTarget = null;
+        MockEventCenter.TriggerHeldObjectChanged(false);
     }
 
     private void Update()
@@ -231,6 +232,8 @@ public class DevourHandler : MonoBehaviour
 
         if (holdable is MonoBehaviour)
             MockEventCenter.TriggerDevourableExitRange(holdable);
+
+        MockEventCenter.TriggerHeldObjectChanged(false);
     }
 
     private void TrySpitOutHeldObject()
@@ -422,6 +425,10 @@ public class DevourHandler : MonoBehaviour
         _currentTarget = null;
         _cooldownEndTime = Time.time + cooldownSeconds;
         _devourSequenceRunning = false;
+
+        // 吞噬演出全部结束后，再广播当前持有状态（仅持有物会显示吐出提示）
+        if (isHoldable && _heldObject != null)
+            MockEventCenter.TriggerHeldObjectChanged(_heldObject.CanVoluntarySpit);
 
         // ── Deferred form switch (first-time devour only) ──
         if (isFirstDevour && devAnimal != null)
