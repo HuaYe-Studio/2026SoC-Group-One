@@ -163,6 +163,29 @@ public class SaveManager : MonoBehaviour
 
         _pendingSaveData = data;
         Time.timeScale = 1f; // 读档面板把游戏暂停了，加载存档场景前恢复时间
+
+        // 优先通过场景转场加载（播放开门/加载动画），与主菜单开始游戏一致
+        if (SceneTransition.Instance != null && PlayerInputReader.HasInstance)
+        {
+            try
+            {
+                SceneTransition.Instance.GoToScene(data.sceneName);
+                Debug.Log($"正在通过场景转场加载存档场景：{data.sceneName}");
+                return true;
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"场景转场加载存档失败：{e.Message}，改用无转场回退");
+            }
+        }
+
+        // 无转场回退
+        Debug.LogWarning("SceneTransition 缺失或不可用，使用无转场回退加载存档场景");
+        if (PlayerInputReader.HasInstance)
+        {
+            PlayerInputReader.Instance.OnUICancelTrigger();
+            PlayerInputReader.Instance.SwitchToGameplay();
+        }
         SceneManager.LoadScene(data.sceneName);
         Debug.Log($"正在加载存档场景：{data.sceneName}，完成后将恢复存档数据");
 
