@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 6464180581974310331}
   - component: {fileID: 365095310744916715}
   - component: {fileID: 4671543279699651032}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: PF_Mech_Axle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -74,8 +74,8 @@ SpriteRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
+  m_SortingLayerID: -1303260157
+  m_SortingLayer: 5
   m_SortingOrder: 0
   m_Sprite: {fileID: 21300000, guid: a92b55b2f0ec49c45ab9472de04b3885, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
