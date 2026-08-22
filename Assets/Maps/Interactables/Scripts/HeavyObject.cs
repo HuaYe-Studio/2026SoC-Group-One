@@ -22,7 +22,14 @@ public class HeavyObject : MonoBehaviour, IHeavy
         // 导致 SignalSource.GetComponentInParent 检测不到
         PlayerController pc = FindObjectOfType<PlayerController>();
         if (pc != null && pc.GetComponent<HeavyObject>() == null)
+        {
             pc.gameObject.AddComponent<HeavyObject>();
+            Debug.Log($"[HeavyObject] SetPlayerHeavy: added to {pc.name}, IsHeavy={pc.GetComponent<HeavyObject>().IsHeavy}");
+        }
+        else
+        {
+            Debug.Log($"[HeavyObject] SetPlayerHeavy: pc={pc?.name}, already={pc?.GetComponent<HeavyObject>()?.IsHeavy}");
+        }
     }
     public void RemovePlayerHeavy()
     {
