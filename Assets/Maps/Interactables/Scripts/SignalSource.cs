@@ -65,7 +65,9 @@ public class SignalSource : MonoBehaviour
 
         for (int i = 0; i < hitCount; i++)
         {
-            IHeavy heavy = _hitBuffer[i].GetComponent<IHeavy>();
+            // GetComponentInParent：IHeavy 可能挂在玩家根节点上（持有 HeavyStone 时
+            // SetPlayerHeavy 加到 "Player" 根），而碰撞体在形态子物体上
+            IHeavy heavy = _hitBuffer[i].GetComponentInParent<IHeavy>();
             if (heavy != null && heavy.IsHeavy)
             {
                 return true;
@@ -81,7 +83,7 @@ public class SignalSource : MonoBehaviour
 
         for (int i = 0; i < hitCount; i++)
         {
-            IHeavy heavy = _hitBuffer[i].GetComponent<IHeavy>();
+            IHeavy heavy = _hitBuffer[i].GetComponentInParent<IHeavy>();
             if (heavy != null && heavy.IsHeavy)
             {
                 return true;
