@@ -21,7 +21,7 @@ public class LoadPanelController : MonoBehaviour
     [SerializeField] private TMPro.TMP_Text _formText;//形态进度文本
     [SerializeField] private TMPro.TMP_Text _infoText;//存档信息文本
 
-    private const int TotalFormCount = 8;
+    private const int TotalFormCount = 4;
     private Texture2D _previewTexture;
     private Sprite _previewSprite;
 
