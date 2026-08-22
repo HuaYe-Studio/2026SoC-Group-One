@@ -26,6 +26,10 @@ public class HoldableObject : DevourableObject, IHoldable
         hasBeenDevoured = true;
         onEquipEffect?.Invoke();
 
+        // 兜底：即使 onEquipEffect 的 UnityEvent 未触发（如 m_Mode 配置问题），
+        // 持有 HeavyObject 的持有物（如 HeavyStone）也要让玩家变重
+        GetComponent<HeavyObject>()?.SetPlayerHeavy();
+
         if (statModifier.HasAnyEffect && playerController?.ActiveForm != null)
             playerController.ActiveForm.ApplyHoldableModifier(statModifier);
     }
@@ -34,6 +38,8 @@ public class HoldableObject : DevourableObject, IHoldable
     {
         _isHeld = false;
         onUnequipEffect?.Invoke();
+
+        GetComponent<HeavyObject>()?.RemovePlayerHeavy();
 
         if (statModifier.HasAnyEffect && playerController?.ActiveForm != null)
             playerController.ActiveForm.RemoveHoldableModifier(statModifier);

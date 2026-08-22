@@ -101,7 +101,7 @@ MonoBehaviour:
   isActive: 0
   detectHeavyObject: 1
   detectionShape: 0
-  detectionSize: {x: 0.9, y: 0.3}
+  detectionSize: {x: 1.5, y: 2.5}
   detectionRadius: 1.5
   detectionLayer:
     serializedVersion: 2
