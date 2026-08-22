@@ -447,6 +447,19 @@ public class SaveManager : MonoBehaviour
             Debug.LogWarning("未找到 ElementAbilityManager，元素能力使用空列表");
         }
 
+        // ===== 3. 获取金币 =====
+        if (CoinManager.Instance != null)
+        {
+            data.coinCount = CoinManager.Instance.GetCoinCount();
+            data.coinAccumulatedCount = CoinManager.Instance.GetCoinAccumulatedCount();
+        }
+        else
+        {
+            data.coinCount = 0;
+            data.coinAccumulatedCount = 0;
+            Debug.LogWarning("未找到 CoinManager，金币使用默认值");
+        }
+
         return data;
     }
 
@@ -505,7 +518,18 @@ public class SaveManager : MonoBehaviour
             Debug.LogWarning("未找到 ElementAbilityManager，元素恢复失败");
         }
 
-        // ===== 5. 恢复生命值（固定为3颗心） =====
+        // ===== 5. 恢复金币 =====
+        if (CoinManager.Instance != null)
+        {
+            CoinManager.Instance.RestoreCoinData(data.coinCount, data.coinAccumulatedCount);
+            Debug.Log($"恢复金币：当前={data.coinCount}，累计={data.coinAccumulatedCount}");
+        }
+        else
+        {
+            Debug.LogWarning("未找到 CoinManager，金币恢复失败");
+        }
+
+        // ===== 6. 恢复生命值（固定为3颗心） =====
         PlayerHP hp = player.GetComponent<PlayerHP>();
         if (hp != null)
         {

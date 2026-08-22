@@ -19,6 +19,10 @@ public class SaveData
     // ---------- 3. 元素能力 ----------
     public List<string> unlockedElements;
 
+    // ---------- 4. 金币 ----------
+    public int coinCount;
+    public int coinAccumulatedCount;
+
     // ---------- 辅助方法 ----------
     public void SetSavePointPosition(Vector2 pos)
     {
