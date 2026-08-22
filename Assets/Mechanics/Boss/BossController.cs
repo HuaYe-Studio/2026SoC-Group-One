@@ -238,11 +238,13 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
 
         if (_player == null)
         {
-            GameObject playerGo = GameObject.FindGameObjectWithTag("Player");
-            if (playerGo != null)
+            // 项目里多个子物体（形态）都带 "Player" 标签，FindGameObjectWithTag 会返回非根节点（形态子物体），
+            // 而 PlayerHP 挂在根节点（与 PlayerController 同物体）上。与 HeavyObject 一致，用 PlayerController 定位根节点。
+            PlayerController pc = FindObjectOfType<PlayerController>();
+            if (pc != null)
             {
-                _player = playerGo.transform;
-                _playerHP = playerGo.GetComponent<PlayerHP>();
+                _player = pc.transform;
+                _playerHP = pc.GetComponent<PlayerHP>();
             }
         }
 

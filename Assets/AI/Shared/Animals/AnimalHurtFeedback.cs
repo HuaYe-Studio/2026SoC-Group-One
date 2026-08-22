@@ -53,6 +53,9 @@ public class AnimalHurtFeedback : MonoBehaviour
     /// <summary>受伤横向逃离速度（米/秒）。</summary>
     public float HurtFleeSpeed => _hurtFleeSpeed;
 
+    /// <summary>设置最大生命值；0=禁用扣血（受伤不扣血、永不因普通伤害死亡，其余无敌/记忆/弹开/闪烁照旧）。</summary>
+    public void SetMaxHealth(int maxHealth) => _maxHealth = Mathf.Max(0, maxHealth);
+
     private void Awake()
     {
         _animal = GetComponent<AnimalBase>();

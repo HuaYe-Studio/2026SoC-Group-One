@@ -120,6 +120,7 @@ public class FrogBT : MonoBehaviour
         _hurtFeedback = GetComponent<AnimalHurtFeedback>();
         if (_hurtFeedback == null)
             _hurtFeedback = gameObject.AddComponent<AnimalHurtFeedback>();
+        _hurtFeedback.SetMaxHealth(0); // 青蛙：禁用扣血（受伤不扣血、不死亡），保留无敌/记忆/弹开/闪烁
 
         // MC 式软推开：同类重叠时沿最短穿透轴物理推开（仅水平，横板标准），未挂则运行时补挂
         if (GetComponent<AnimalSoftPush>() == null)
