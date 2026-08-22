@@ -21,9 +21,9 @@ public class DevourHandler : MonoBehaviour
     [SerializeField] private float animalFlightSpeed = 5f;
 
     [Header("Audio")]
-    [SerializeField] private AudioClip pounceClip;
-    [SerializeField] private AudioClip devourClip;
-    [SerializeField] private AudioClip spitClip;
+    [SerializeField] private string pounceSfxKey = "pounce";
+    [SerializeField] private string devourSfxKey = "devour";
+    [SerializeField] private string spitSfxKey = "spit";
 
     private SlimeForm _slimeForm;
     private BaseForm _baseForm;
@@ -224,7 +224,7 @@ public class DevourHandler : MonoBehaviour
         holdable.PlaceInWorld(spitPos);
         holdable.OnUnequip(_playerController);
 
-        AudioManager.Instance?.PlaySfx(spitClip);
+        AudioManager.Instance?.PlaySfxByKey(spitSfxKey);
 
         if (holdable is MonoBehaviour)
             MockEventCenter.TriggerDevourableExitRange(holdable);
@@ -283,7 +283,7 @@ public class DevourHandler : MonoBehaviour
 
         SetPounceCollisionIgnore(true);
 
-        AudioManager.Instance?.PlaySfx(pounceClip);
+        AudioManager.Instance?.PlaySfxByKey(pounceSfxKey);
     }
 
     private void CancelPounce()
@@ -371,7 +371,7 @@ public class DevourHandler : MonoBehaviour
         else
             yield return new WaitForSecondsRealtime(0.4f);
 
-        AudioManager.Instance?.PlaySfx(devourClip);
+        AudioManager.Instance?.PlaySfxByKey(devourSfxKey);
 
         if (_effectPlayer != null)
             yield return _effectPlayer.PlayDevour(target);
@@ -382,7 +382,7 @@ public class DevourHandler : MonoBehaviour
         if (!isHoldable)
         {
             target.ExecuteDevourOutcome(_playerController);
-            AudioManager.Instance?.PlaySfx(spitClip);
+            AudioManager.Instance?.PlaySfxByKey(spitSfxKey);
             target.OnBeingSpitOut(spitDirection);
         }
         else

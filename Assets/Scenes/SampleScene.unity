@@ -2051,6 +2051,43 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   bgmSource: {fileID: 519420035}
+  bgmSourceSecondary: {fileID: 0}
+  library: {fileID: 11400000, guid: e8a9f303d107fe94e85bd6dc129cbde0, type: 2}
+  mixer: {fileID: 24100000, guid: 76b2979416aaaea45a1ac257e783bbbd, type: 2}
+  bgmGroup: {fileID: 5072601794937784794, guid: 76b2979416aaaea45a1ac257e783bbbd, type: 2}
+  sfxGroup: {fileID: -957184350001987912, guid: 76b2979416aaaea45a1ac257e783bbbd, type: 2}
+  uiGroup: {fileID: 742123984092588714, guid: 76b2979416aaaea45a1ac257e783bbbd, type: 2}
+  bgmVolume: 1
+  sfxVolume: 1
+  uiVolume: 1
+  defaultMaxDistance: 18
+  falloffCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: -1
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: -1
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  bgmVolumeParam: BGMVolume
+  sfxVolumeParam: SFXVolume
+  uiVolumeParam: UIVolume
 --- !u!4 &1308031375
 Transform:
   m_ObjectHideFlags: 0

@@ -5,6 +5,8 @@ using UnityEngine;
 
 public class ElementAbilityManager : MonoBehaviour
 {
+    public static ElementAbilityManager Instance { get; private set; }
+
     [Serializable]
     public struct ElementAbilityDef
     {
@@ -19,6 +21,7 @@ public class ElementAbilityManager : MonoBehaviour
 
     private void Awake()
     {
+        Instance = this;
         _playerController = GetComponent<PlayerController>();
     }
 

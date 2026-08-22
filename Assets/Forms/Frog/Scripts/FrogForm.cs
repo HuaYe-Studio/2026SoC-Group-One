@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -37,8 +38,8 @@ public class FrogForm : BaseForm
     [SerializeField] private float airControlSpeed = 4f;
 
     [Header("Audio")]
-    [SerializeField] private AudioClip jumpClip;
-    [SerializeField] private AudioClip landClip;
+    [SerializeField] private string jumpSfxKey = "jump";
+    [SerializeField] private string landSfxKey = "land";
 
     private static readonly int IsWallJumpHash = Animator.StringToHash("IsWallJump");
     private static readonly int IsChargingHash = Animator.StringToHash("IsCharging");
@@ -54,6 +55,8 @@ public class FrogForm : BaseForm
     private float _chargeProgress;
     private float _coyoteTimer;
     private float _jumpBufferTimer;
+
+    public event Action<bool> OnChargeModeChanged;
 
     public bool IsChargeMode => _chargeModeEnabled;
     public float ChargeProgress => _chargeProgress;
@@ -102,8 +105,12 @@ public class FrogForm : BaseForm
 
     private void OnToggleCharge(InputAction.CallbackContext ctx)
     {
+        if (Time.timeScale == 0f)
+            return;
+
         _chargeModeEnabled = !_chargeModeEnabled;
         _chargeProgress = 0f;
+        OnChargeModeChanged?.Invoke(_chargeModeEnabled);
     }
 
     private void Update()
@@ -192,7 +199,7 @@ public class FrogForm : BaseForm
         ignoreGroundUntil = Time.fixedTime + GroundIgnoreAfterJump;
         IsGrounded = false;
 
-        PlaySfx(jumpClip);
+        PlaySfxByKey(jumpSfxKey);
     }
 
     protected override void DoMovement(float horizontal)
@@ -235,7 +242,7 @@ public class FrogForm : BaseForm
         ignoreGroundUntil = Time.fixedTime + GroundIgnoreAfterJump;
         IsGrounded = false;
 
-        PlaySfx(jumpClip);
+        PlaySfxByKey(jumpSfxKey);
     }
 
     private void ApplyJumpCut()
@@ -261,7 +268,7 @@ public class FrogForm : BaseForm
         if (landingThisFrame)
         {
             _ceilingEjectTimer = 0f;
-            PlaySfx(landClip);
+            PlaySfxByKey(landSfxKey);
         }
     }
 
@@ -380,7 +387,7 @@ public class FrogForm : BaseForm
         ignoreGroundUntil = Time.fixedTime + GroundIgnoreAfterJump;
         IsGrounded = false;
 
-        PlaySfx(jumpClip);
+        PlaySfxByKey(jumpSfxKey);
     }
 
     private void SyncAnimator()
