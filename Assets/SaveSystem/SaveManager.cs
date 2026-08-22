@@ -153,11 +153,18 @@ public class SaveManager : MonoBehaviour
             return false ;
         }
 
-        // 有存档的正常读档流程
+        // 有存档的正常读档流程：加载存档里的场景（而非当前所在场景，
+        // 否则从主菜单读档会错误地重载主菜单场景）
+        if (!Application.CanStreamedLevelBeLoaded(data.sceneName))
+        {
+            Debug.LogWarning($"存档场景无效：{data.sceneName}");
+            return false;
+        }
+
         _pendingSaveData = data;
-        string currentScene = SceneManager.GetActiveScene().name;
-        SceneManager.LoadScene(currentScene);
-        Debug.Log($"正在重载场景：{currentScene}，完成后将恢复存档数据");
+        Time.timeScale = 1f; // 读档面板把游戏暂停了，加载存档场景前恢复时间
+        SceneManager.LoadScene(data.sceneName);
+        Debug.Log($"正在加载存档场景：{data.sceneName}，完成后将恢复存档数据");
 
         return true;
     }
