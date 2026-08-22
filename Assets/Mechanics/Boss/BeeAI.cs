@@ -313,6 +313,9 @@ public class BeeAI : MonoBehaviour
 
     private void OnTargetWeakened()
     {
+        // 守护态蜜蜂不响应「目标受创」飞散——只有蜂巢被毁、转入攻击态的蜜蜂才会被目标受创驱散。
+        // 否则一个蜂巢被毁后，攻击 BOSS 导致段血打空，会连带其他仍在守护的蜂巢蜜蜂一起飞散消失。
+        if (!_hiveDestroyed) return;
         _scatterRequested = true;
         if (_debugLog)
             Debug.Log($"[BeeAI][状态] {name} → 飞散（目标受创到阈值）", this);
@@ -540,18 +543,27 @@ public class BeeAI : MonoBehaviour
         if (_guardPoints.Count == 0)
             _guardPoints.Add(new Vector2(_hiveAnchor.position.x, minY));
 
-        // 点数不足（泊松盘在区域/间距约束下没生成满）→ 用等角均布圆周点补足到 _guardPointCount。
+        // 点数不足（泊松盘在区域/间距约束下没生成满）→ 用随机采样补足到 _guardPointCount。
         // 保证"点数 ≥ 蜜蜂数"，认领机制才有足够点可分，不会全部蜜蜂挤同一个点。
+        // 补足点同样排除 Ground 层/墙内的目标点（IsCellFree），落在墙内就换位重新随机生成。
         for (int i = _guardPoints.Count; i < _guardPointCount; i++)
         {
-            float angle = 2f * Mathf.PI * i / _guardPointCount;
-            Vector2 basePos = (Vector2)_hiveAnchor.position +
-                new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * _guardRadius;
-            Vector2 fallback = basePos;
-            if (_guardPointJitter > 0f)
-                fallback += Random.insideUnitCircle * _guardPointJitter;
-            if (fallback.y < minY) continue; // 底部点不再抬升，直接丢弃
-            _guardPoints.Add(fallback);
+            bool placed = false;
+            for (int attempt = 0; attempt < maxAttempts && !placed; attempt++)
+            {
+                float radius = _guardRadius * Mathf.Sqrt(Random.value);
+                float angle = Random.Range(0f, 2f * Mathf.PI);
+                Vector2 candidate = (Vector2)_hiveAnchor.position +
+                    new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
+                if (_guardPointJitter > 0f)
+                    candidate += Random.insideUnitCircle * _guardPointJitter;
+                if (candidate.y < minY) continue; // 底部点不再抬升，直接丢弃
+                if (!IsCellFree(candidate)) continue; // 排除 Ground 层/墙内目标点
+                if (!IsFarFromPlaced(candidate)) continue; // 间距约束
+
+                _guardPoints.Add(candidate);
+                placed = true;
+            }
         }
 
         // 诊断：输出每个巡游点的坐标 + 拒绝原因计数（判断"点没铺满"是区域/网格/间距哪个导致的）。
