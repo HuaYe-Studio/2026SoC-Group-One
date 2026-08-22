@@ -470,7 +470,11 @@ public abstract class BaseForm : MonoBehaviour
         // SubscribeToSlot never warns about unsupported slots for dead bindings.
         if (binding.onAbilityActivated == null || binding.onAbilityActivated.GetPersistentEventCount() == 0) return;
         abilityBindings.Add(binding);
-        if (PlayerInputReader.HasInstance)
+        // Only subscribe immediately while this form's GameObject is active (the current form).
+        // Inactive forms keep the binding in the list and get subscribed by
+        // RegisterAbilityBindings on OnFormActivated, avoiding triggering an inactive
+        // form's ability (e.g. SpitFire armed while restoring elements during a load).
+        if (PlayerInputReader.HasInstance && gameObject.activeInHierarchy)
         {
             System.Action handler = () => binding.onAbilityActivated.Invoke();
             _bindingHandlers[binding] = handler;
