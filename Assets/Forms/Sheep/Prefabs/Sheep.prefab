@@ -82,7 +82,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: 9456c3bcedaafef4a86e6d846fbc90c7, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 5df752847973e3c459c61bd52e43709b, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -156,7 +156,7 @@ BoxCollider2D:
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 0.16, y: 0.16}
+    oldSize: {x: 1, y: 1}
     newSize: {x: 0.16, y: 0.16}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
@@ -220,6 +220,10 @@ MonoBehaviour:
   _groundLayer:
     serializedVersion: 2
     m_Bits: 1
+  _hazardTags:
+  - Spike
+  _hazardCheckDistance: 1.5
+  _hazardCheckHeight: 1
   _fellowRadius: 5
   _fellowLayer:
     serializedVersion: 2
@@ -285,6 +289,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _wanderRange: 5
+  _enableBoids: 1
+  _flockNeighborRadius: 5
+  _flockSeparationRadius: 1.2
+  _separationWeight: 0.8
+  _alignmentWeight: 0.4
+  _cohesionWeight: 0.25
+  _flockMaxSteer: 0.6
   _enableDebugLog: 0
 --- !u!114 &3010035019521355723
 MonoBehaviour:
@@ -298,11 +309,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0f238f6ab76377b479aab3bfe75c9ad1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isInstantKill: 0
   damage: 1
   knockback: {x: 8, y: 4}
   targetLayer:
     serializedVersion: 2
     m_Bits: 64
+  repeatInterval: 0.5
 --- !u!114 &1544250296468739573
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -318,3 +331,4 @@ MonoBehaviour:
   grantedForm: 3
   priority: 0
   destroyAfterDevour: 0
+  devourSound: {fileID: 0}

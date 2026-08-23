@@ -73,11 +73,39 @@ public class DevourHandler : MonoBehaviour
 
     private void OnEnable()
     {
+        ResetDevourState();
+
         if (PlayerInputReader.HasInstance)
         {
             PlayerInputReader.Instance.OnInput_Space += TryHandleDevourInput;
             PlayerInputReader.Instance.OnSpit += TrySpitOutHeldObject;
         }
+    }
+
+    /// <summary>
+    /// 史莱姆重新激活（切回/复活/读档）时，清掉可能残留的吞噬状态，确保吞噬立即可用。
+    /// OnDisable 只重置了部分标志，currentState 与 _heldObject 需在此兜底。
+    /// </summary>
+    private void ResetDevourState()
+    {
+        _isPouncing = false;
+        _devourSequenceRunning = false;
+        _devourInitiatedSwitchPending = false;
+        _cooldownEndTime = 0f;
+
+        if (_currentTarget != null)
+        {
+            _currentTarget.IsTargeted = false;
+            _currentTarget = null;
+        }
+
+        SetPounceCollisionIgnore(false);
+
+        if (_heldObject != null)
+            SpitOutHeldObject();
+
+        if (_baseForm != null)
+            _baseForm.SetActionState(ActionState.Idle);
     }
 
     private void OnDisable()
@@ -144,7 +172,15 @@ public class DevourHandler : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (!_isPouncing || _currentTarget == null) return;
+        if (!_isPouncing) return;
+
+        // Target vanished mid-pounce (e.g. destroyed): cancel so devour isn't stuck
+        // with _isPouncing + SpecialAction until the next form switch.
+        if (_currentTarget == null)
+        {
+            CancelPounce();
+            return;
+        }
 
         if (Time.fixedTime >= _pounceEndTime)
         {
@@ -177,14 +213,15 @@ public class DevourHandler : MonoBehaviour
 
     private void TryHandleDevourInput()
     {
-        if (_baseForm.CurrentState == ActionState.SpecialAction) return;
-        if (_isPouncing) return;
-        if (_devourSequenceRunning) return;
-        if (_heldObject != null) return;
+        // ── TEMP diagnostic: log the persistent blockers that indicate a stuck devour (remove after debugging) ──
+        if (_baseForm.CurrentState == ActionState.SpecialAction) { Debug.LogWarning("[DevourDebug] blocked: currentState=SpecialAction"); return; }
+        if (_isPouncing) { Debug.LogWarning("[DevourDebug] blocked: _isPouncing"); return; }
+        if (_devourSequenceRunning) { Debug.LogWarning("[DevourDebug] blocked: _devourSequenceRunning"); return; }
+        if (_heldObject != null) { Debug.LogWarning($"[DevourDebug] blocked: _heldObject={_heldObject}"); return; }
         if (Time.time < _cooldownEndTime) return;
 
         IDevourable target = FindNearestDevourable();
-        if (target == null) return;
+        if (target == null) { Debug.LogWarning("[DevourDebug] blocked: no devourable target in range"); return; }
 
         // 贴墙吸附时先退出贴墙再扑出，否则无法吞噬贴在墙上的可吞噬物（如 HeavyStone）
         if (_baseForm.CurrentState == ActionState.WallCling)
@@ -248,7 +285,11 @@ public class DevourHandler : MonoBehaviour
     {
         Vector2 origin = transform.root.position;
         int count = Physics2D.OverlapCircleNonAlloc(origin, detectionRadius, _overlapBuffer, devourableLayer);
-        if (count == 0) return null;
+        if (count == 0)
+        {
+            Debug.LogWarning("[DevourDebug] FindNearest: no colliders in range on devourableLayer");
+            return null;
+        }
 
         IDevourable best = null;
         float bestPriority = float.MinValue;
@@ -258,7 +299,12 @@ public class DevourHandler : MonoBehaviour
         {
             IDevourable devourable = GetDevourable(_overlapBuffer[i]);
             if (devourable == null) continue;
-            if (!devourable.CanBeDevoured(_playerController)) continue;
+            if (!devourable.CanBeDevoured(_playerController))
+            {
+                if (devourable is DevourableAnimal da && da.IsInDevourSequence)
+                    Debug.LogWarning($"[DevourDebug] FindNearest: skipped {da.name} (IsInDevourSequence stuck?)");
+                continue;
+            }
 
             float dSq = ((Vector2)devourable.Transform.position - origin).sqrMagnitude;
             if (devourable.Priority > bestPriority ||
@@ -270,6 +316,8 @@ public class DevourHandler : MonoBehaviour
             }
         }
 
+        if (best == null)
+            Debug.LogWarning("[DevourDebug] FindNearest: targets present but none devourable");
         return best;
     }
 
@@ -351,92 +399,117 @@ public class DevourHandler : MonoBehaviour
         _rb.velocity = Vector2.zero;
         SetPounceCollisionIgnore(false); // restore before target hides, else it would clip through the player when spat out
 
-        Vector2 pointA = _pounceStartPos;
-        Vector2 pointB = target.Transform.position;
-        Vector2 spitDirection = (pointA - pointB).normalized;
-
-        MonoBehaviour targetMb = target as MonoBehaviour;
-
-        bool isHoldable = target is IHoldable;
-        DevourableAnimal devAnimal = target as DevourableAnimal;
-        bool isFirstDevour = !isHoldable && devAnimal != null
-            && !_playerController.IsFormUnlocked(devAnimal.GrantedForm);
-
-        yield return null;
-
-        // ── Engulf: time freeze + DOTween ──
-        target.OnBeingDevoured();
-
-        if (_baseForm.Animator != null)
-            _baseForm.Animator.updateMode = AnimatorUpdateMode.UnscaledTime;
-
-        Time.timeScale = 0f;
-
-        if (_effectPlayer != null)
-            yield return _effectPlayer.PlayZoomIn(target.Transform.position);
-        else
-            yield return new WaitForSecondsRealtime(0.4f);
-
-        AudioManager.Instance?.PlaySfxByKey(devourSfxKey);
-
-        if (_effectPlayer != null)
-            yield return _effectPlayer.PlayDevour(target);
-        else
-            yield return new WaitForSecondsRealtime(1.0f);
-
-        // ── Outcome (during freeze, unlock only — no form switch) ──
-        if (!isHoldable)
+        try
         {
-            target.ExecuteDevourOutcome(_playerController);
-            AudioManager.Instance?.PlaySfxByKey(spitSfxKey);
-            target.OnBeingSpitOut(spitDirection);
+            Vector2 pointA = _pounceStartPos;
+            Vector2 pointB = target.Transform.position;
+            Vector2 spitDirection = (pointA - pointB).normalized;
+
+            MonoBehaviour targetMb = target as MonoBehaviour;
+
+            bool isHoldable = target is IHoldable;
+            DevourableAnimal devAnimal = target as DevourableAnimal;
+            bool isFirstDevour = !isHoldable && devAnimal != null
+                && !_playerController.IsFormUnlocked(devAnimal.GrantedForm);
+
+            yield return null;
+
+            // ── Engulf: time freeze + DOTween ──
+            target.OnBeingDevoured();
+
+            if (_baseForm.Animator != null)
+                _baseForm.Animator.updateMode = AnimatorUpdateMode.UnscaledTime;
+
+            Time.timeScale = 0f;
+
+            if (_effectPlayer != null)
+                yield return _effectPlayer.PlayZoomIn(target.Transform.position);
+            else
+                yield return new WaitForSecondsRealtime(0.4f);
+
+            AudioManager.Instance?.PlaySfxByKey(devourSfxKey);
+
+            if (_effectPlayer != null)
+                yield return _effectPlayer.PlayDevour(target);
+            else
+                yield return new WaitForSecondsRealtime(1.0f);
+
+            // ── Outcome (during freeze, unlock only — no form switch) ──
+            if (!isHoldable)
+            {
+                target.ExecuteDevourOutcome(_playerController);
+                AudioManager.Instance?.PlaySfxByKey(spitSfxKey);
+                target.OnBeingSpitOut(spitDirection);
+            }
+            else
+            {
+                IHoldable holdable = (IHoldable)target;
+                holdable.OnEquip(_playerController);
+                _heldObject = holdable;
+                targetMb?.gameObject.SetActive(false);
+            }
+
+            if (_effectPlayer != null)
+                yield return _effectPlayer.PlayZoomOut();
+            else
+                yield return new WaitForSecondsRealtime(0.4f);
+
+            Time.timeScale = 1f;
+
+            if (_baseForm.Animator != null)
+                _baseForm.Animator.updateMode = AnimatorUpdateMode.Normal;
+
+            // ── Spit animal in BA direction then decelerate + stun (on animal, survives form switch) ──
+            if (!isHoldable && devAnimal != null)
+            {
+                devAnimal.LaunchAndStun(spitDirection, animalFlightSpeed);
+            }
+
+            // ── Cleanup ──
+            _baseForm.SetAnimatorBool(IsSwoopingHash, false);
+            if (!isHoldable && target.DestroyAfterDevour && targetMb != null)
+                Destroy(targetMb.gameObject);
+
+            _baseForm.SetActionState(ActionState.Idle);
+            target.IsTargeted = false;
+            _currentTarget = null;
+            _cooldownEndTime = Time.time + cooldownSeconds;
+            _devourSequenceRunning = false;
+
+            // 吞噬演出全部结束后，再广播当前持有状态（仅持有物会显示吐出提示）
+            if (isHoldable && _heldObject != null)
+                MockEventCenter.TriggerHeldObjectChanged(_heldObject.CanVoluntarySpit);
+
+            // ── Deferred form switch (first-time devour only) ──
+            if (isFirstDevour && devAnimal != null)
+            {
+                _devourInitiatedSwitchPending = true;
+                _deferredFormType = devAnimal.GrantedForm;
+                _playerController.SwitchToFormByType(_deferredFormType);
+                _devourInitiatedSwitchPending = false;
+            }
         }
-        else
+        finally
         {
-            IHoldable holdable = (IHoldable)target;
-            holdable.OnEquip(_playerController);
-            _heldObject = holdable;
-            targetMb?.gameObject.SetActive(false);
-        }
-
-        if (_effectPlayer != null)
-            yield return _effectPlayer.PlayZoomOut();
-        else
-            yield return new WaitForSecondsRealtime(0.4f);
-
-        Time.timeScale = 1f;
-
-        if (_baseForm.Animator != null)
-            _baseForm.Animator.updateMode = AnimatorUpdateMode.Normal;
-
-        // ── Spit animal in BA direction then decelerate + stun (on animal, survives form switch) ──
-        if (!isHoldable && devAnimal != null)
-        {
-            devAnimal.LaunchAndStun(spitDirection, animalFlightSpeed);
-        }
-
-        // ── Cleanup ──
-        _baseForm.SetAnimatorBool(IsSwoopingHash, false);
-        if (!isHoldable && target.DestroyAfterDevour && targetMb != null)
-            Destroy(targetMb.gameObject);
-
-        _baseForm.SetActionState(ActionState.Idle);
-        target.IsTargeted = false;
-        _currentTarget = null;
-        _cooldownEndTime = Time.time + cooldownSeconds;
-        _devourSequenceRunning = false;
-
-        // 吞噬演出全部结束后，再广播当前持有状态（仅持有物会显示吐出提示）
-        if (isHoldable && _heldObject != null)
-            MockEventCenter.TriggerHeldObjectChanged(_heldObject.CanVoluntarySpit);
-
-        // ── Deferred form switch (first-time devour only) ──
-        if (isFirstDevour && devAnimal != null)
-        {
-            _devourInitiatedSwitchPending = true;
-            _deferredFormType = devAnimal.GrantedForm;
-            _playerController.SwitchToFormByType(_deferredFormType);
+            // Guaranteed cleanup: even if an exception kills this coroutine mid-sequence
+            // (which used to leave _devourSequenceRunning true and freeze devour until the
+            // next form switch), the system always returns to a devourable baseline.
+            Time.timeScale = 1f;
+            if (_baseForm != null)
+            {
+                if (_baseForm.Animator != null)
+                    _baseForm.Animator.updateMode = AnimatorUpdateMode.Normal;
+                _baseForm.SetActionState(ActionState.Idle);
+            }
+            SetPounceCollisionIgnore(false);
+            _isPouncing = false;
+            _devourSequenceRunning = false;
             _devourInitiatedSwitchPending = false;
+            if (_currentTarget != null)
+            {
+                _currentTarget.IsTargeted = false;
+                _currentTarget = null;
+            }
         }
     }
 
