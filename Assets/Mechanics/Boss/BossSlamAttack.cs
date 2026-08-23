@@ -19,6 +19,7 @@ public class BossSlamAttack : BossAttack
         canDestroyHive = true;
         followDuration = 1f;
         lockDuration = 0.5f;
+        attackSfxKey = "boss_slam";
     }
 
     public override IEnumerator Execute(BossAttackContext ctx)
@@ -70,6 +71,7 @@ public class BossSlamAttack : BossAttack
 
         // 4. 命中：BossController 统一处理玩家伤害 + 蜂巢破坏
         ctx.onHit?.Invoke(hitPoint);
+        PlayAttackSfx();
 
         if (telegraph != null)
             telegraph.Hide();

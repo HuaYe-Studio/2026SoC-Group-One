@@ -903,6 +903,7 @@ GameObject:
   - component: {fileID: 8084950948594842238}
   - component: {fileID: 4925435840266706490}
   - component: {fileID: 714463921836420346}
+  - component: {fileID: 8786330205599125949}
   m_Layer: 6
   m_Name: Player
   m_TagString: Player
@@ -1058,3 +1059,16 @@ MonoBehaviour:
               m_StringArgument: 
               m_BoolArgument: 0
             m_CallState: 2
+--- !u!114 &8786330205599125949
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6837292219011752717}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 10efb9006f136e648a4a94efcff4b918, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  deathSfxKey: player_death
