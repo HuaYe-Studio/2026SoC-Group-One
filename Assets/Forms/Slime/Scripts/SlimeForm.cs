@@ -131,7 +131,19 @@ public class SlimeForm : BaseForm
         StopSpitFire();
         if (currentState == ActionState.WallCling)
             ExitWallCling();
+        // 死亡时清理吞噬状态（吐出持有物/中断扑出与吞噬流程），否则残留的
+        // _heldObject 或进行中的流程会让复活后吞噬失效（只有切形态才能恢复）。
+        if (devourHandler != null)
+            devourHandler.CancelAll();
         base.Die();
+    }
+
+    public override void Revive()
+    {
+        base.Revive();
+        // 复活时同样兜底清理吞噬状态，覆盖 R 键调试复活等不走 Die 的路径。
+        if (devourHandler != null)
+            devourHandler.CancelAll();
     }
 
     public void SpitFire()

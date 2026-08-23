@@ -213,14 +213,15 @@ public class DevourHandler : MonoBehaviour
 
     private void TryHandleDevourInput()
     {
-        if (_baseForm.CurrentState == ActionState.SpecialAction) return;
-        if (_isPouncing) return;
-        if (_devourSequenceRunning) return;
-        if (_heldObject != null) return;
+        // ── TEMP diagnostic: log the persistent blockers that indicate a stuck devour (remove after debugging) ──
+        if (_baseForm.CurrentState == ActionState.SpecialAction) { Debug.LogWarning("[DevourDebug] blocked: currentState=SpecialAction"); return; }
+        if (_isPouncing) { Debug.LogWarning("[DevourDebug] blocked: _isPouncing"); return; }
+        if (_devourSequenceRunning) { Debug.LogWarning("[DevourDebug] blocked: _devourSequenceRunning"); return; }
+        if (_heldObject != null) { Debug.LogWarning($"[DevourDebug] blocked: _heldObject={_heldObject}"); return; }
         if (Time.time < _cooldownEndTime) return;
 
         IDevourable target = FindNearestDevourable();
-        if (target == null) return;
+        if (target == null) { Debug.LogWarning("[DevourDebug] blocked: no devourable target in range"); return; }
 
         // 贴墙吸附时先退出贴墙再扑出，否则无法吞噬贴在墙上的可吞噬物（如 HeavyStone）
         if (_baseForm.CurrentState == ActionState.WallCling)
@@ -284,7 +285,11 @@ public class DevourHandler : MonoBehaviour
     {
         Vector2 origin = transform.root.position;
         int count = Physics2D.OverlapCircleNonAlloc(origin, detectionRadius, _overlapBuffer, devourableLayer);
-        if (count == 0) return null;
+        if (count == 0)
+        {
+            Debug.LogWarning("[DevourDebug] FindNearest: no colliders in range on devourableLayer");
+            return null;
+        }
 
         IDevourable best = null;
         float bestPriority = float.MinValue;
@@ -294,7 +299,12 @@ public class DevourHandler : MonoBehaviour
         {
             IDevourable devourable = GetDevourable(_overlapBuffer[i]);
             if (devourable == null) continue;
-            if (!devourable.CanBeDevoured(_playerController)) continue;
+            if (!devourable.CanBeDevoured(_playerController))
+            {
+                if (devourable is DevourableAnimal da && da.IsInDevourSequence)
+                    Debug.LogWarning($"[DevourDebug] FindNearest: skipped {da.name} (IsInDevourSequence stuck?)");
+                continue;
+            }
 
             float dSq = ((Vector2)devourable.Transform.position - origin).sqrMagnitude;
             if (devourable.Priority > bestPriority ||
@@ -306,6 +316,8 @@ public class DevourHandler : MonoBehaviour
             }
         }
 
+        if (best == null)
+            Debug.LogWarning("[DevourDebug] FindNearest: targets present but none devourable");
         return best;
     }
 
