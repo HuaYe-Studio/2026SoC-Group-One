@@ -95,10 +95,12 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
     [SerializeField] private bool _calmRestoresSegment = true;
     [Tooltip("胜利触发-蜂巢全毁")]
     [SerializeField] private bool _winOnAllHives = true;
+    [Tooltip("胜利所需破坏的蜂巢数（0=全部蜂巢；如 3=毁 3 个蜂巢即胜利）")]
+    [SerializeField] private int _hivesToWin = 0;
     [Tooltip("胜利触发-血量打空")]
     [SerializeField] private bool _winOnHpDepleted = true;
-    [Tooltip("每毁一个蜂巢对 BOSS 造成的段伤害（0=蜂巢不伤 BOSS，走 _winOnAllHives 胜利；1=一蜂巢一段血）")]
-    [SerializeField] private int _segmentDamagePerHive = 0;
+    [Tooltip("每毁一个蜂巢对 BOSS 造成的段伤害（1=一蜂巢一段血；0=蜂巢不伤 BOSS，只走 _winOnAllHives 胜利）")]
+    [SerializeField] private int _segmentDamagePerHive = 1;
 
     [Header("攻击调度")]
     [Tooltip("攻击冷却区间（秒）：Normal")]
@@ -276,6 +278,66 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
         foreach (Hive hive in _hives)
             if (hive != null)
                 hive.OnDestroyed -= OnHiveDestroyed;
+    }
+
+    private void OnEnable()
+    {
+        MockEventCenter.OnPlayerRespawn += OnPlayerRespawn;
+    }
+
+    private void OnDisable()
+    {
+        MockEventCenter.OnPlayerRespawn -= OnPlayerRespawn;
+    }
+
+    /// <summary>
+    /// 玩家死亡复活回调：死亡复活不重载场景，只传送玩家，因此 BOSS 战状态（血量/追击仇恨/蜂巢/蜜蜂）
+    /// 都不会自动重置。这里在复活时把 BOSS 战整体复位到「未激活」状态：
+    /// 仇恨（追击/攻击）关闭、血量/阶段复位、BOSS 回到出场站位、蜂巢恢复并重新生成守护蜜蜂。
+    /// 玩家重新靠近 BOSS 后再由 TryAutoActivate / BossArenaTrigger 重新开战。
+    /// </summary>
+    private void OnPlayerRespawn()
+    {
+        if (!_isActive) return; // BOSS 未激活，无需复位
+
+        ResetForRespawn();
+    }
+
+    /// <summary>把 BOSS 战整体复位到未激活状态（玩家复活 / 需要重开 BOSS 战时调用）。</summary>
+    public void ResetForRespawn()
+    {
+        // 1. 停止所有战斗协程，关闭仇恨（追击/攻击）
+        if (_attackLoop != null) { StopCoroutine(_attackLoop); _attackLoop = null; }
+        if (_chaseRoutine != null) { StopCoroutine(_chaseRoutine); _chaseRoutine = null; }
+        if (_movementRoutine != null) { StopCoroutine(_movementRoutine); _movementRoutine = null; }
+        _currentAttack = null;
+
+        _isActive = false;
+        _pending = PendingType.None;
+        _pendingUntil = 0f;
+        _enrageEndTime = 0f;
+
+        // 2. 血量/段/蜂巢自身状态复位
+        ResetFight();
+
+        // 3. 阶段回到 Normal（UI 血条/阶段显示复位）
+        SetPhase(BossPhase.Normal);
+
+        // 4. 回到出场站位（追击可能把 BOSS 带离站位）
+        transform.position = _arenaPosition;
+
+        // 5. 隐藏预警
+        if (_telegraph != null) _telegraph.Hide();
+
+        // 6. 蜂巢重新生成守护蜜蜂（蜂巢被毁后蜜蜂已飞散回池，这里重新补上）
+        if (_hives != null)
+        {
+            foreach (Hive hive in _hives)
+                if (hive != null)
+                    hive.RespawnBees();
+        }
+
+        Debug.Log($"[BossController] {name} 玩家复活，BOSS 战已复位（仇恨关闭、血量复位、蜂巢/蜜蜂恢复）", this);
     }
 
     /// <summary>数组为空、或所有元素都是 null（prefab 里 `[null]` 序列化的典型形态）。</summary>
@@ -695,10 +757,14 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
         if (_segmentDamagePerHive > 0)
             TakeDamage(_segmentDamagePerHive * _segmentMax);
 
-        // 全毁 → 胜利
-        if (_winOnAllHives && RemainingActiveHives() <= 0)
+        // 全毁（或达到 _hivesToWin 指定数量）→ 胜利
+        bool winReached = _hivesToWin > 0
+            ? _hiveDestroyedCount >= _hivesToWin
+            : RemainingActiveHives() <= 0;
+        if (_winOnAllHives && winReached)
         {
             BeginPending(PendingType.Victory);
+            LogBossStatus($"蜂巢全毁 → 进入胜利时序");
             return;
         }
 
@@ -719,6 +785,22 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
                 BeginPending(PendingType.Enrage);
             }
         }
+
+        LogBossStatus($"蜂巢 {hive.HiveIndex} 被破坏后");
+    }
+
+    /// <summary>
+    /// 输出 BOSS 当前完整状态日志（蜂巢被破坏等关键节点后调用，排查"BOSS 无敌/不胜利/不掉血"）。
+    /// </summary>
+    private void LogBossStatus(string context)
+    {
+        Debug.Log(
+            $"[BossController][状态] {context} 激活={_isActive} 阶段={_phase} 待决={_pending}(到{_pendingUntil:F1}s) " +
+            $"剩余蜂巢={RemainingActiveHives()}/{(_hives?.Length ?? 0)} 已毁={_hiveDestroyedCount} 目标={(_hivesToWin > 0 ? _hivesToWin.ToString() : "全部")} " +
+            $"段={_remainingSegments} 段内HP={_currentSegmentHP}/{_segmentMax} " +
+            $"终段={_inFinalPhase} 终段余血={_finalHPRemaining} 目标存活={(_player != null)} " +
+            $"胜利开关[蜂巢全毁={_winOnAllHives}/血打空={_winOnHpDepleted}] 蜂巢段伤={_segmentDamagePerHive}",
+            this);
     }
 
     private int RemainingActiveHives()

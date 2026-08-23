@@ -80,8 +80,9 @@ MonoBehaviour:
   _calmRadius: 12
   _calmRestoresSegment: 1
   _winOnAllHives: 1
+  _hivesToWin: 3
   _winOnHpDepleted: 1
-  _segmentDamagePerHive: 0
+  _segmentDamagePerHive: 1
   _cooldownNormal: {x: 3, y: 4}
   _cooldownEnrage1: {x: 2, y: 2.5}
   _cooldownEnrage2: {x: 1.8, y: 2.2}
