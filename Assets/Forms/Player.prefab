@@ -76,7 +76,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: 9456c3bcedaafef4a86e6d846fbc90c7, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 5df752847973e3c459c61bd52e43709b, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -123,7 +123,7 @@ BoxCollider2D:
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 0.16, y: 0.16}
+    oldSize: {x: 1, y: 1}
     newSize: {x: 0.16, y: 0.16}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
@@ -579,18 +579,9 @@ MonoBehaviour:
   groundLayer:
     serializedVersion: 2
     m_Bits: 8
-  abilityBindings:
+  abilityBindings: []
   acceleration: 0.5
   deceleration: 0.5
-  flamePrefab: {fileID: 6985371871358679056, guid: 5e894b5bc8f38e549b5ec40991f7a924, type: 3}
-  firePointOffset: {x: 0.7, y: 0.4}
-  sprayInterval: 0.1
-  flamesPerBatch: 1
-  spreadAngle: 30
-  speedVariance: 1.5
-  flameSpeed: 5
-  flameLifeTime: 2
-  flameMaxDistance: 0
   devourHandler: {fileID: 2091084545104360566}
   slimePhysicsMaterial: {fileID: 6200000, guid: a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6, type: 2}
   wallLayer:
@@ -606,8 +597,17 @@ MonoBehaviour:
   wallStickForce: 5
   wallClingCooldown: 0.15
   wallExhaustedGraceTime: 1.5
-  walkClip: {fileID: 0}
+  walkSfxKey: walk
   walkSoundInterval: 0.4
+  flamePrefab: {fileID: 6985371871358679056, guid: 5e894b5bc8f38e549b5ec40991f7a924, type: 3}
+  firePointOffset: {x: 0.7, y: 0.4}
+  sprayInterval: 0.1
+  flamesPerBatch: 1
+  spreadAngle: 30
+  speedVariance: 1.5
+  flameSpeed: 5
+  flameLifeTime: 2
+  flameMaxDistance: 0
 --- !u!114 &2091084545104360566
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -628,9 +628,9 @@ MonoBehaviour:
   pounceMaxDuration: 0.6
   cooldownSeconds: 0.5
   animalFlightSpeed: 5
-  pounceClip: {fileID: 0}
-  devourClip: {fileID: 0}
-  spitClip: {fileID: 0}
+  pounceSfxKey: pounce
+  devourSfxKey: devour
+  spitSfxKey: spit
 --- !u!95 &7002593809756338887
 Animator:
   serializedVersion: 5
@@ -866,8 +866,8 @@ MonoBehaviour:
   ceilingEjectDuration: 0.12
   ceilingEjectRiseFloor: 2
   airControlSpeed: 4
-  jumpClip: {fileID: 0}
-  landClip: {fileID: 0}
+  jumpSfxKey: jump
+  landSfxKey: land
 --- !u!95 &389382289352285113
 Animator:
   serializedVersion: 5
@@ -989,6 +989,8 @@ MonoBehaviour:
   maxHP: 3
   invincibilityDuration: 1.5
   flashInterval: 0.1
+  respawnDelay: 1.5
+  respawnInvincibility: 1
 --- !u!114 &4925435840266706490
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1033,7 +1035,7 @@ MonoBehaviour:
               m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
               m_IntArgument: 0
               m_FloatArgument: 0
-              m_StringArgument:
+              m_StringArgument: 
               m_BoolArgument: 0
             m_CallState: 2
   - type: 0
@@ -1053,6 +1055,6 @@ MonoBehaviour:
               m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
               m_IntArgument: 0
               m_FloatArgument: 0
-              m_StringArgument:
+              m_StringArgument: 
               m_BoolArgument: 0
             m_CallState: 2
