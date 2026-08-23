@@ -11,11 +11,9 @@ public class MemoryFragment : MonoBehaviour
 
     [Header("replace")]
     public GameObject coinPrefab;
-   
-    private bool isCollected = false;
     private void Start()
     {
-        if (isCollected)
+        if (MemoryCollectionManager.Instance.IsMemoryCollected(itemID))
         {
             ReplaceWithCoins();
             return;
@@ -35,7 +33,6 @@ public class MemoryFragment : MonoBehaviour
     }
     void CollectFragment()
     {
-        isCollected = true;
         MemoryCollectionManager.Instance.AddMemoryFragment(itemID);
         Destroy(gameObject);
     }
