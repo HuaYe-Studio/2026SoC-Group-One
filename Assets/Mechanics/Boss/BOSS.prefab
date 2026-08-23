@@ -85,6 +85,14 @@ MonoBehaviour:
   _chaseSpeed: 2
   _chaseStopDistance: 2
   _chaseMaxDistance: 20
+  _enableStepClimb: 1
+  _groundLayer:
+    serializedVersion: 2
+    m_Bits: 8
+  _footOffsetY: 0
+  _stepProbeDistance: 1
+  _maxStepHeight: 0.6
+  _stepClimbSpeed: 3
   _contactDamage: 1
   _contactKnockback: {x: 3, y: 4}
   _contactInstantKill: 1

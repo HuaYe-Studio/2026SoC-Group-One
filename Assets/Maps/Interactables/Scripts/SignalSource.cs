@@ -19,7 +19,6 @@ public class SignalSource : MonoBehaviour
     public UnityEvent onSignalOff;
 
     private static readonly Collider2D[] _hitBuffer = new Collider2D[16];
-    private bool previousSignalState;
 
     public bool IsActive => isActive;
 
@@ -27,11 +26,6 @@ public class SignalSource : MonoBehaviour
     {
         Rectangle,
         Circle
-    }
-
-    private void Start()
-    {
-        previousSignalState = isActive;
     }
 
     private void FixedUpdate()
@@ -59,13 +53,23 @@ public class SignalSource : MonoBehaviour
         SetSignal(hasHeavyObject);
     }
 
+    // IHeavy 可能挂在玩家根节点上（持有 HeavyStone 时 SetPlayerHeavy 加到根），
+    // 而碰撞体在形态子物体上。GetComponentInParent 向上找，兜底再查根节点。
+    private static IHeavy FindHeavy(Collider2D col)
+    {
+        IHeavy heavy = col.GetComponentInParent<IHeavy>();
+        if (heavy == null && col.transform.root != null)
+            heavy = col.transform.root.GetComponent<IHeavy>();
+        return heavy;
+    }
+
     private bool DetectInRectangle()
     {
         int hitCount = Physics2D.OverlapBoxNonAlloc(transform.position, detectionSize, 0f, _hitBuffer, detectionLayer);
 
         for (int i = 0; i < hitCount; i++)
         {
-            IHeavy heavy = _hitBuffer[i].GetComponent<IHeavy>();
+            IHeavy heavy = FindHeavy(_hitBuffer[i]);
             if (heavy != null && heavy.IsHeavy)
             {
                 return true;
@@ -81,7 +85,7 @@ public class SignalSource : MonoBehaviour
 
         for (int i = 0; i < hitCount; i++)
         {
-            IHeavy heavy = _hitBuffer[i].GetComponent<IHeavy>();
+            IHeavy heavy = FindHeavy(_hitBuffer[i]);
             if (heavy != null && heavy.IsHeavy)
             {
                 return true;

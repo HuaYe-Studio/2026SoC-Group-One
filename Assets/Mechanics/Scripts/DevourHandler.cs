@@ -101,6 +101,7 @@ public class DevourHandler : MonoBehaviour
         _devourSequenceRunning = false;
         _devourInitiatedSwitchPending = false;
         _currentTarget = null;
+        MockEventCenter.TriggerHeldObjectChanged(false);
     }
 
     private void Update()
@@ -177,7 +178,6 @@ public class DevourHandler : MonoBehaviour
     private void TryHandleDevourInput()
     {
         if (_baseForm.CurrentState == ActionState.SpecialAction) return;
-        if (_baseForm.CurrentState == ActionState.WallCling) return;
         if (_isPouncing) return;
         if (_devourSequenceRunning) return;
         if (_heldObject != null) return;
@@ -185,6 +185,10 @@ public class DevourHandler : MonoBehaviour
 
         IDevourable target = FindNearestDevourable();
         if (target == null) return;
+
+        // 贴墙吸附时先退出贴墙再扑出，否则无法吞噬贴在墙上的可吞噬物（如 HeavyStone）
+        if (_baseForm.CurrentState == ActionState.WallCling)
+            _slimeForm.ExitWallCling();
 
         _currentTarget = target;
         _currentTarget.IsTargeted = true;
@@ -228,6 +232,8 @@ public class DevourHandler : MonoBehaviour
 
         if (holdable is MonoBehaviour)
             MockEventCenter.TriggerDevourableExitRange(holdable);
+
+        MockEventCenter.TriggerHeldObjectChanged(false);
     }
 
     private void TrySpitOutHeldObject()
@@ -419,6 +425,10 @@ public class DevourHandler : MonoBehaviour
         _currentTarget = null;
         _cooldownEndTime = Time.time + cooldownSeconds;
         _devourSequenceRunning = false;
+
+        // 吞噬演出全部结束后，再广播当前持有状态（仅持有物会显示吐出提示）
+        if (isHoldable && _heldObject != null)
+            MockEventCenter.TriggerHeldObjectChanged(_heldObject.CanVoluntarySpit);
 
         // ── Deferred form switch (first-time devour only) ──
         if (isFirstDevour && devAnimal != null)

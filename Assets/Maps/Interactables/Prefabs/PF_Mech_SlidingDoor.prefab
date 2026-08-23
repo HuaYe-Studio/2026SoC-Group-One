@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 1686194521706431189}
   - component: {fileID: 1754048491231991308}
   - component: {fileID: 5317775279572120634}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Door
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -75,8 +75,8 @@ SpriteRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
+  m_SortingLayerID: -1303260157
+  m_SortingLayer: 5
   m_SortingOrder: 0
   m_Sprite: {fileID: 21300000, guid: 9c7698c6b9d1f6a4d860e6d184cbc65f, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -101,7 +101,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d155e0cf96006b24f92d8c3ad07a4722, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _signalSource: {fileID: 0}
+  _signalSources: []
+  _triggerMode: 0
   OnStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -285,7 +286,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2335700815360213117}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: PF_Mech_SlidingDoor
   m_TagString: Untagged
   m_Icon: {fileID: 0}

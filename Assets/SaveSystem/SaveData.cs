@@ -4,24 +4,27 @@ using UnityEngine;
 [System.Serializable]
 public class SaveData
 {
-    // ---------- 0. 场景/存档基本信息 ----------
-    public string sceneName;
-    public string saveTime;
+    // ---------- 0. 元数据 ----------
+    public string sceneName;                // 存档时的场景名称
+    public string saveTime;                 // 存档时间（ISO 格式）
 
     // ---------- 1. 存档点位置 ----------
     public float savePointX;
     public float savePointY;
 
     // ---------- 2. 形态数据 ----------
-    public string currentForm;              // 当前使用的形态ID
-    public List<string> unlockedForms;      // 已解锁的形态列表
+    public string currentForm;
+    public List<string> unlockedForms;
 
-    // ---------- 3. 收集数据（变更） ----------
-    public int coinCount;                  // 当前金币数量
-    public int coinAccumulatedCount;       // 金币累计计数（每30枚触发效果）
+    // ---------- 3. 元素能力 ----------
+    public List<string> unlockedElements;
 
-    // ---------- 4. 元素能力（新增） ----------
-    public List<string> unlockedElements;  // 已解锁的元素能力列表
+    // ---------- 4. 金币 ----------
+    public int coinCount;
+    public int coinAccumulatedCount;
+
+    // ---------- 5. 记忆碎片 ----------
+    public List<string> memoryFragments;
 
     // ---------- 辅助方法 ----------
     public void SetSavePointPosition(Vector2 pos)

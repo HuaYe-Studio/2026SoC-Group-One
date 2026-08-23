@@ -43,7 +43,7 @@ public class SlimeForm : BaseForm
     [SerializeField] private float speedVariance = 1.5f;
     [SerializeField] private float flameSpeed = 5f;
     [SerializeField] private float flameLifeTime = 2f;
-    [SerializeField] private float flameMaxDistance = 0f;
+    [SerializeField] private float flameMaxDistance;
 
     private float _currentVelocityX;
     private float _nextWalkSoundTime;
@@ -312,7 +312,7 @@ public class SlimeForm : BaseForm
         rb.gravityScale = 0f;
     }
 
-    private void ExitWallCling()
+    public void ExitWallCling()
     {
         _staminaExhaustedTime = -1f;
         _wallClingExitTime = Time.time;

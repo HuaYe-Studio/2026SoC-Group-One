@@ -45,18 +45,24 @@ public class MovingPlatform : MonoBehaviour
             rb.velocity=direction*movespeed;
         }
     }
+    private static bool IsRideableLayer(int layer)
+    {
+        return layer == LayerMask.NameToLayer("Animal") || layer == LayerMask.NameToLayer("Player");
+    }
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if(collision.gameObject.layer == LayerMask.NameToLayer("Animal"))  
+        if (IsRideableLayer(collision.gameObject.layer))
         {
-            collision.transform.transform.SetParent(transform);
+            // 挂到根节点：动物/玩家都随平台移动（玩家碰撞体在形态子物体上，取其 root）
+            collision.transform.root.SetParent(transform);
         }
     }
     private void OnTriggerExit2D(Collider2D collision)
     {
-        if (collision.gameObject.layer == LayerMask.NameToLayer("Animal") && collision.transform.parent == transform)
+        Transform root = collision.transform.root;
+        if (IsRideableLayer(collision.gameObject.layer) && root.parent == transform)
         {
-            collision.transform.SetParent(null);
+            root.SetParent(null);
         }
     }
 }
