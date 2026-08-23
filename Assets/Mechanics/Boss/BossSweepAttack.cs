@@ -20,6 +20,7 @@ public class BossSweepAttack : BossAttack
         canDestroyHive = false;
         followDuration = 0f;
         lockDuration = 0.8f;
+        attackSfxKey = "boss_sweep";
     }
 
     public override IEnumerator Execute(BossAttackContext ctx)
@@ -57,6 +58,7 @@ public class BossSweepAttack : BossAttack
 
         // 3. 命中：BossController 统一结算（全屏 → 玩家必中；蜂巢因 CanDestroyHive=false 跳过）
         ctx.onHit?.Invoke(hitPoint);
+        PlayAttackSfx();
 
         if (telegraph != null)
             telegraph.Hide();

@@ -48,6 +48,10 @@ public abstract class BossAttack : MonoBehaviour
     [Tooltip("锁定预警时长（秒）：红框锁定+闪烁后再命中")]
     [SerializeField] protected float lockDuration = 0.5f;
 
+    [Header("攻击音效")]
+    [Tooltip("攻击命中时播放的音效 key（对应 AudioLibrary 的 sfxEntries）。子类 Awake 里设默认值，Inspector 可覆盖")]
+    [SerializeField] protected string attackSfxKey = "";
+
     /// <summary>选择权重（供 BossController 概率归一化）。</summary>
     public float Probability => probability;
 
@@ -68,4 +72,11 @@ public abstract class BossAttack : MonoBehaviour
     /// 命中判定统一走 ctx.onHit(hitPoint) 回调，Boss 侧负责玩家伤害 + 蜂巢破坏。
     /// </summary>
     public abstract System.Collections.IEnumerator Execute(BossAttackContext ctx);
+
+    /// <summary>播放攻击命中音效（子类在命中时调用）。</summary>
+    protected void PlayAttackSfx()
+    {
+        if (!string.IsNullOrEmpty(attackSfxKey) && AudioManager.HasInstance)
+            AudioManager.Instance.PlaySfxByKey(attackSfxKey);
+    }
 }

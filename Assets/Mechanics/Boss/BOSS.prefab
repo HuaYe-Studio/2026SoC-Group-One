@@ -12,6 +12,10 @@ GameObject:
   - component: {fileID: 2484698007255412260}
   - component: {fileID: 7137302672446041464}
   - component: {fileID: 4445558007473283304}
+  - component: {fileID: 5168117401294855417}
+  - component: {fileID: 7298832713340331498}
+  - component: {fileID: 110143375257574536}
+  - component: {fileID: 3301072361318980728}
   m_Layer: 8
   m_Name: BOSS
   m_TagString: Untagged
@@ -147,6 +151,75 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _boxRenderer: {fileID: 0}
   _boxSize: {x: 3, y: 1.5}
+--- !u!114 &5168117401294855417
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 944351066009322587}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 22276a6915310b943b5488136583ec93, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  enterSfxKey: boss_enter
+  enrageSfxKey: boss_enrage
+  defeatedSfxKey: boss_defeated
+--- !u!114 &7298832713340331498
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 944351066009322587}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0e782198c655ac4491c517d39983948, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  probability: 25
+  hitboxSize: {x: 3, y: 1.5}
+  canDestroyHive: 1
+  followDuration: 1
+  lockDuration: 0.5
+  attackSfxKey: boss_bite
+--- !u!114 &110143375257574536
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 944351066009322587}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e73910faa6b85a488eee61296a3e01c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  probability: 25
+  hitboxSize: {x: 3, y: 1.5}
+  canDestroyHive: 1
+  followDuration: 1
+  lockDuration: 0.5
+  attackSfxKey: boss_sweep
+--- !u!114 &3301072361318980728
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 944351066009322587}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ab2080a8267b624b8905a922ed35679, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  probability: 25
+  hitboxSize: {x: 3, y: 1.5}
+  canDestroyHive: 1
+  followDuration: 1
+  lockDuration: 0.5
+  attackSfxKey: boss_slam
 --- !u!1 &3703200743659137553
 GameObject:
   m_ObjectHideFlags: 0
@@ -462,6 +535,7 @@ MonoBehaviour:
   canDestroyHive: 1
   followDuration: 1
   lockDuration: 0.5
+  attackSfxKey: 
 --- !u!1 &8920223996409487028
 GameObject:
   m_ObjectHideFlags: 0
@@ -601,6 +675,7 @@ MonoBehaviour:
   canDestroyHive: 1
   followDuration: 1
   lockDuration: 0.5
+  attackSfxKey: 
 --- !u!114 &6935997116573265677
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -618,3 +693,4 @@ MonoBehaviour:
   canDestroyHive: 1
   followDuration: 1
   lockDuration: 0.5
+  attackSfxKey: 

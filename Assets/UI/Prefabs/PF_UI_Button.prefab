@@ -432,6 +432,7 @@ GameObject:
   - component: {fileID: 6684720605841850494}
   - component: {fileID: 6712439165433580806}
   - component: {fileID: 4043753954820727858}
+  - component: {fileID: 1714425871703887255}
   m_Layer: 5
   m_Name: Button
   m_TagString: Untagged
@@ -557,6 +558,7 @@ MonoBehaviour:
   _right: {fileID: 2162018546129356215}
   _scaleAmount: 1.1
   _tips: {fileID: 0}
+  _isWithPanel: 0
 --- !u!225 &4043753954820727858
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -569,6 +571,22 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!114 &1714425871703887255
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6353350271704382728}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 626fda652b18c584b9c8d6aaaae25e1c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hoverSfxKey: hover
+  clickSfxKey: click
+  playHover: 1
+  playClick: 1
 --- !u!1 &7664235365773259663
 GameObject:
   m_ObjectHideFlags: 0
