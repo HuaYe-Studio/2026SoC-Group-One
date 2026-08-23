@@ -943,18 +943,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: PF_Mech_FlameThrower (13)
       objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flameMaxDistance
-      value: 3
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1011,18 +999,6 @@ PrefabInstance:
     - target: {fileID: 6952915957312195775, guid: d02369ec3a599904995615850927c63b, type: 3}
       propertyPath: m_Name
       value: PF_Mech_FlameThrower (24)
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flameMaxDistance
-      value: 3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -2056,6 +2032,71 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 8ccfd6f0e1f6cb44ba5d460bf52efd7a, type: 3}
+--- !u!1001 &95773643
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1475662441}
+    m_Modifications:
+    - target: {fileID: 3016817783219696433, guid: d667ec7b8520a2e46b50293ea1d2fcfc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 411.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3016817783219696433, guid: d667ec7b8520a2e46b50293ea1d2fcfc, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 14.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3016817783219696433, guid: d667ec7b8520a2e46b50293ea1d2fcfc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3016817783219696433, guid: d667ec7b8520a2e46b50293ea1d2fcfc, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3016817783219696433, guid: d667ec7b8520a2e46b50293ea1d2fcfc, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3016817783219696433, guid: d667ec7b8520a2e46b50293ea1d2fcfc, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3016817783219696433, guid: d667ec7b8520a2e46b50293ea1d2fcfc, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3016817783219696433, guid: d667ec7b8520a2e46b50293ea1d2fcfc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3016817783219696433, guid: d667ec7b8520a2e46b50293ea1d2fcfc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3016817783219696433, guid: d667ec7b8520a2e46b50293ea1d2fcfc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3135210052081597010, guid: d667ec7b8520a2e46b50293ea1d2fcfc, type: 3}
+      propertyPath: m_Name
+      value: PF_Mech_Signboard
+      objectReference: {fileID: 0}
+    - target: {fileID: 5293702578054929332, guid: d667ec7b8520a2e46b50293ea1d2fcfc, type: 3}
+      propertyPath: m_text
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 5293702578054929332, guid: d667ec7b8520a2e46b50293ea1d2fcfc, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4278190335
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: d667ec7b8520a2e46b50293ea1d2fcfc, type: 3}
 --- !u!1001 &99712505
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3572,18 +3613,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: PF_Mech_FlameThrower (26)
       objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flameMaxDistance
-      value: 3
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -4119,14 +4148,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: PF_Mech_FlameThrower (2)
       objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -4453,18 +4474,6 @@ PrefabInstance:
     - target: {fileID: 6952915957312195775, guid: d02369ec3a599904995615850927c63b, type: 3}
       propertyPath: m_Name
       value: PF_Mech_FlameThrower (21)
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flameMaxDistance
-      value: 3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -5389,14 +5398,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
       propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flameMaxDistance
       value: 3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
@@ -5543,14 +5544,6 @@ PrefabInstance:
     - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
       propertyPath: pulseInterval
       value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flameMaxDistance
-      value: 3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -6119,18 +6112,6 @@ PrefabInstance:
     - target: {fileID: 6952915957312195775, guid: d02369ec3a599904995615850927c63b, type: 3}
       propertyPath: m_Name
       value: PF_Mech_FlameThrower (14)
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flameMaxDistance
-      value: 3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -7545,14 +7526,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
       propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flameMaxDistance
       value: 3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
@@ -7915,18 +7888,6 @@ PrefabInstance:
     - target: {fileID: 6952915957312195775, guid: d02369ec3a599904995615850927c63b, type: 3}
       propertyPath: m_Name
       value: PF_Mech_FlameThrower (25)
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flameMaxDistance
-      value: 3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -10183,6 +10144,10 @@ PrefabInstance:
       propertyPath: m_LocalScale.y
       value: 2
       objectReference: {fileID: 0}
+    - target: {fileID: 6308014947372226517, guid: 8e16e89aee6d26a4c8c7797a4da8f353, type: 3}
+      propertyPath: pausetime
+      value: 1.5
+      objectReference: {fileID: 0}
     - target: {fileID: 8739218918603711872, guid: 8e16e89aee6d26a4c8c7797a4da8f353, type: 3}
       propertyPath: m_LocalPosition.x
       value: 464.5
@@ -10757,18 +10722,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: PF_Mech_FlameThrower (18)
       objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flameMaxDistance
-      value: 3
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -11003,6 +10956,10 @@ PrefabInstance:
     - target: {fileID: 5361305856935642284, guid: 8e16e89aee6d26a4c8c7797a4da8f353, type: 3}
       propertyPath: m_LocalScale.y
       value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 6308014947372226517, guid: 8e16e89aee6d26a4c8c7797a4da8f353, type: 3}
+      propertyPath: pausetime
+      value: 1.5
       objectReference: {fileID: 0}
     - target: {fileID: 8739218918603711872, guid: 8e16e89aee6d26a4c8c7797a4da8f353, type: 3}
       propertyPath: m_LocalPosition.x
@@ -13225,18 +13182,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: PF_Mech_FlameThrower (23)
       objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flameMaxDistance
-      value: 3
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -13847,18 +13792,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: PF_Mech_FlameThrower (16)
       objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flameMaxDistance
-      value: 3
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -13993,14 +13926,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: PF_Mech_FlameThrower (32)
       objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -14062,14 +13987,6 @@ PrefabInstance:
     - target: {fileID: 6952915957312195775, guid: d02369ec3a599904995615850927c63b, type: 3}
       propertyPath: m_Name
       value: PF_Mech_FlameThrower
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -14923,14 +14840,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
       propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flameMaxDistance
       value: 3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
@@ -15559,14 +15468,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
       propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flameMaxDistance
       value: 3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
@@ -16022,18 +15923,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: PF_Mech_FlameThrower (20)
       objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flameMaxDistance
-      value: 3
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -16204,18 +16093,6 @@ PrefabInstance:
     - target: {fileID: 6952915957312195775, guid: d02369ec3a599904995615850927c63b, type: 3}
       propertyPath: m_Name
       value: PF_Mech_FlameThrower (9)
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flameMaxDistance
-      value: 3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -19990,14 +19867,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: PF_Mech_FlameThrower (28)
       objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -21861,14 +21730,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: PF_Mech_FlameThrower (30)
       objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -22458,18 +22319,6 @@ PrefabInstance:
     - target: {fileID: 6952915957312195775, guid: d02369ec3a599904995615850927c63b, type: 3}
       propertyPath: m_Name
       value: PF_Mech_FlameThrower (10)
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flameMaxDistance
-      value: 3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -23466,14 +23315,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: PF_Mech_FlameThrower (27)
       objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -23619,14 +23460,6 @@ PrefabInstance:
     - target: {fileID: 6952915957312195775, guid: d02369ec3a599904995615850927c63b, type: 3}
       propertyPath: m_Name
       value: PF_Mech_FlameThrower (1)
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -24087,18 +23920,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: PF_Mech_FlameThrower (17)
       objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flameMaxDistance
-      value: 3
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -24284,18 +24105,6 @@ PrefabInstance:
     - target: {fileID: 6952915957312195775, guid: d02369ec3a599904995615850927c63b, type: 3}
       propertyPath: m_Name
       value: PF_Mech_FlameThrower (12)
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flameMaxDistance
-      value: 3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -25984,14 +25793,6 @@ PrefabInstance:
     - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
       propertyPath: pulseInterval
       value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flameMaxDistance
-      value: 3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -41626,14 +41427,6 @@ PrefabInstance:
       propertyPath: pulseInterval
       value: 2
       objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flameMaxDistance
-      value: 3
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -41750,14 +41543,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
       propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flameMaxDistance
       value: 3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
@@ -42654,6 +42439,10 @@ PrefabInstance:
     - target: {fileID: 5361305856935642284, guid: 8e16e89aee6d26a4c8c7797a4da8f353, type: 3}
       propertyPath: m_LocalScale.y
       value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 7360948955740394244, guid: 8e16e89aee6d26a4c8c7797a4da8f353, type: 3}
+      propertyPath: m_BodyType
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7360948955740394244, guid: 8e16e89aee6d26a4c8c7797a4da8f353, type: 3}
       propertyPath: m_Constraints
@@ -49293,6 +49082,7 @@ Transform:
   m_Children:
   - {fileID: 693482335}
   - {fileID: 1472628786}
+  - {fileID: 1906249107}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1475870013
@@ -49470,18 +49260,6 @@ PrefabInstance:
     - target: {fileID: 6952915957312195775, guid: d02369ec3a599904995615850927c63b, type: 3}
       propertyPath: m_Name
       value: PF_Mech_FlameThrower (22)
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flameMaxDistance
-      value: 3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -50350,18 +50128,6 @@ PrefabInstance:
     - target: {fileID: 6952915957312195775, guid: d02369ec3a599904995615850927c63b, type: 3}
       propertyPath: m_Name
       value: PF_Mech_FlameThrower (19)
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flameMaxDistance
-      value: 3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -61950,6 +61716,10 @@ PrefabInstance:
       value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 7360948955740394244, guid: 8e16e89aee6d26a4c8c7797a4da8f353, type: 3}
+      propertyPath: m_BodyType
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7360948955740394244, guid: 8e16e89aee6d26a4c8c7797a4da8f353, type: 3}
       propertyPath: m_Constraints
       value: 5
       objectReference: {fileID: 0}
@@ -62327,14 +62097,6 @@ PrefabInstance:
     - target: {fileID: 6952915957312195775, guid: d02369ec3a599904995615850927c63b, type: 3}
       propertyPath: m_Name
       value: PF_Mech_FlameThrower (29)
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -64528,14 +64290,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: PF_Mech_FlameThrower (31)
       objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -65440,18 +65194,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: PF_Mech_FlameThrower (15)
       objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flameMaxDistance
-      value: 3
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -66235,6 +65977,10 @@ PrefabInstance:
       value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 7360948955740394244, guid: 8e16e89aee6d26a4c8c7797a4da8f353, type: 3}
+      propertyPath: m_BodyType
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7360948955740394244, guid: 8e16e89aee6d26a4c8c7797a4da8f353, type: 3}
       propertyPath: m_Constraints
       value: 5
       objectReference: {fileID: 0}
@@ -66958,6 +66704,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: bc5217e04ffbaf24b9a957633457f7b3, type: 3}
+--- !u!4 &1906249107 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3016817783219696433, guid: d667ec7b8520a2e46b50293ea1d2fcfc, type: 3}
+  m_PrefabInstance: {fileID: 95773643}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &1909213575 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8739218918603711872, guid: 8e16e89aee6d26a4c8c7797a4da8f353, type: 3}
@@ -67017,14 +66768,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
       propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flameMaxDistance
       value: 3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
@@ -67502,14 +67245,6 @@ PrefabInstance:
     - target: {fileID: 6952915957312195775, guid: d02369ec3a599904995615850927c63b, type: 3}
       propertyPath: m_Name
       value: PF_Mech_FlameThrower
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -74925,6 +74660,16 @@ Tilemap:
       m_TileObjectToInstantiateIndex: 65535
       dummyAlignment: 0
       m_AllTileFlags: 1073741825
+  - first: {x: 411, y: 13, z: 0}
+    second:
+      serializedVersion: 2
+      m_TileIndex: 0
+      m_TileSpriteIndex: 0
+      m_TileMatrixIndex: 0
+      m_TileColorIndex: 0
+      m_TileObjectToInstantiateIndex: 65535
+      dummyAlignment: 0
+      m_AllTileFlags: 1073741825
   - first: {x: 453, y: 13, z: 0}
     second:
       serializedVersion: 2
@@ -81627,17 +81372,17 @@ Tilemap:
       m_AllTileFlags: 1073741825
   m_AnimatedTiles: {}
   m_TileAssetArray:
-  - m_RefCount: 1249
+  - m_RefCount: 1250
     m_Data: {fileID: 11400000, guid: 35cb3590dd8d8f14a8397df59b03851c, type: 2}
   - m_RefCount: 25
     m_Data: {fileID: 11400000, guid: bcd1cedb167268e40b3e1a102c3294eb, type: 2}
   m_TileSpriteArray:
-  - m_RefCount: 1249
+  - m_RefCount: 1250
     m_Data: {fileID: 21300000, guid: 06303c0b848b94f45b57257780a9301f, type: 3}
   - m_RefCount: 25
     m_Data: {fileID: 21300000, guid: 0919719839169bf41b3fb5817f3903d6, type: 3}
   m_TileMatrixArray:
-  - m_RefCount: 1274
+  - m_RefCount: 1275
     m_Data:
       e00: 1
       e01: 0
@@ -81656,7 +81401,7 @@ Tilemap:
       e32: 0
       e33: 1
   m_TileColorArray:
-  - m_RefCount: 1274
+  - m_RefCount: 1275
     m_Data: {r: 1, g: 1, b: 1, a: 1}
   m_TileObjectToInstantiateArray: []
   m_AnimationFrameRate: 1
@@ -82122,13 +81867,13 @@ CompositeCollider2D:
         Y: 140000000
       - X: 4209999872
         Y: 140000000
-    - - X: 4110000128
+    - - X: 4120000000
         Y: 140000000
       - X: 3769999872
         Y: 140000000
       - X: 3769999872
         Y: 130000000
-      - X: 4110000128
+      - X: 4120000000
         Y: 130000000
     - - X: 4600000000
         Y: 140000000
@@ -82490,8 +82235,8 @@ CompositeCollider2D:
       - {x: 459.99994, y: 14}
       - {x: 453, y: 13.999971}
       - {x: 453.00003, y: 13}
-    - - {x: 411, y: 13}
-      - {x: 411, y: 14}
+    - - {x: 411.99997, y: 13}
+      - {x: 411.99997, y: 14}
       - {x: 377, y: 13.999971}
       - {x: 377.00003, y: 13}
     - - {x: 373.99997, y: 13.437501}
@@ -83791,6 +83536,10 @@ PrefabInstance:
       value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 7360948955740394244, guid: 8e16e89aee6d26a4c8c7797a4da8f353, type: 3}
+      propertyPath: m_BodyType
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7360948955740394244, guid: 8e16e89aee6d26a4c8c7797a4da8f353, type: 3}
       propertyPath: m_Constraints
       value: 5
       objectReference: {fileID: 0}
@@ -84222,6 +83971,10 @@ PrefabInstance:
       value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 7360948955740394244, guid: 8e16e89aee6d26a4c8c7797a4da8f353, type: 3}
+      propertyPath: m_BodyType
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7360948955740394244, guid: 8e16e89aee6d26a4c8c7797a4da8f353, type: 3}
       propertyPath: m_Constraints
       value: 5
       objectReference: {fileID: 0}
@@ -84373,6 +84126,10 @@ PrefabInstance:
     - target: {fileID: 5361305856935642284, guid: 8e16e89aee6d26a4c8c7797a4da8f353, type: 3}
       propertyPath: m_LocalScale.y
       value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 7360948955740394244, guid: 8e16e89aee6d26a4c8c7797a4da8f353, type: 3}
+      propertyPath: m_BodyType
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7360948955740394244, guid: 8e16e89aee6d26a4c8c7797a4da8f353, type: 3}
       propertyPath: m_Constraints
@@ -85840,18 +85597,6 @@ PrefabInstance:
     - target: {fileID: 6952915957312195775, guid: d02369ec3a599904995615850927c63b, type: 3}
       propertyPath: m_Name
       value: PF_Mech_FlameThrower (11)
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: pulseInterval
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flamesPerPulse
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7432500187387056602, guid: d02369ec3a599904995615850927c63b, type: 3}
-      propertyPath: flameMaxDistance
-      value: 3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

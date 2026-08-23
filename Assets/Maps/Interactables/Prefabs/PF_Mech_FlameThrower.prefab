@@ -214,8 +214,8 @@ MonoBehaviour:
   flameSpeed: 2
   flameLifeTime: 2
   flameMaxDistance: 3
-  pulseInterval: 1
-  flamesPerPulse: 3
+  pulseInterval: 4
+  flamesPerPulse: 1
   flamesPerBatch: 1
   spreadAngle: 0
   speedVariance: 1.5
