@@ -73,11 +73,39 @@ public class DevourHandler : MonoBehaviour
 
     private void OnEnable()
     {
+        ResetDevourState();
+
         if (PlayerInputReader.HasInstance)
         {
             PlayerInputReader.Instance.OnInput_Space += TryHandleDevourInput;
             PlayerInputReader.Instance.OnSpit += TrySpitOutHeldObject;
         }
+    }
+
+    /// <summary>
+    /// 史莱姆重新激活（切回/复活/读档）时，清掉可能残留的吞噬状态，确保吞噬立即可用。
+    /// OnDisable 只重置了部分标志，currentState 与 _heldObject 需在此兜底。
+    /// </summary>
+    private void ResetDevourState()
+    {
+        _isPouncing = false;
+        _devourSequenceRunning = false;
+        _devourInitiatedSwitchPending = false;
+        _cooldownEndTime = 0f;
+
+        if (_currentTarget != null)
+        {
+            _currentTarget.IsTargeted = false;
+            _currentTarget = null;
+        }
+
+        SetPounceCollisionIgnore(false);
+
+        if (_heldObject != null)
+            SpitOutHeldObject();
+
+        if (_baseForm != null)
+            _baseForm.SetActionState(ActionState.Idle);
     }
 
     private void OnDisable()
