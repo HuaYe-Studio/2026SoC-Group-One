@@ -43,7 +43,7 @@ public class SlimeForm : BaseForm
     [SerializeField] private float speedVariance = 1.5f;
     [SerializeField] private float flameSpeed = 5f;
     [SerializeField] private float flameLifeTime = 2f;
-    [SerializeField] private float flameMaxDistance = 0f;
+    [SerializeField] private float flameMaxDistance;
 
     private float _currentVelocityX;
     private float _nextWalkSoundTime;
