@@ -169,4 +169,22 @@ public class Hive : MonoBehaviour
         var renderer = GetComponent<SpriteRenderer>();
         if (renderer != null) renderer.enabled = true;
     }
+
+    /// <summary>
+    /// 玩家复活时重新生成守护蜜蜂：先回收仍在场上的旧蜜蜂（飞散回池的已 inactive，跳过），
+    /// 再重新按 _beeCount 生成守护态蜜蜂（Init 会重置 _hiveDestroyed=false，回到绕巢巡游）。
+    /// </summary>
+    public void RespawnBees()
+    {
+        // 回收仍活跃的旧蜜蜂，清空引用（倒序防迭代中修改）
+        for (int i = _bees.Count - 1; i >= 0; i--)
+        {
+            BeeAI bee = _bees[i];
+            if (bee != null && bee.gameObject.activeSelf)
+                BeePool.Release(bee.gameObject);
+        }
+        _bees.Clear();
+
+        SpawnBees();
+    }
 }

@@ -8,6 +8,7 @@ public class PlayerHP : MonoBehaviour
     [SerializeField] private float flashInterval = 0.1f;
     [SerializeField] private float respawnDelay = 1.5f;
     [SerializeField] private float respawnInvincibility = 1f;
+    [SerializeField] private bool _godMode = true; // 调试：玩家永久无敌，不扣血不死亡
 
     private int _currentHP;
     private float _invincibilityEndTime;
