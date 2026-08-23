@@ -220,6 +220,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62cbac214ec98414bb17fb8c1be37988, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  WaitTime: 0.5
 --- !u!114 &779463525903775353
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -241,7 +242,19 @@ MonoBehaviour:
   canVoluntarySpit: 1
   onEquipEffect:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 656387283472953589}
+        m_TargetAssemblyTypeName: StickyResin, Assembly-CSharp
+        m_MethodName: DestroyAllJoints
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
   onUnequipEffect:
     m_PersistentCalls:
       m_Calls: []

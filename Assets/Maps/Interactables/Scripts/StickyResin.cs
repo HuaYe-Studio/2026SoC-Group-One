@@ -89,7 +89,7 @@ public class StickyResin : MonoBehaviour
         }
     }*/
 
-    public void OnDestroy()
+    public void DestroyAllJoints()
     {
         // 取消所有等待中的连接
         foreach (GameObject pending in pendingConnections)
