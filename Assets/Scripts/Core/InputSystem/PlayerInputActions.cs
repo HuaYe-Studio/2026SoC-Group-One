@@ -207,7 +207,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                 {
                     ""name"": ""AD"",
                     ""id"": ""b1fbf3cb-7dac-4b50-b157-8e4c230b90c8"",
-                    ""path"": ""Dpad"",
+                    ""path"": ""Dpad(mode=1)"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
