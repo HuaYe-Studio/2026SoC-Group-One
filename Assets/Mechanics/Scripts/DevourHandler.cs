@@ -172,7 +172,15 @@ public class DevourHandler : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (!_isPouncing || _currentTarget == null) return;
+        if (!_isPouncing) return;
+
+        // Target vanished mid-pounce (e.g. destroyed): cancel so devour isn't stuck
+        // with _isPouncing + SpecialAction until the next form switch.
+        if (_currentTarget == null)
+        {
+            CancelPounce();
+            return;
+        }
 
         if (Time.fixedTime >= _pounceEndTime)
         {
@@ -379,92 +387,117 @@ public class DevourHandler : MonoBehaviour
         _rb.velocity = Vector2.zero;
         SetPounceCollisionIgnore(false); // restore before target hides, else it would clip through the player when spat out
 
-        Vector2 pointA = _pounceStartPos;
-        Vector2 pointB = target.Transform.position;
-        Vector2 spitDirection = (pointA - pointB).normalized;
-
-        MonoBehaviour targetMb = target as MonoBehaviour;
-
-        bool isHoldable = target is IHoldable;
-        DevourableAnimal devAnimal = target as DevourableAnimal;
-        bool isFirstDevour = !isHoldable && devAnimal != null
-            && !_playerController.IsFormUnlocked(devAnimal.GrantedForm);
-
-        yield return null;
-
-        // ── Engulf: time freeze + DOTween ──
-        target.OnBeingDevoured();
-
-        if (_baseForm.Animator != null)
-            _baseForm.Animator.updateMode = AnimatorUpdateMode.UnscaledTime;
-
-        Time.timeScale = 0f;
-
-        if (_effectPlayer != null)
-            yield return _effectPlayer.PlayZoomIn(target.Transform.position);
-        else
-            yield return new WaitForSecondsRealtime(0.4f);
-
-        AudioManager.Instance?.PlaySfxByKey(devourSfxKey);
-
-        if (_effectPlayer != null)
-            yield return _effectPlayer.PlayDevour(target);
-        else
-            yield return new WaitForSecondsRealtime(1.0f);
-
-        // ── Outcome (during freeze, unlock only — no form switch) ──
-        if (!isHoldable)
+        try
         {
-            target.ExecuteDevourOutcome(_playerController);
-            AudioManager.Instance?.PlaySfxByKey(spitSfxKey);
-            target.OnBeingSpitOut(spitDirection);
+            Vector2 pointA = _pounceStartPos;
+            Vector2 pointB = target.Transform.position;
+            Vector2 spitDirection = (pointA - pointB).normalized;
+
+            MonoBehaviour targetMb = target as MonoBehaviour;
+
+            bool isHoldable = target is IHoldable;
+            DevourableAnimal devAnimal = target as DevourableAnimal;
+            bool isFirstDevour = !isHoldable && devAnimal != null
+                && !_playerController.IsFormUnlocked(devAnimal.GrantedForm);
+
+            yield return null;
+
+            // ── Engulf: time freeze + DOTween ──
+            target.OnBeingDevoured();
+
+            if (_baseForm.Animator != null)
+                _baseForm.Animator.updateMode = AnimatorUpdateMode.UnscaledTime;
+
+            Time.timeScale = 0f;
+
+            if (_effectPlayer != null)
+                yield return _effectPlayer.PlayZoomIn(target.Transform.position);
+            else
+                yield return new WaitForSecondsRealtime(0.4f);
+
+            AudioManager.Instance?.PlaySfxByKey(devourSfxKey);
+
+            if (_effectPlayer != null)
+                yield return _effectPlayer.PlayDevour(target);
+            else
+                yield return new WaitForSecondsRealtime(1.0f);
+
+            // ── Outcome (during freeze, unlock only — no form switch) ──
+            if (!isHoldable)
+            {
+                target.ExecuteDevourOutcome(_playerController);
+                AudioManager.Instance?.PlaySfxByKey(spitSfxKey);
+                target.OnBeingSpitOut(spitDirection);
+            }
+            else
+            {
+                IHoldable holdable = (IHoldable)target;
+                holdable.OnEquip(_playerController);
+                _heldObject = holdable;
+                targetMb?.gameObject.SetActive(false);
+            }
+
+            if (_effectPlayer != null)
+                yield return _effectPlayer.PlayZoomOut();
+            else
+                yield return new WaitForSecondsRealtime(0.4f);
+
+            Time.timeScale = 1f;
+
+            if (_baseForm.Animator != null)
+                _baseForm.Animator.updateMode = AnimatorUpdateMode.Normal;
+
+            // ── Spit animal in BA direction then decelerate + stun (on animal, survives form switch) ──
+            if (!isHoldable && devAnimal != null)
+            {
+                devAnimal.LaunchAndStun(spitDirection, animalFlightSpeed);
+            }
+
+            // ── Cleanup ──
+            _baseForm.SetAnimatorBool(IsSwoopingHash, false);
+            if (!isHoldable && target.DestroyAfterDevour && targetMb != null)
+                Destroy(targetMb.gameObject);
+
+            _baseForm.SetActionState(ActionState.Idle);
+            target.IsTargeted = false;
+            _currentTarget = null;
+            _cooldownEndTime = Time.time + cooldownSeconds;
+            _devourSequenceRunning = false;
+
+            // 吞噬演出全部结束后，再广播当前持有状态（仅持有物会显示吐出提示）
+            if (isHoldable && _heldObject != null)
+                MockEventCenter.TriggerHeldObjectChanged(_heldObject.CanVoluntarySpit);
+
+            // ── Deferred form switch (first-time devour only) ──
+            if (isFirstDevour && devAnimal != null)
+            {
+                _devourInitiatedSwitchPending = true;
+                _deferredFormType = devAnimal.GrantedForm;
+                _playerController.SwitchToFormByType(_deferredFormType);
+                _devourInitiatedSwitchPending = false;
+            }
         }
-        else
+        finally
         {
-            IHoldable holdable = (IHoldable)target;
-            holdable.OnEquip(_playerController);
-            _heldObject = holdable;
-            targetMb?.gameObject.SetActive(false);
-        }
-
-        if (_effectPlayer != null)
-            yield return _effectPlayer.PlayZoomOut();
-        else
-            yield return new WaitForSecondsRealtime(0.4f);
-
-        Time.timeScale = 1f;
-
-        if (_baseForm.Animator != null)
-            _baseForm.Animator.updateMode = AnimatorUpdateMode.Normal;
-
-        // ── Spit animal in BA direction then decelerate + stun (on animal, survives form switch) ──
-        if (!isHoldable && devAnimal != null)
-        {
-            devAnimal.LaunchAndStun(spitDirection, animalFlightSpeed);
-        }
-
-        // ── Cleanup ──
-        _baseForm.SetAnimatorBool(IsSwoopingHash, false);
-        if (!isHoldable && target.DestroyAfterDevour && targetMb != null)
-            Destroy(targetMb.gameObject);
-
-        _baseForm.SetActionState(ActionState.Idle);
-        target.IsTargeted = false;
-        _currentTarget = null;
-        _cooldownEndTime = Time.time + cooldownSeconds;
-        _devourSequenceRunning = false;
-
-        // 吞噬演出全部结束后，再广播当前持有状态（仅持有物会显示吐出提示）
-        if (isHoldable && _heldObject != null)
-            MockEventCenter.TriggerHeldObjectChanged(_heldObject.CanVoluntarySpit);
-
-        // ── Deferred form switch (first-time devour only) ──
-        if (isFirstDevour && devAnimal != null)
-        {
-            _devourInitiatedSwitchPending = true;
-            _deferredFormType = devAnimal.GrantedForm;
-            _playerController.SwitchToFormByType(_deferredFormType);
+            // Guaranteed cleanup: even if an exception kills this coroutine mid-sequence
+            // (which used to leave _devourSequenceRunning true and freeze devour until the
+            // next form switch), the system always returns to a devourable baseline.
+            Time.timeScale = 1f;
+            if (_baseForm != null)
+            {
+                if (_baseForm.Animator != null)
+                    _baseForm.Animator.updateMode = AnimatorUpdateMode.Normal;
+                _baseForm.SetActionState(ActionState.Idle);
+            }
+            SetPounceCollisionIgnore(false);
+            _isPouncing = false;
+            _devourSequenceRunning = false;
             _devourInitiatedSwitchPending = false;
+            if (_currentTarget != null)
+            {
+                _currentTarget.IsTargeted = false;
+                _currentTarget = null;
+            }
         }
     }
 
