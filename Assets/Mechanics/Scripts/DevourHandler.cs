@@ -29,6 +29,10 @@ public class DevourHandler : MonoBehaviour
     private BaseForm _baseForm;
     private Rigidbody2D _rb;
     private PlayerController _playerController;
+    // Cached player-root reference: a moving platform can reparent the player root
+    // (MovingPlatform.SetParent), which would make transform.root point at the platform.
+    // Cache the reference at Awake so detection/pounce origins stay on the player.
+    private Transform _playerRoot;
     private DevourEffectPlayer _effectPlayer;
 
     private IDevourable _currentTarget;
@@ -62,6 +66,7 @@ public class DevourHandler : MonoBehaviour
         _baseForm = _slimeForm;
         _rb = GetComponentInParent<Rigidbody2D>();
         _playerController = GetComponentInParent<PlayerController>();
+        _playerRoot = _playerController != null ? _playerController.transform : transform.root;
     }
 
     private void Start()
@@ -139,7 +144,7 @@ public class DevourHandler : MonoBehaviour
 
     private void UpdateDevourablesInRange()
     {
-        Vector2 origin = transform.root.position;
+        Vector2 origin = _playerRoot.position;
         int count = Physics2D.OverlapCircleNonAlloc(origin, detectionRadius, _overlapBuffer, devourableLayer);
 
         _rangeCheckResults.Clear();
@@ -174,9 +179,11 @@ public class DevourHandler : MonoBehaviour
     {
         if (!_isPouncing) return;
 
-        // Target vanished mid-pounce (e.g. destroyed): cancel so devour isn't stuck
-        // with _isPouncing + SpecialAction until the next form switch.
-        if (_currentTarget == null)
+        // Target vanished mid-pounce (destroyed, deactivated, or disabled): cancel so devour
+        // isn't stuck with _isPouncing + SpecialAction until the next form switch. Cast to
+        // MonoBehaviour so Unity's fake-null catches destroyed objects.
+        MonoBehaviour targetMb = _currentTarget as MonoBehaviour;
+        if (targetMb == null || !targetMb.gameObject.activeInHierarchy)
         {
             CancelPounce();
             return;
@@ -188,20 +195,21 @@ public class DevourHandler : MonoBehaviour
             return;
         }
 
-        float dist = Vector2.Distance(transform.root.position, _currentTarget.Transform.position);
+        float dist = Vector2.Distance(_playerRoot.position, _currentTarget.Transform.position);
         if (dist < 0.5f && !_devourSequenceRunning)
         {
             StartCoroutine(RunDevourSequence(_currentTarget));
             return;
         }
 
-        Vector2 toTarget = (_currentTarget.Transform.position - transform.root.position).normalized;
+        Vector2 toTarget = (_currentTarget.Transform.position - _playerRoot.position).normalized;
         _rb.velocity = toTarget * pounceSpeed;
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (!_isPouncing || _currentTarget == null) return;
+        MonoBehaviour targetMb = _currentTarget as MonoBehaviour;
+        if (!_isPouncing || targetMb == null || !targetMb.gameObject.activeInHierarchy) return;
 
         IDevourable devourable = GetDevourable(other);
         if (devourable != _currentTarget) return;
@@ -213,7 +221,6 @@ public class DevourHandler : MonoBehaviour
 
     private void TryHandleDevourInput()
     {
-        // ── TEMP diagnostic: log the persistent blockers that indicate a stuck devour (remove after debugging) ──
         if (_baseForm.CurrentState == ActionState.SpecialAction) { Debug.LogWarning("[DevourDebug] blocked: currentState=SpecialAction"); return; }
         if (_isPouncing) { Debug.LogWarning("[DevourDebug] blocked: _isPouncing"); return; }
         if (_devourSequenceRunning) { Debug.LogWarning("[DevourDebug] blocked: _devourSequenceRunning"); return; }
@@ -260,7 +267,7 @@ public class DevourHandler : MonoBehaviour
         IHoldable holdable = _heldObject;
         _heldObject = null;
 
-        Vector3 spitPos = transform.root.position + (Vector3)(_baseForm.FacingDirection * 1f);
+        Vector3 spitPos = _playerRoot.position + (Vector3)(_baseForm.FacingDirection * 1f);
 
         holdable.PlaceInWorld(spitPos);
         holdable.OnUnequip(_playerController);
@@ -283,11 +290,11 @@ public class DevourHandler : MonoBehaviour
 
     private IDevourable FindNearestDevourable()
     {
-        Vector2 origin = transform.root.position;
+        Vector2 origin = _playerRoot.position;
         int count = Physics2D.OverlapCircleNonAlloc(origin, detectionRadius, _overlapBuffer, devourableLayer);
         if (count == 0)
         {
-            Debug.LogWarning("[DevourDebug] FindNearest: no colliders in range on devourableLayer");
+            Debug.LogWarning("[DevourDebug] FindNearest: no devourables in range");
             return null;
         }
 
@@ -325,14 +332,14 @@ public class DevourHandler : MonoBehaviour
     {
         if (_currentTarget == null) return;
 
-        _pounceStartPos = transform.root.position;
+        _pounceStartPos = _playerRoot.position;
 
         _isPouncing = true;
         _pounceEndTime = Time.fixedTime + pounceMaxDuration;
         _baseForm.SetActionState(ActionState.SpecialAction);
         _baseForm.SetAnimatorBool(IsSwoopingHash, true);
 
-        Vector2 toTarget = (_currentTarget.Transform.position - transform.root.position).normalized;
+        Vector2 toTarget = (_currentTarget.Transform.position - _playerRoot.position).normalized;
         _rb.velocity = toTarget * pounceSpeed;
 
         SetPounceCollisionIgnore(true);
@@ -366,7 +373,7 @@ public class DevourHandler : MonoBehaviour
         if (ignore)
         {
             if (_currentTarget == null) return;
-            Collider2D[] playerColliders = transform.root.GetComponentsInChildren<Collider2D>();
+            Collider2D[] playerColliders = _playerRoot.GetComponentsInChildren<Collider2D>();
             Collider2D[] targetColliders = _currentTarget.Transform.GetComponentsInChildren<Collider2D>();
 
             _pounceIgnoredColliders.Clear();
@@ -401,11 +408,15 @@ public class DevourHandler : MonoBehaviour
 
         try
         {
+            MonoBehaviour targetMb = target as MonoBehaviour;
+            // Target vanished (destroyed/deactivated/disabled) before or during pounce:
+            // abort safely. finally restores timeScale and state.
+            if (targetMb == null || !targetMb.gameObject.activeInHierarchy)
+                yield break;
+
             Vector2 pointA = _pounceStartPos;
             Vector2 pointB = target.Transform.position;
             Vector2 spitDirection = (pointA - pointB).normalized;
-
-            MonoBehaviour targetMb = target as MonoBehaviour;
 
             bool isHoldable = target is IHoldable;
             DevourableAnimal devAnimal = target as DevourableAnimal;

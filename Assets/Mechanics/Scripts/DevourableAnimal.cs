@@ -45,6 +45,26 @@ public class DevourableAnimal : MonoBehaviour, IDevourable
         _animalBase = GetComponent<AnimalBase>();
     }
 
+    private void OnEnable()
+    {
+        // Defensive self-heal: if a level culling system disables this animal while
+        // _isInDevourSequence is stuck (e.g. disabled mid-devour before the
+        // DecelerateAndStun coroutine could clear it), the flag would stay true forever
+        // and the animal would become permanently undevourable after re-enable.
+        // Re-enabling always resets the flag so devour works again.
+        _isInDevourSequence = false;
+    }
+
+    private void OnDisable()
+    {
+        // Symmetric with the OnEnable self-heal: disabling this animal mid-devour kills
+        // the DecelerateAndStun coroutine (the only normal clearer of the flag), which used
+        // to leave _isInDevourSequence stuck true until a scene reload. Clear it on disable
+        // so the animal is devourable again the moment it is re-enabled.
+        _isInDevourSequence = false;
+        IsTargeted = false;
+    }
+
     bool IDevourable.CanBeDevoured(PlayerController pc) => CanBeDevouredOverride(pc);
 
     void IDevourable.OnBeingDevoured() => OnBeingDevouredOverride();
