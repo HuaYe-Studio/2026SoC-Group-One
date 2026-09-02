@@ -20,7 +20,7 @@ public class BTStunnedAction : BTNode
         _bb = animal.Board;
     }
 
-    public override State Tick()
+    protected override State DoTick()
     {
         // 眩晕结束
         if (!_bb.IsStunned)

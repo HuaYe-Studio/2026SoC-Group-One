@@ -56,7 +56,7 @@ public class BeeAStarMoveAction : BTNode
         _nextRepathTime = Time.time + Random.Range(0f, _repathInterval);
     }
 
-    public override State Tick()
+    protected override State DoTick()
     {
         Vector2 position = (Vector2)_bee.transform.position;
         Vector2 desired = _targetProvider != null ? _targetProvider() : position;

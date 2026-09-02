@@ -35,7 +35,7 @@ public class BTMoveAction : BTNode
         _timeout = timeout;
     }
 
-    public override State Tick()
+    protected override State DoTick()
     {
         // 进入节点即开始计时（首次进入时）
         if (!_hasStarted)

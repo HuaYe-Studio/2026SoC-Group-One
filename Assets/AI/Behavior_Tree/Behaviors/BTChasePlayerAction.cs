@@ -3,7 +3,9 @@ using UnityEngine;
 /// <summary>
 /// [BT] 追捕玩家节点：朝玩家方向持续移动（支持蜘蛛8向爬行的垂直方向）。
 /// 玩家丢失、超出放弃距离、或玩家变为同形态（蜘蛛）时 → Failure；贴近玩家 → Success。
+/// 数据驱动：工厂通过 IBTContext 构造器创建，参数 speed/arriveRadius/timeout 可配。
 /// </summary>
+[BTNode("ChasePlayer")]
 public class BTChasePlayerAction : BTNode
 {
     private readonly SpiderAI _spider;
@@ -29,7 +31,18 @@ public class BTChasePlayerAction : BTNode
         _timeout = timeout;
     }
 
-    public override State Tick()
+    /// <summary>数据驱动构造：SpiderAI 从上下文解析，参数表可配 speed/arriveRadius/timeout。</summary>
+    public BTChasePlayerAction(IBTContext ctx)
+    {
+        _spider = ctx.GetComponent<SpiderAI>();
+        _animal = _spider != null ? _spider : ctx.Animal;
+        _bb = ctx.Board;
+        _speedMultiplier = ctx.GetParamFloat("speed", 1.2f);
+        _arriveRadius = ctx.GetParamFloat("arriveRadius", 0.8f);
+        _timeout = ctx.GetParamFloat("timeout", 6f);
+    }
+
+    protected override State DoTick()
     {
         // 进入节点即开始计时（首次进入时）
         if (!_hasStarted)

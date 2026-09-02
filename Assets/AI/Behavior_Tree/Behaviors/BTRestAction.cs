@@ -20,7 +20,7 @@ public class BTRestAction : BTNode
         _durationMax = durationMax;
     }
 
-    public override State Tick()
+    protected override State DoTick()
     {
         // 首帧进入：必须先落地才开始休息计时，空中保持等待
         if (!_isResting)

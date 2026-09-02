@@ -14,6 +14,9 @@ using UnityEngine;
 [RequireComponent(typeof(FrogAI))]
 public class FrogBT : MonoBehaviour
 {
+    /// <summary>本组件加载的行为树 JSON 名（与 Resources.Load 共用同一常量，编辑器据此反查绑定）。</summary>
+    public static string TreeAssetName => "Frog";
+
     [Header("Burst Hop")]
     [Tooltip("每组连跳次数（=1 时退化为单跳，可作回退开关）")]
     [SerializeField] private int _jumpsPerBurst = 3;
@@ -102,6 +105,12 @@ public class FrogBT : MonoBehaviour
     private BTNode.State _lastResult;
     private bool _lastGrounded;
 
+    private void OnDestroy()
+    {
+        // 阶段 0.3：注销本棵树（对象销毁时从注册表移除，避免悬空引用）
+        BTTreeRegistry.Unregister(this);
+    }
+
     private void Awake()
     {
         _frog = GetComponent<FrogAI>();
@@ -131,12 +140,67 @@ public class FrogBT : MonoBehaviour
         TerritoryManager.Register(_territoryKey, _frog.SpawnPosition, AnimalRegion.RegionType.Generic, isShared: false, strength: stats.Strength);
 
         _root = BuildTree();
+
+        // 阶段 0.3：向注册表登记本棵行为树（调试器/可视化据此发现树结构）
+        BTTreeRegistry.Register(gameObject.name, _root, this);
     }
 
     /// <summary>
-    /// 组装青蛙行为树。感知数据统一从 Blackboard 读取。
+    /// 从 JSON 资产组装青蛙行为树（阶段 4.3 数据驱动）。
+    /// 树结构/分支顺序/节点参数走 Assets/Resources/BTTrees/Frog.json；
+    /// 逻辑叶子（条件/动作委托）由 ResolveLeaf 按名解析。JSON 缺失或解析失败时回退代码版。
     /// </summary>
     private BTNode BuildTree()
+    {
+        TextAsset asset = Resources.Load<TextAsset>("BTTrees/" + TreeAssetName);
+        if (asset == null)
+        {
+            Debug.LogError("[FrogBT] 未找到 JSON 树资产 Resources/BTTrees/Frog，回退代码组装");
+            return BuildTreeLegacy();
+        }
+
+        BTNode root = BTLayoutParser.Load(asset.text, new BTContext(this), ResolveLeaf);
+        if (root == null)
+        {
+            Debug.LogError("[FrogBT] JSON 树解析失败，回退代码组装");
+            return BuildTreeLegacy();
+        }
+        return root;
+    }
+
+    /// <summary>JSON 逻辑叶子解析器：按 name 返回对应条件/动作节点（结构在 JSON，逻辑委托在代码）。</summary>
+    private BTNode ResolveLeaf(string type, string name, IBTContext ctx)
+    {
+        // 优先查通用叶子目录（BossUrgent/ThreatUrgent/FoodDetected 等与本地等价）
+        BTNode fromCatalog = BTLeafCatalog.Create(name, ctx);
+        if (fromCatalog != null) return fromCatalog;
+
+        Blackboard bb = _frog.Board;
+        switch (name)
+        {
+            case "BossUrgent": return new BTCondition(IsBossThreatUrgent);
+            case "ThreatUrgent": return new BTCondition(() => bb.IsThreatUrgent);
+            case "ShouldSearch": return new BTCondition(() => bb.ShouldSearch && bb.ThreatLevel >= _searchThreatThreshold);
+            case "FoodDetected": return new BTCondition(() => bb.IsFoodDetected);
+            case "BossFlee": return _bossFleeAction = new BTBossFleeAction(_frog);
+            case "Flee": return _fleeAction = new BTFleeAction(_frog);
+            case "Search": return new BTSearchAction(_frog, 1f, 1.2f);
+            case "Pounce": return new BTChaseAction(_frog, 1.8f, 0.6f);
+            case "ForageBurst":
+                return new BTBurstHopAction(_frog, GetForageDirection, 1f,
+                    _jumpsPerBurst, _hopHeightDecay, _hopIntervalDecay, _baseHopInterval,
+                    directionSteer: ApplyFrogSeparation,
+                    speedScale: GetHazardSpeedScale);
+            case "Pant": return new BTPantAction(_frog, _pantDurationMin, _pantDurationMax);
+            default: return null; // 组合/装饰等结构节点交还工厂
+        }
+    }
+
+    /// <summary>
+    /// 代码组装版（JSON 资产缺失/解析失败时的回退）。
+    /// 感知数据统一从 Blackboard 读取。
+    /// </summary>
+    private BTNode BuildTreeLegacy()
     {
         Blackboard bb = _frog.Board;
 

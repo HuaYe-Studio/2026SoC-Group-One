@@ -26,7 +26,7 @@ public class BTHurtFeedbackAction : BTNode
         _feedback = feedback;
     }
 
-    public override State Tick()
+    protected override State DoTick()
     {
         // 首次进入：执行弹跳 + 横向位移
         if (!_hasHopped)

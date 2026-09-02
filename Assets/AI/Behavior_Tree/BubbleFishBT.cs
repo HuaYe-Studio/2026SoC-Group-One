@@ -14,6 +14,9 @@ using UnityEngine;
 [RequireComponent(typeof(BubbleFishAI))]
 public class BubbleFishBT : MonoBehaviour
 {
+    /// <summary>本组件加载的行为树 JSON 名（与 Resources.Load 共用同一常量，编辑器据此反查绑定）。</summary>
+    public static string TreeAssetName => "Fish";
+
     [Header("安全点设置")]
     [Tooltip("安全点数量（多点防抖，建议 3~5；仅在未配置手动安全点时生效）")]
     [SerializeField] private int _safePointCount = 4;
@@ -172,6 +175,15 @@ public class BubbleFishBT : MonoBehaviour
         // 自动安全点延后到领地统一分配完成后再生成（见 Update 首帧），以领地中心替代出生点
 
         _root = BuildTree();
+
+        // 阶段 0.3：向注册表登记本棵行为树（调试器/可视化据此发现树结构）
+        BTTreeRegistry.Register(gameObject.name, _root, this);
+    }
+
+    private void OnDestroy()
+    {
+        // 阶段 0.3：注销本棵树（对象销毁时从注册表移除，避免悬空引用）
+        BTTreeRegistry.Unregister(this);
     }
 
     /// <summary>
@@ -183,7 +195,93 @@ public class BubbleFishBT : MonoBehaviour
         return _enableDebugLog ? new BTDebugNode(name, node, this) : node;
     }
 
+    /// <summary>
+    /// 从 JSON 资产组装泡泡鱼行为树（阶段 4.3 数据驱动）。
+    /// 树结构/分支顺序走 Assets/Resources/BTTrees/Fish.json；
+    /// 逻辑叶子（条件/动作委托，含 A* 目标/代价/动画解析）由 ResolveLeaf 按名解析；
+    /// Decorate 在 JSON 节点名非空时统一包 BTDebugNode（等价原 WithDebug 包装，保留调试日志）。
+    /// JSON 缺失或解析失败时回退代码版。
+    /// </summary>
     private BTNode BuildTree()
+    {
+        TextAsset asset = Resources.Load<TextAsset>("BTTrees/" + TreeAssetName);
+        if (asset == null)
+        {
+            Debug.LogError("[BubbleFishBT] 未找到 JSON 树资产 Resources/BTTrees/Fish，回退代码组装");
+            return BuildTreeLegacy();
+        }
+
+        BTNode root = BTLayoutParser.Load(asset.text, new BTContext(this), ResolveLeaf, Decorate);
+        if (root == null)
+        {
+            Debug.LogError("[BubbleFishBT] JSON 树解析失败，回退代码组装");
+            return BuildTreeLegacy();
+        }
+        return root;
+    }
+
+    /// <summary>JSON 逻辑叶子解析器：按 name 返回对应条件/动作节点（结构在 JSON，逻辑委托在代码）。</summary>
+    private BTNode ResolveLeaf(string type, string name, IBTContext ctx)
+    {
+        // 优先查通用叶子目录（BossUrgent/ThreatUrgent 等与本地等价）
+        BTNode fromCatalog = BTLeafCatalog.Create(name, ctx);
+        if (fromCatalog != null) return fromCatalog;
+
+        switch (name)
+        {
+            case "BossUrgent": return new BTCondition(IsBossThreatUrgent);
+            case "ThreatUrgent": return new BTCondition(() => _fish.Board.IsThreatUrgent);
+            case "ShouldSearch": return new BTCondition(() => _fish.Board.ShouldSearch);
+            case "BossEscape":
+                return new BTAStarMoveAction(_fish,
+                    targetProvider: GetBossEscapeTarget,
+                    costAt: CostAt,
+                    speedMultiplier: _escapeSpeedMultiplier,
+                    arriveRadius: _arriveRadius,
+                    repathInterval: _repathInterval,
+                    move: (direction, mult) => _fish.Swim(direction, mult),
+                    animResolver: ResolvePathAnimation);
+            case "Escape":
+                return new BTAStarMoveAction(_fish,
+                    targetProvider: GetEscapeTarget,
+                    costAt: CostAt,
+                    speedMultiplier: _escapeSpeedMultiplier,
+                    arriveRadius: _arriveRadius,
+                    repathInterval: _repathInterval,
+                    move: (direction, mult) => _fish.Swim(direction, mult),
+                    animResolver: ResolvePathAnimation);
+            case "Search":
+                return new BTSearchAction(_fish,
+                    arriveDistance: 1f,
+                    speedMultiplier: 1.2f,
+                    move: (direction, mult) =>
+                    {
+                        _fish.PlayAnimation(AnimalAnimNames.SwimForward);
+                        _fish.Swim(direction, mult);
+                    });
+            case "Wander":
+                return new BTAStarMoveAction(_fish,
+                    targetProvider: GetWanderTarget,
+                    costAt: CostAt,
+                    speedMultiplier: 1f,
+                    arriveRadius: _arriveRadius,
+                    repathInterval: _repathInterval,
+                    move: (direction, mult) => _fish.Swim(ApplyFlockSteering(direction), mult),
+                    animResolver: ResolvePathAnimation);
+            default: return null; // 组合/装饰等结构节点交还工厂
+        }
+    }
+
+    /// <summary>JSON 节点装饰器：节点名非空时包一层 BTDebugNode（等价原 WithDebug 语义）。</summary>
+    private BTNode Decorate(BTNode node, string name)
+    {
+        return string.IsNullOrEmpty(name) ? node : WithDebug(name, node);
+    }
+
+    /// <summary>
+    /// 代码组装版（JSON 资产缺失/解析失败时的回退）。
+    /// </summary>
+    private BTNode BuildTreeLegacy()
     {
         Blackboard bb = _fish.Board;
 
@@ -473,6 +571,7 @@ public class BubbleFishBT : MonoBehaviour
         {
             _fish = GetComponent<BubbleFishAI>();
             _root = BuildTree();
+            BTTreeRegistry.Register(gameObject.name, _root, this);
         }
 
         // 首帧：所有动物 Awake 完成后统一分配领地，再用领地中心生成安全点（替代出生点）

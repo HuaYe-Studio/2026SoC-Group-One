@@ -1,0 +1,18 @@
+{
+  "root": {
+    "type": "Selector",
+    "name": "根",
+    "children": [
+      { "type": "SubTree", "name": "CommonDefense" },
+      {
+        "type": "Sequence",
+        "name": "复仇冲撞",
+        "children": [
+          { "type": "Condition", "name": "RevengeCond" },
+          { "type": "Action", "name": "Charge" }
+        ]
+      },
+      { "type": "Action", "name": "Wander" }
+    ]
+  }
+}

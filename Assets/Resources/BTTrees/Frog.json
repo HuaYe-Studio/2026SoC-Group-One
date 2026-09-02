@@ -1,0 +1,49 @@
+{
+  "root": {
+    "type": "Selector",
+    "name": "根",
+    "children": [
+      { "type": "SubTree", "name": "CommonDefense" },
+      {
+        "type": "Sequence",
+        "name": "逃离BOSS",
+        "children": [
+          { "type": "Condition", "name": "BossUrgent" },
+          { "type": "Action", "name": "BossFlee" }
+        ]
+      },
+      {
+        "type": "Sequence",
+        "name": "逃跑",
+        "children": [
+          { "type": "Condition", "name": "ThreatUrgent" },
+          { "type": "Action", "name": "Flee" }
+        ]
+      },
+      {
+        "type": "Sequence",
+        "name": "搜索",
+        "children": [
+          { "type": "Condition", "name": "ShouldSearch" },
+          { "type": "Action", "name": "Search" }
+        ]
+      },
+      {
+        "type": "Sequence",
+        "name": "捕食",
+        "children": [
+          { "type": "Condition", "name": "FoodDetected" },
+          { "type": "Action", "name": "Pounce" }
+        ]
+      },
+      {
+        "type": "Sequence",
+        "name": "觅食",
+        "children": [
+          { "type": "Action", "name": "ForageBurst" },
+          { "type": "Action", "name": "Pant" }
+        ]
+      }
+    ]
+  }
+}

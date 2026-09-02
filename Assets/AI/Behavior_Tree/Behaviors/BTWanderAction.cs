@@ -11,7 +11,9 @@ using UnityEngine;
 ///   巡游半径时，强制面向中心并拉回路点，让非 A* 动物也倾向待在领地内；
 /// - 方向由 heading 角度 + MoveTowardsAngle 限幅平滑转向，垂直漂移交给
 ///   BubbleFishAI.PerformMove 的 Perlin 噪声。持续 Running。
+/// 数据驱动：工厂通过 IBTContext 构造器创建，参数 range 可配。
 /// </summary>
+[BTNode("Wander")]
 public class BTWanderAction : BTNode
 {
     private readonly AnimalBase _animal;
@@ -60,13 +62,25 @@ public class BTWanderAction : BTNode
         _waypointX = _animal != null ? _animal.transform.position.x : 0f;
     }
 
+    /// <summary>数据驱动构造：参数表可配 range；steer/centerProvider 委托需代码提供，JSON 场景保持 null。</summary>
+    public BTWanderAction(IBTContext ctx)
+    {
+        _animal = ctx.Animal;
+        _bb = ctx.Board;
+        _swimRange = ctx.GetParamFloat("range", 6f);
+        _obstacleMask = default;
+        _steer = null;
+        _centerProvider = null;
+        _waypointX = _animal != null ? _animal.transform.position.x : 0f;
+    }
+
     /// <summary>巡游中心：优先用领地中心（centerProvider），否则回退出生点。</summary>
     private Vector2 GetCenter()
     {
         return _centerProvider != null ? _centerProvider() : _animal.SpawnPosition;
     }
 
-    public override State Tick()
+    protected override State DoTick()
     {
         Vector2 position = (Vector2)_animal.transform.position;
         Vector2 center = GetCenter();
