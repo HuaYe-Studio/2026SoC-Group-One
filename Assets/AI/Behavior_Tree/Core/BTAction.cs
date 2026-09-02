@@ -13,7 +13,7 @@ public class BTAction : BTNode
         _action = action;
     }
 
-    public override State Tick()
+    protected override State DoTick()
     {
         return _action();
     }

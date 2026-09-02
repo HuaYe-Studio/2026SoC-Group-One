@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -12,6 +13,7 @@ public class BTDebugNode : BTNode
     private readonly BTNode _inner;
     private readonly Object _context;
     private State _last = State.Failure;
+    private BTNode[] _childrenCache;
 
     /// <param name="name">日志中显示的节点名（如分支名）</param>
     /// <param name="inner">被包裹的实际节点</param>
@@ -23,7 +25,9 @@ public class BTDebugNode : BTNode
         _context = context;
     }
 
-    public override State Tick()
+    public override IReadOnlyList<BTNode> Children => _childrenCache ??= new[] { _inner };
+
+    protected override State DoTick()
     {
         State result = _inner.Tick();
 

@@ -62,7 +62,7 @@ public class BTBurstHopAction : BTNode
         _timeout = timeout;
     }
 
-    public override State Tick()
+    protected override State DoTick()
     {
         // 首次进入：必须落地才开始（空中进入则等待）
         if (!_hasStarted)

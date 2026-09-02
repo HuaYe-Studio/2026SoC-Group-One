@@ -25,7 +25,7 @@ public class BTBossFleeAction : BTNode
         _bb = animal.Board;
     }
 
-    public override State Tick()
+    protected override State DoTick()
     {
         // 每帧刷新 BOSS 紧迫状态（迟滞 + 最小持续时长，仲裁逻辑写入）
         _bb.RefreshBossUrgent();

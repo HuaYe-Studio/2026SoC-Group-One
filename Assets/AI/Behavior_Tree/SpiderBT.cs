@@ -10,6 +10,9 @@ using UnityEngine;
 [RequireComponent(typeof(SpiderAI))]
 public class SpiderBT : MonoBehaviour
 {
+    /// <summary>本组件加载的行为树 JSON 名（与 Resources.Load 共用同一常量，编辑器据此反查绑定）。</summary>
+    public static string TreeAssetName => "Spider";
+
     [Header("Chase")]
     [Tooltip("追捕玩家速度倍率")]
     [SerializeField] private float _chaseSpeedMultiplier = 1.2f;
@@ -63,6 +66,12 @@ public class SpiderBT : MonoBehaviour
     private string _lastBranch;
     private BTNode.State _lastResult;
 
+    private void OnDestroy()
+    {
+        // 阶段 0.3：注销本棵树（对象销毁时从注册表移除，避免悬空引用）
+        BTTreeRegistry.Unregister(this);
+    }
+
     private void Awake()
     {
         _spider = GetComponent<SpiderAI>();
@@ -93,9 +102,57 @@ public class SpiderBT : MonoBehaviour
         TerritoryManager.Register(_territoryKey, _spider.SpawnPosition, AnimalRegion.RegionType.SpiderWeb, isShared: false, strength: stats.Strength);
 
         _root = BuildTree();
+
+        // 阶段 0.3：向注册表登记本棵行为树（调试器/可视化据此发现树结构）
+        BTTreeRegistry.Register(gameObject.name, _root, this);
     }
 
+    /// <summary>
+    /// 从 JSON 资产组装蜘蛛行为树（阶段 4.3 数据驱动）。
+    /// 树结构/分支顺序/节点参数走 Assets/Resources/BTTrees/Spider.json；
+    /// 逻辑叶子（条件/动作委托）由 ResolveLeaf 按名解析。JSON 缺失或解析失败时回退代码版。
+    /// </summary>
     private BTNode BuildTree()
+    {
+        TextAsset asset = Resources.Load<TextAsset>("BTTrees/" + TreeAssetName);
+        if (asset == null)
+        {
+            Debug.LogError("[SpiderBT] 未找到 JSON 树资产 Resources/BTTrees/Spider，回退代码组装");
+            return BuildTreeLegacy();
+        }
+
+        BTNode root = BTLayoutParser.Load(asset.text, new BTContext(this), ResolveLeaf);
+        if (root == null)
+        {
+            Debug.LogError("[SpiderBT] JSON 树解析失败，回退代码组装");
+            return BuildTreeLegacy();
+        }
+        return root;
+    }
+
+    /// <summary>JSON 逻辑叶子解析器：按 name 返回对应条件/动作节点（结构在 JSON，逻辑委托在代码）。</summary>
+    private BTNode ResolveLeaf(string type, string name, IBTContext ctx)
+    {
+        // 优先查通用叶子目录（ChaseCond 等与本地等价）
+        BTNode fromCatalog = BTLeafCatalog.Create(name, ctx);
+        if (fromCatalog != null) return fromCatalog;
+
+        Blackboard bb = _spider.Board;
+        switch (name)
+        {
+            case "ChaseCond": return new BTCondition(() => bb.IsPlayerVisible && !bb.IsPlayerSameForm);
+            case "ShouldSearch": return new BTCondition(() => bb.ShouldSearch && bb.ThreatLevel >= _searchThreatThreshold);
+            case "ChasePlayer": return new BTChasePlayerAction(_spider, _chaseSpeedMultiplier);
+            case "Search": return new BTSearchAction(_spider, 1f, 1.2f);
+            case "Wander": return new BTWanderAction(_spider, _wanderRange, default, ApplyFlockSteering, GetTerritoryCenter);
+            default: return null; // 组合/装饰等结构节点交还工厂
+        }
+    }
+
+    /// <summary>
+    /// 代码组装版（JSON 资产缺失/解析失败时的回退）。
+    /// </summary>
+    private BTNode BuildTreeLegacy()
     {
         Blackboard bb = _spider.Board;
 

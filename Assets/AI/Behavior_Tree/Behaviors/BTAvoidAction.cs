@@ -17,7 +17,7 @@ public class BTAvoidAction : BTNode
         _stepDistance = stepDistance;
     }
 
-    public override State Tick()
+    protected override State DoTick()
     {
         if (_startPos == Vector2.zero)
         {

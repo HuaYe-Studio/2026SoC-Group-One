@@ -52,7 +52,7 @@ public class BTAStarMoveAction : BTNode
         _animResolver = animResolver;
     }
 
-    public override State Tick()
+    protected override State DoTick()
     {
         Vector2 position = (Vector2)_animal.transform.position;
         Vector2 desired = _targetProvider != null ? _targetProvider() : position;

@@ -4,7 +4,9 @@ using System.Collections.Generic;
 /// [BT] 选择节点：从上到下依次尝试子节点，任一子节点 Success 或 Running 即返回。
 /// 每帧从头重新评估，高优先级分支就绪时会打断（Reset）正在运行的低优先级分支，
 /// 保证"检测到玩家立即逃跑"这类抢占逻辑生效。
+/// 数据驱动：工厂创建后通过 AddChild 逐个挂子节点。
 /// </summary>
+[BTNode("Selector")]
 public class BTSelector : BTNode
 {
     private readonly List<BTNode> _children;
@@ -15,7 +17,19 @@ public class BTSelector : BTNode
         _children = new List<BTNode>(children);
     }
 
-    public override State Tick()
+    /// <summary>工厂用：创建空选择器后挂子节点。</summary>
+    public BTSelector() : this(new BTNode[0]) { }
+
+    /// <summary>追加子节点（链式）。</summary>
+    public BTNode AddChild(BTNode child)
+    {
+        if (child != null) _children.Add(child);
+        return this;
+    }
+
+    public override IReadOnlyList<BTNode> Children => _children;
+
+    protected override State DoTick()
     {
         for (int i = 0; i < _children.Count; i++)
         {

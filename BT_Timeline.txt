@@ -1,0 +1,252 @@
+[BTDebugger] 时间线导出 time=30.17 条目=250/1024
+时间	树	节点	状态
+0.00	Frog (1)	BTCondition	Success
+0.00	Frog (1)	BTSequence	Success
+0.00	Frog (1)	BTCondition	Success
+0.00	Frog (1)	BTSequence	Success
+0.00	Frog (1)	BTCondition	Success
+0.00	Frog (1)	BTSequence	Success
+0.00	Frog (1)	BTCondition	Success
+0.00	Frog (1)	BTSequence	Success
+0.00	Frog (1)	BTCondition	Success
+0.00	Frog (1)	BTSequence	Success
+0.00	Frog (1)	BTCondition	Success
+0.00	Frog (1)	BTSequence	Success
+0.00	Frog (1)	BTCondition	Success
+0.00	Frog (1)	BTSequence	Success
+0.00	Frog (1)	BTBurstHopAction	Success
+0.00	Frog (1)	BTSequence	Success
+0.00	Frog (1)	BTSelector	Success
+0.00	Frog	BTCondition	Success
+0.00	Frog	BTSequence	Success
+0.00	Frog	BTCondition	Success
+0.00	Frog	BTSequence	Success
+0.00	Frog	BTCondition	Success
+0.00	Frog	BTSequence	Success
+0.00	Frog	BTCondition	Success
+0.00	Frog	BTSequence	Success
+0.00	Frog	BTCondition	Success
+0.00	Frog	BTSequence	Success
+0.00	Frog	BTCondition	Success
+0.00	Frog	BTSequence	Success
+0.00	Frog	BTCondition	Success
+0.00	Frog	BTSequence	Success
+0.00	Frog	BTBurstHopAction	Success
+0.00	Frog	BTSequence	Success
+0.00	Frog	BTSelector	Success
+0.02	Frog (1)	BTCondition	Failure
+0.02	Frog (1)	BTUnstickAction	Success
+0.02	Frog (1)	BTSequence	Failure
+0.02	Frog	BTCondition	Failure
+0.02	Frog	BTUnstickAction	Success
+0.02	Frog	BTSequence	Failure
+2.07	Frog (1)	BTUnstickAction	Running
+2.07	Frog (1)	BTSequence	Running
+2.07	Frog (1)	BTSelector	Running
+2.07	Frog	BTUnstickAction	Running
+2.07	Frog	BTSequence	Running
+2.07	Frog	BTSelector	Running
+2.08	Frog (1)	BTCondition	Success
+2.08	Frog (1)	BTSequence	Success
+2.08	Frog (1)	BTSelector	Success
+2.08	Frog	BTCondition	Success
+2.08	Frog	BTSequence	Success
+2.08	Frog	BTSelector	Success
+3.06	Frog (1)	BTBurstHopAction	Running
+3.06	Frog (1)	BTPantAction	Success
+3.06	Frog	BTBurstHopAction	Running
+3.06	Frog	BTPantAction	Success
+3.99	Frog	BTPantAction	Running
+3.99	Frog	BTSequence	Running
+3.99	Frog	BTSelector	Running
+4.01	Frog	BTBurstHopAction	Success
+4.01	Frog	BTSequence	Success
+4.01	Frog	BTSelector	Success
+4.16	Frog (1)	BTPantAction	Running
+4.16	Frog (1)	BTSequence	Running
+4.16	Frog (1)	BTSelector	Running
+4.16	Frog (1)	BTBurstHopAction	Success
+4.16	Frog (1)	BTSequence	Success
+4.16	Frog (1)	BTSelector	Success
+5.02	Frog	BTBurstHopAction	Running
+5.02	Frog	BTPantAction	Success
+5.19	Frog (1)	BTBurstHopAction	Running
+5.19	Frog (1)	BTPantAction	Success
+6.11	Frog (1)	BTPantAction	Running
+6.11	Frog (1)	BTSequence	Running
+6.11	Frog (1)	BTSelector	Running
+6.11	Frog (1)	BTBurstHopAction	Success
+6.11	Frog (1)	BTSequence	Success
+6.11	Frog (1)	BTSelector	Success
+6.16	Frog	BTPantAction	Running
+6.16	Frog	BTSequence	Running
+6.16	Frog	BTSelector	Running
+6.16	Frog	BTBurstHopAction	Success
+6.16	Frog	BTSequence	Success
+6.16	Frog	BTSelector	Success
+7.11	Frog	BTCondition	Failure
+7.11	Frog	BTUnstickAction	Success
+7.11	Frog	BTSequence	Failure
+7.13	Frog (1)	BTBurstHopAction	Running
+7.13	Frog (1)	BTPantAction	Success
+8.19	Frog (1)	BTPantAction	Running
+8.19	Frog (1)	BTSequence	Running
+8.19	Frog (1)	BTSelector	Running
+8.20	Frog (1)	BTBurstHopAction	Success
+8.20	Frog (1)	BTSequence	Success
+8.20	Frog (1)	BTSelector	Success
+9.12	Frog	BTUnstickAction	Running
+9.12	Frog	BTSequence	Running
+9.12	Frog	BTSelector	Running
+9.13	Frog	BTCondition	Success
+9.13	Frog	BTSequence	Success
+9.13	Frog	BTSelector	Success
+9.22	Frog (1)	BTBurstHopAction	Running
+9.22	Frog (1)	BTPantAction	Success
+10.14	Frog (1)	BTPantAction	Running
+10.14	Frog (1)	BTSequence	Running
+10.14	Frog (1)	BTSelector	Running
+10.14	Frog (1)	BTBurstHopAction	Success
+10.14	Frog (1)	BTSequence	Success
+10.14	Frog (1)	BTSelector	Success
+10.18	Frog	BTBurstHopAction	Running
+10.18	Frog	BTPantAction	Success
+11.17	Frog (1)	BTBurstHopAction	Running
+11.17	Frog (1)	BTPantAction	Success
+11.65	Frog	BTPantAction	Running
+11.65	Frog	BTSequence	Running
+11.65	Frog	BTSelector	Running
+11.66	Frog	BTBurstHopAction	Success
+11.66	Frog	BTSequence	Success
+11.66	Frog	BTSelector	Success
+12.28	Frog (1)	BTPantAction	Running
+12.28	Frog (1)	BTSequence	Running
+12.28	Frog (1)	BTSelector	Running
+12.31	Frog (1)	BTBurstHopAction	Success
+12.31	Frog (1)	BTSequence	Success
+12.31	Frog (1)	BTSelector	Success
+12.69	Frog	BTBurstHopAction	Running
+12.69	Frog	BTPantAction	Success
+13.32	Frog (1)	BTBurstHopAction	Running
+13.32	Frog (1)	BTPantAction	Success
+13.52	Frog	BTPantAction	Running
+13.52	Frog	BTSequence	Running
+13.52	Frog	BTSelector	Running
+13.53	Frog	BTBurstHopAction	Success
+13.53	Frog	BTSequence	Success
+13.53	Frog	BTSelector	Success
+14.54	Frog	BTBurstHopAction	Running
+14.54	Frog	BTPantAction	Success
+14.66	Frog (1)	BTPantAction	Running
+14.66	Frog (1)	BTSequence	Running
+14.66	Frog (1)	BTSelector	Running
+14.67	Frog (1)	BTBurstHopAction	Success
+14.67	Frog (1)	BTSequence	Success
+14.67	Frog (1)	BTSelector	Success
+15.68	Frog (1)	BTBurstHopAction	Running
+15.68	Frog (1)	BTPantAction	Success
+15.76	Frog	BTPantAction	Running
+15.76	Frog	BTSequence	Running
+15.76	Frog	BTSelector	Running
+15.77	Frog	BTBurstHopAction	Success
+15.77	Frog	BTSequence	Success
+15.77	Frog	BTSelector	Success
+16.78	Frog	BTBurstHopAction	Running
+16.78	Frog	BTPantAction	Success
+17.18	Frog (1)	BTPantAction	Running
+17.18	Frog (1)	BTSequence	Running
+17.18	Frog (1)	BTSelector	Running
+17.19	Frog (1)	BTBurstHopAction	Success
+17.19	Frog (1)	BTSequence	Success
+17.19	Frog (1)	BTSelector	Success
+17.85	Frog	BTPantAction	Running
+17.85	Frog	BTSequence	Running
+17.85	Frog	BTSelector	Running
+17.86	Frog	BTBurstHopAction	Success
+17.86	Frog	BTSequence	Success
+17.86	Frog	BTSelector	Success
+18.21	Frog (1)	BTBurstHopAction	Running
+18.21	Frog (1)	BTPantAction	Success
+18.31	Frog	BTCondition	Failure
+18.31	Frog	BTUnstickAction	Success
+18.31	Frog	BTSequence	Failure
+19.11	Frog (1)	BTPantAction	Running
+19.11	Frog (1)	BTSequence	Running
+19.11	Frog (1)	BTSelector	Running
+19.12	Frog (1)	BTBurstHopAction	Success
+19.12	Frog (1)	BTSequence	Success
+19.12	Frog (1)	BTSelector	Success
+19.31	Frog	BTUnstickAction	Running
+19.31	Frog	BTSequence	Running
+19.31	Frog	BTSelector	Running
+19.32	Frog	BTCondition	Success
+19.32	Frog	BTSequence	Success
+19.32	Frog	BTSelector	Success
+20.35	Frog (1)	BTBurstHopAction	Running
+20.35	Frog (1)	BTPantAction	Success
+20.86	Frog	BTBurstHopAction	Running
+20.86	Frog	BTPantAction	Success
+21.57	Frog (1)	BTPantAction	Running
+21.57	Frog (1)	BTSequence	Running
+21.57	Frog (1)	BTSelector	Running
+21.58	Frog (1)	BTBurstHopAction	Success
+21.58	Frog (1)	BTSequence	Success
+21.58	Frog (1)	BTSelector	Success
+22.10	Frog	BTPantAction	Running
+22.10	Frog	BTSequence	Running
+22.10	Frog	BTSelector	Running
+22.11	Frog	BTBurstHopAction	Success
+22.11	Frog	BTSequence	Success
+22.11	Frog	BTSelector	Success
+22.61	Frog (1)	BTBurstHopAction	Running
+22.61	Frog (1)	BTPantAction	Success
+23.13	Frog	BTBurstHopAction	Running
+23.13	Frog	BTPantAction	Success
+24.08	Frog	BTPantAction	Running
+24.08	Frog	BTSequence	Running
+24.08	Frog	BTSelector	Running
+24.08	Frog (1)	BTPantAction	Running
+24.08	Frog (1)	BTSequence	Running
+24.08	Frog (1)	BTSelector	Running
+24.08	Frog	BTBurstHopAction	Success
+24.08	Frog	BTSequence	Success
+24.08	Frog	BTSelector	Success
+24.09	Frog (1)	BTBurstHopAction	Success
+24.09	Frog (1)	BTSequence	Success
+24.09	Frog (1)	BTSelector	Success
+25.10	Frog (1)	BTBurstHopAction	Running
+25.10	Frog (1)	BTPantAction	Success
+25.10	Frog	BTBurstHopAction	Running
+25.10	Frog	BTPantAction	Success
+26.02	Frog	BTPantAction	Running
+26.02	Frog	BTSequence	Running
+26.02	Frog	BTSelector	Running
+26.02	Frog	BTBurstHopAction	Success
+26.02	Frog	BTSequence	Success
+26.02	Frog	BTSelector	Success
+26.47	Frog (1)	BTPantAction	Running
+26.47	Frog (1)	BTSequence	Running
+26.47	Frog (1)	BTSelector	Running
+26.48	Frog (1)	BTBurstHopAction	Success
+26.48	Frog (1)	BTSequence	Success
+26.48	Frog (1)	BTSelector	Success
+27.05	Frog	BTBurstHopAction	Running
+27.05	Frog	BTPantAction	Success
+27.50	Frog (1)	BTBurstHopAction	Running
+27.50	Frog (1)	BTPantAction	Success
+28.06	Frog	BTPantAction	Running
+28.06	Frog	BTSequence	Running
+28.06	Frog	BTSelector	Running
+28.07	Frog	BTBurstHopAction	Success
+28.07	Frog	BTSequence	Success
+28.07	Frog	BTSelector	Success
+28.79	Frog (1)	BTPantAction	Running
+28.79	Frog (1)	BTSequence	Running
+28.79	Frog (1)	BTSelector	Running
+28.82	Frog (1)	BTBurstHopAction	Success
+28.82	Frog (1)	BTSequence	Success
+28.82	Frog (1)	BTSelector	Success
+29.09	Frog	BTBurstHopAction	Running
+29.09	Frog	BTPantAction	Success
+29.84	Frog (1)	BTBurstHopAction	Running
+29.84	Frog (1)	BTPantAction	Success

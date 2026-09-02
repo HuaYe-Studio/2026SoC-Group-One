@@ -13,7 +13,7 @@ public class BTCondition : BTNode
         _condition = condition;
     }
 
-    public override State Tick()
+    protected override State DoTick()
     {
         return _condition() ? State.Success : State.Failure;
     }
