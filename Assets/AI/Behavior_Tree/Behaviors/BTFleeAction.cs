@@ -7,7 +7,9 @@ using UnityEngine;
 /// 感知数据统一从 Blackboard 读取。
 /// 适配动物：青蛙走跳跃+地形感知；泡泡鱼(BubbleFishAI)走全方向 Swim+逃生动画；其余走水平 PerformMove。
 /// 注意：Reset() 只重置内部状态，绝不调用 StopMoving 等物理副作用。
+/// 数据驱动：工厂通过 IBTContext 构造器创建，FrogAI 由上下文 GetComponent 解析。
 /// </summary>
+[BTNode("Flee")]
 public class BTFleeAction : BTNode
 {
     private readonly FrogAI _frog;
@@ -46,10 +48,18 @@ public class BTFleeAction : BTNode
         _bb = animal.Board;
     }
 
+    /// <summary>数据驱动构造：FrogAI 从上下文解析（鱼/其他动物走通用路径，与旧构造行为一致）。</summary>
+    public BTFleeAction(IBTContext ctx)
+    {
+        _frog = ctx.GetComponent<FrogAI>();
+        _animal = _frog != null ? _frog : ctx.Animal;
+        _bb = ctx.Board ?? _animal?.Board;
+    }
+
     /// <summary>当前紧迫度等级（0=普通，1=慌张，2=恐慌）。仅用于调试。</summary>
     public int UrgencyLevel => _urgencyLevel;
 
-    public override State Tick()
+    protected override State DoTick()
     {
         // ---- 逃脱评估 ----
         if (!_bb.IsPlayerVisible || _bb.PlayerDistance > _animal.FleeSafeDistance)

@@ -30,7 +30,7 @@ public class BTPantAction : BTNode
     /// 喘息过程：首帧必须已着地才开始计时（空中进入保持等待，防止刚起跳就误入喘息），
     /// 着地后停动、播 Rest 动画并写 IsPanting，停顿 [durationMin, durationMax] 秒后返回 Success。
     /// </summary>
-    public override State Tick()
+    protected override State DoTick()
     {
         // 首帧进入：必须先落地才开始喘息计时，空中保持等待
         if (!_isPanting)

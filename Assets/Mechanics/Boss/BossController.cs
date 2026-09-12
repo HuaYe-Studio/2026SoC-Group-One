@@ -114,6 +114,10 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
     [Tooltip("攻击命中玩家的伤害值（PlayerHP.TakeDamage）")]
     [SerializeField] private int _attackDamage = 1;
 
+    [Header("调试")]
+    [Tooltip("调试日志开关：输出受击/命中/蜂巢被毁/状态快照等诊断日志（默认关，正式环境安静；排查问题/联调时打开）")]
+    [SerializeField] private bool _debugLog = false;
+
     [Header("移动追击")]
     [Tooltip("开启战斗期追击：BOSS 朝玩家水平移动（除出场/退去滑行外的主动移动方式）")]
     [SerializeField] private bool _enableChase = true;
@@ -337,7 +341,7 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
                     hive.RespawnBees();
         }
 
-        Debug.Log($"[BossController] {name} 玩家复活，BOSS 战已复位（仇恨关闭、血量复位、蜂巢/蜜蜂恢复）", this);
+        LogStatus("玩家复活，BOSS 战已复位（仇恨关闭、血量复位、蜂巢/蜜蜂恢复）");
     }
 
     /// <summary>数组为空、或所有元素都是 null（prefab 里 `[null]` 序列化的典型形态）。</summary>
@@ -379,7 +383,7 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
         if (_player == null) return;
         if (Vector2.Distance(_player.position, transform.position) <= _autoActivateRadius)
         {
-            Debug.Log($"[BossController] {name} 玩家进入警戒范围，自动激活 BOSS 战", this);
+            LogStatus("玩家进入警戒范围，自动激活 BOSS 战");
             EnterArena();
         }
     }
@@ -392,7 +396,7 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
 
         _enrageEndTime = 0f;
         SetPhase(BossPhase.Normal);
-        Debug.Log($"[BossController] {name} 狂暴结束，恢复普通状态", this);
+        LogStatus("狂暴结束，恢复普通状态");
     }
 
     /// <summary>按狂暴阶段取持续时间并启动计时（duration=0 表示不自动恢复）。</summary>
@@ -441,7 +445,7 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
         if (_enableChase)
             _chaseRoutine = StartCoroutine(ChasePlayer());
 
-        Debug.Log($"[BossController] {name} 进入场地，阶段={_phase}", this);
+        LogStatus($"进入场地，阶段={_phase}");
     }
 
     private IEnumerator EnterRoutine()
@@ -504,7 +508,7 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
         // 胜利广播（先事件后隐藏，避免协程被禁用中断）
         OnDefeated?.Invoke();
         MockEventCenter.TriggerBossDefeated();
-        Debug.Log($"[BossController] {name} 已击败，退去并开放场地", this);
+        LogStatus($"已击败，退去并开放场地");
 
         gameObject.SetActive(false);
     }
@@ -624,7 +628,7 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
             return;
         if (amount <= 0) return;
 
-        Debug.Log($"[BossController] {name} 受击 -{amount}（段内={_currentSegmentHP}/{_segmentMax}，剩余段={_remainingSegments}，终段={_inFinalPhase}）", this);
+        LogStatus($"受击 -{amount}（段内={_currentSegmentHP}/{_segmentMax}，剩余段={_remainingSegments}，终段={_inFinalPhase}）");
 
         if (_inFinalPhase)
         {
@@ -743,7 +747,7 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
             _finalHPRemaining = Mathf.Max(1, _finalHealth);
             NotifyHPChanged();
         }
-        Debug.Log($"[BossController] {name} 冷静退档，剩余段={_remainingSegments}", this);
+        LogStatus($"冷静退档，剩余段={_remainingSegments}");
     }
 
     // ===================== 蜂巢 =====================
@@ -751,7 +755,7 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
     private void OnHiveDestroyed(Hive hive)
     {
         _hiveDestroyedCount++;
-        Debug.Log($"[BossController] {name} 蜂巢 {hive.HiveIndex} 被破坏（{_hiveDestroyedCount}/{(_hives?.Length ?? 0)}）", this);
+        LogStatus($"蜂巢 {hive.HiveIndex} 被破坏（{_hiveDestroyedCount}/{(_hives?.Length ?? 0)}）");
 
         // 可配置：蜂巢被毁对 BOSS 造成段伤害
         if (_segmentDamagePerHive > 0)
@@ -789,11 +793,20 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
         LogBossStatus($"蜂巢 {hive.HiveIndex} 被破坏后");
     }
 
+    /// <summary>统一诊断日志入口：受 _debugLog 开关控制（默认关，正式环境安静；排查时在 Inspector 打开）。</summary>
+    private void LogStatus(string msg)
+    {
+        if (_debugLog)
+            Debug.Log($"[BossController] {name} {msg}", this);
+    }
+
     /// <summary>
     /// 输出 BOSS 当前完整状态日志（蜂巢被破坏等关键节点后调用，排查"BOSS 无敌/不胜利/不掉血"）。
+    /// 受 _debugLog 开关控制：默认关闭，联调排查时在 Inspector 打开。
     /// </summary>
     private void LogBossStatus(string context)
     {
+        if (!_debugLog) return;
         Debug.Log(
             $"[BossController][状态] {context} 激活={_isActive} 阶段={_phase} 待决={_pending}(到{_pendingUntil:F1}s) " +
             $"剩余蜂巢={RemainingActiveHives()}/{(_hives?.Length ?? 0)} 已毁={_hiveDestroyedCount} 目标={(_hivesToWin > 0 ? _hivesToWin.ToString() : "全部")} " +
@@ -901,7 +914,7 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
     private void HandleAttackHit(Vector2 hitPoint)
     {
         string attackName = _currentAttack != null ? _currentAttack.GetType().Name : "null";
-        Debug.Log($"[BossController] {name} 攻击命中 攻击={attackName} 落点=({hitPoint.x:F1},{hitPoint.y:F1}) 可破巢={(_currentAttack != null && _currentAttack.CanDestroyHive)}", this);
+        LogStatus($"攻击命中 攻击={attackName} 落点=({hitPoint.x:F1},{hitPoint.y:F1}) 可破巢={(_currentAttack != null && _currentAttack.CanDestroyHive)}");
 
         DamagePlayerIfHit(hitPoint);
 
@@ -940,7 +953,7 @@ public class BossController : MonoBehaviour, IHazardSource, IAttackTarget
             float dist = Vector2.Distance(hitPoint, hive.transform.position);
             if (dist <= _hiveHitRadius)
             {
-                Debug.Log($"[BossController] 落点命中蜂巢#{hive.HiveIndex}（距离={dist:F2}m ≤ {_hiveHitRadius}m）", this);
+                LogStatus($"落点命中蜂巢#{hive.HiveIndex}（距离={dist:F2}m ≤ {_hiveHitRadius}m）");
                 hive.TakeHit(hitPoint);
             }
         }

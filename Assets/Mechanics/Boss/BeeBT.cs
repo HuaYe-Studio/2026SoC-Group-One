@@ -52,6 +52,15 @@ public class BeeBT : MonoBehaviour
                 move: (dir, mult) => _bee.MoveAlong(dir, mult),
                 onArrive: () => _bee.AdvanceGuardPoint())
         );
+
+        // 阶段 0.3：向注册表登记本棵行为树（调试器/可视化据此发现树结构）
+        BTTreeRegistry.Register(gameObject.name, _root, this);
+    }
+
+    private void OnDestroy()
+    {
+        // 阶段 0.3：注销本棵树（对象销毁时从注册表移除，避免悬空引用）
+        BTTreeRegistry.Unregister(this);
     }
 
     private void Update()
@@ -60,6 +69,7 @@ public class BeeBT : MonoBehaviour
         {
             _bee = GetComponent<BeeAI>();
             _root = BuildTree();
+            BTTreeRegistry.Register(gameObject.name, _root, this);
         }
 
         // 镜头距离剔除：离镜头中心过远的蜜蜂整棵行为树跳过（A*/Boids 全免），冻结在原地。

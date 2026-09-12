@@ -30,7 +30,7 @@ public class BTChargeAction : BTNode
         _targetPos = targetPos ?? (() => (Vector2)_bb.LastKnownPlayerPos);
     }
 
-    public override State Tick()
+    protected override State DoTick()
     {
         // 冷却中且未在冲撞 → 让位（由 Selector 走巡游等低优先级行为）
         if (Time.time < _nextChargeTime && !_sheep.IsCharging)

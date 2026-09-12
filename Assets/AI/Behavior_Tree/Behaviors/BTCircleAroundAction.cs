@@ -16,7 +16,7 @@ public class BTCircleAroundAction : BTNode
         _animal = animal;
     }
 
-    public override State Tick()
+    protected override State DoTick()
     {
         if (!_animal.IsPlayerDetected)
         {

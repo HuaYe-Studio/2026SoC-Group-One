@@ -1,0 +1,34 @@
+{
+  "root": {
+    "type": "Selector",
+    "name": "根",
+    "children": [
+      { "type": "SubTree", "name": "CommonDefense" },
+      {
+        "type": "Sequence",
+        "name": "BossEscape",
+        "children": [
+          { "type": "Condition", "name": "BossUrgent" },
+          { "type": "Action", "name": "BossEscape" }
+        ]
+      },
+      {
+        "type": "Sequence",
+        "name": "Escape",
+        "children": [
+          { "type": "Condition", "name": "ThreatUrgent" },
+          { "type": "Action", "name": "Escape" }
+        ]
+      },
+      {
+        "type": "Sequence",
+        "name": "Search",
+        "children": [
+          { "type": "Condition", "name": "ShouldSearch" },
+          { "type": "Action", "name": "Search" }
+        ]
+      },
+      { "type": "Action", "name": "Wander" }
+    ]
+  }
+}

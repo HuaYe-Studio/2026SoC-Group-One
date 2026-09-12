@@ -15,6 +15,9 @@ using UnityEngine;
 [RequireComponent(typeof(RevengeBehavior))]
 public class SheepBT : MonoBehaviour
 {
+    /// <summary>本组件加载的行为树 JSON 名（与 Resources.Load 共用同一常量，编辑器据此反查绑定）。</summary>
+    public static string TreeAssetName => "Sheep";
+
     [Header("Wander")]
     [Tooltip("自由巡游范围半径（米）")]
     [SerializeField] private float _wanderRange = 5f;
@@ -90,9 +93,64 @@ public class SheepBT : MonoBehaviour
         TerritoryManager.Register(_territoryKey, _sheep.SpawnPosition, AnimalRegion.RegionType.Generic, isShared: false, strength: stats.Strength);
 
         _root = BuildTree();
+
+        // 阶段 0.3：向注册表登记本棵行为树（调试器/可视化据此发现树结构）
+        BTTreeRegistry.Register(gameObject.name, _root, this);
     }
 
+    private void OnDestroy()
+    {
+        // 阶段 0.3：注销本棵树（对象销毁时从注册表移除，避免悬空引用）
+        BTTreeRegistry.Unregister(this);
+    }
+
+    /// <summary>
+    /// 从 JSON 资产组装冲冲羊行为树（阶段 4.3 数据驱动）。
+    /// 树结构/分支顺序/节点参数走 Assets/Resources/BTTrees/Sheep.json；
+    /// 逻辑叶子（条件/动作委托）由 ResolveLeaf 按名解析。JSON 缺失或解析失败时回退代码版。
+    /// </summary>
     private BTNode BuildTree()
+    {
+        TextAsset asset = Resources.Load<TextAsset>("BTTrees/" + TreeAssetName);
+        if (asset == null)
+        {
+            Debug.LogError("[SheepBT] 未找到 JSON 树资产 Resources/BTTrees/Sheep，回退代码组装");
+            return BuildTreeLegacy();
+        }
+
+        BTNode root = BTLayoutParser.Load(asset.text, new BTContext(this), ResolveLeaf);
+        if (root == null)
+        {
+            Debug.LogError("[SheepBT] JSON 树解析失败，回退代码组装");
+            return BuildTreeLegacy();
+        }
+        return root;
+    }
+
+    /// <summary>JSON 逻辑叶子解析器：按 name 返回对应条件/动作节点（结构在 JSON，逻辑委托在代码）。</summary>
+    private BTNode ResolveLeaf(string type, string name, IBTContext ctx)
+    {
+        // 优先查通用叶子目录（暂无与本树重叠的通用叶子，保留扩展位）
+        BTNode fromCatalog = BTLeafCatalog.Create(name, ctx);
+        if (fromCatalog != null) return fromCatalog;
+
+        Blackboard bb = _sheep.Board;
+        switch (name)
+        {
+            case "RevengeCond": return new BTCondition(() => _revenge.IsRevenge && _revenge.RevengeTarget != null);
+            case "Charge":
+                return new BTChargeAction(_sheep,
+                    hasTarget: () => _revenge.IsRevenge && _revenge.RevengeTarget != null,
+                    targetPos: () => (Vector2)_revenge.RevengeTarget.transform.position);
+            case "Wander": return new BTWanderAction(_sheep, _wanderRange, default, ApplyFlockSteering, GetTerritoryCenter);
+            default: return null; // 组合/装饰等结构节点交还工厂
+        }
+    }
+
+    /// <summary>
+    /// 代码组装版（JSON 资产缺失/解析失败时的回退）。
+    /// </summary>
+    private BTNode BuildTreeLegacy()
     {
         Blackboard bb = _sheep.Board;
 

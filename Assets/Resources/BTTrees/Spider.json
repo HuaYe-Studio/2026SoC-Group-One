@@ -1,0 +1,26 @@
+{
+  "root": {
+    "type": "Selector",
+    "name": "根",
+    "children": [
+      { "type": "SubTree", "name": "CommonDefense" },
+      {
+        "type": "Sequence",
+        "name": "追捕",
+        "children": [
+          { "type": "Condition", "name": "ChaseCond" },
+          { "type": "Action", "name": "ChasePlayer" }
+        ]
+      },
+      {
+        "type": "Sequence",
+        "name": "搜索",
+        "children": [
+          { "type": "Condition", "name": "ShouldSearch" },
+          { "type": "Action", "name": "Search" }
+        ]
+      },
+      { "type": "Action", "name": "Wander" }
+    ]
+  }
+}

@@ -28,7 +28,7 @@ public class BTUnstickAction : BTNode
         _frog = animal as FrogAI;
     }
 
-    public override State Tick()
+    protected override State DoTick()
     {
         // 已不卡死（脱困成功或外部解除）→ 正常结束
         if (!_animal.IsStuck)

@@ -31,7 +31,7 @@ public class BTSearchAction : BTNode
         _move = move;
     }
 
-    public override State Tick()
+    protected override State DoTick()
     {
         // 记忆过期或威胁已消退 → 放弃搜索
         if (!_bb.HasThreatMemory || _bb.ThreatLevel <= 10f)
